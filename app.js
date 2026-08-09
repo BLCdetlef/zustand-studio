@@ -528,10 +528,40 @@ function stopTraining(){
   if($("#trainingPlay"))$("#trainingPlay").textContent="▶ Training starten";
 }
 
-$("#startTraining").onclick=startTraining;
-$("#trainingPlay").onclick=()=>trainerPaused?resumeTraining():trainerRunning?null:startTraining();
+$("#startTraining").onclick=()=>{
+  const c=selected("#iCandidate");
+  if(!c)return alert("Bitte zuerst einen Kandidaten auswählen.");
+  // Änderungen sichern, aber Audio noch NICHT starten.
+  data.interviews[c.id]={intro:$("#iIntro").value,notes:$("#iNotes").value};
+  storage.save(data);
+  if(!buildTraining())return alert("Bitte Anmoderation oder Fragen eintragen.");
+  $("#trainingPanel").classList.remove("hidden");
+  $("#trainingStatus").textContent="Bereit";
+  $("#trainingText").textContent=trainerItems[0]?.text||"Bereit";
+  $("#trainingRound").textContent="Runde 1";
+  $("#trainingPlay").textContent="▶ Training starten";
+  $("#trainingPanel").scrollIntoView({behavior:"smooth",block:"start"});
+};
+$("#trainingPlay").onclick=()=>{
+  if(trainerPaused){ resumeTraining(); return; }
+  if(trainerRunning) return;
+  startTraining();
+};
 $("#trainingPauseBtn").onclick=pauseTraining;
 $("#trainingStop").onclick=stopTraining;
+$("#testTrainingVoice").onclick=()=>{
+  if(!("speechSynthesis" in window)){
+    alert("Dieser Browser unterstützt die Sprachausgabe leider nicht.");
+    return;
+  }
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance("ZUSTAND Interviewtraining. Die Sprachausgabe funktioniert.");
+  const v=trainerVoice();
+  if(v)u.voice=v;
+  u.lang=v?.lang||"de-DE";
+  u.rate=Number($("#trainingRate").value||0.95);
+  speechSynthesis.speak(u);
+};
 $("#closeTraining").onclick=()=>{stopTraining();$("#trainingPanel").classList.add("hidden")};
 
 document.addEventListener("visibilitychange",()=>{

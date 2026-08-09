@@ -34,3 +34,7 @@ footer{border-top:1px solid var(--line);background:#fff;padding:18px 5vw;display
   .training-controls{grid-template-columns:1fr 1fr}
   .training-controls .primary{grid-column:1/-1}
 }
+
+.voice-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end}
+.voice-row select{margin-top:0}
+@media(max-width:760px){.voice-row{grid-template-columns:1fr}.voice-row button{width:100%}}
