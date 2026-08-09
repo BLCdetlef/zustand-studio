@@ -183,12 +183,59 @@ $("#saveAcquisition").onclick=()=>{
   persist();
 };
 
+function makeInterviewDraft(c){
+  if(!c)return {intro:"",notes:""};
+
+  const institution=c.institution?` bei ${c.institution}`:"";
+  const topic=c.topic||"langfristigen Veränderungen des Waldbestands";
+  const period=c.period?` Die zugrunde liegenden Daten reichen ${c.period}.`:"";
+
+  let intro=`Heute geht es um die Frage, wie wir Veränderungen des globalen Waldbestands überhaupt verlässlich messen können. Mein Gast ist ${c.name}${institution}. ${c.name} arbeitet zu ${topic}.${period} Mich interessiert besonders, was Satelliten, Waldinventuren und staatliche Meldungen jeweils zeigen – und wo ihre Grenzen liegen.`;
+
+  let questions=[];
+
+  if(/melvin\s+lippe/i.test(c.name)){
+    questions=[
+      "Herr Lippe, bevor wir über Waldverlust sprechen: Woher wissen wir überhaupt, wie viel Wald es auf der Erde gibt?",
+      "Sie vergleichen unterschiedliche globale Wald- und Baumbedeckungsdatensätze. Was misst ein Satellit dabei tatsächlich – und was wird erst durch Auswertung und Klassifikation daraus?",
+      "Warum können zwei seriöse globale Waldkarten für dieselbe Region zu unterschiedlichen Ergebnissen kommen?",
+      "Wie unterscheiden sich satellitengestützte Messreihen von den Waldmeldungen der Nationalstaaten an die FAO?",
+      "Wenn ein Staat eine stabile Waldfläche meldet, Satellitendaten aber deutliche Verluste der Baumbedeckung zeigen: Müssen sich diese Aussagen widersprechen?",
+      "Wie weit können wir mit vergleichbaren Satellitendaten heute zurückblicken, und was verändert sich dadurch an unserem Bild der globalen Waldentwicklung?",
+      "Welche Rolle spielen Walddefinition, räumliche Auflösung und die Unterscheidung zwischen Entwaldung, Degradation und vorübergehendem Verlust der Baumbedeckung?",
+      "Welche Ursachen für Waldverlust lassen sich aus den Daten selbst erkennen – etwa Landwirtschaft, Feuer oder Holznutzung – und wo braucht man zusätzliche Informationen?",
+      "Warum ist diese Entwicklung nicht nur eine Frage des Klimas, sondern auch von Wasserhaushalt, Biodiversität und anderen natürlichen Lebensgrundlagen?",
+      "Wo liegen aus Ihrer Sicht die größten Unsicherheiten, wenn heute weltweit Zahlen zum Waldverlust veröffentlicht werden?",
+      "Wenn Sie sich eine einzige Verbesserung im globalen Waldmonitoring wünschen könnten: Welche wäre das?"
+    ];
+  } else {
+    questions=[
+      `Was genau wird in Ihrer Arbeit zu ${topic} gemessen – und wie?`,
+      `Wie weit reicht die zugrunde liegende Messreihe zurück${c.period?` (${c.period})`:""}?`,
+      "Welche langfristige Veränderung ist in den Daten besonders deutlich zu erkennen?",
+      "Wie unterscheiden sich Fernerkundungsdaten, Waldinventuren und staatliche Meldungen voneinander?",
+      c.question || "Welche Kernfrage lässt sich mit dieser Messreihe besonders gut beantworten?",
+      "Welche Ursachen lassen sich aus den Daten ableiten – und wo beginnen die Unsicherheiten?",
+      "Welche Folgen hat die beobachtete Entwicklung für Klima, Wasserhaushalt und Biodiversität?",
+      "Was wird in der öffentlichen Berichterstattung über diese Daten häufig zu stark vereinfacht?"
+    ];
+  }
+
+  return {intro,notes:questions.join("\\n\\n")};
+}
+
 function getInterview(c){
   if(!c)return {intro:"",notes:""};
   const saved=data.interviews[c.id];
+
   // Abwärtskompatibel: alte Version speicherte nur den Leitfaden als String.
   if(typeof saved==="string")return {intro:"",notes:saved};
-  return saved||{intro:"",notes:""};
+
+  // Eigene Bearbeitungen haben immer Vorrang.
+  if(saved && ((saved.intro||"").trim() || (saved.notes||"").trim()))return saved;
+
+  // Beim ersten Öffnen automatisch einen kandidatenbezogenen Vorschlag erzeugen.
+  return makeInterviewDraft(c);
 }
 
 $("#iCandidate").onchange=()=>{
