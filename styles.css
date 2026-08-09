@@ -20,3 +20,17 @@ button{font:inherit}.primary,.ghost{border-radius:7px;padding:10px 14px;cursor:p
 .hidden{display:none}.candidate{display:grid;grid-template-columns:1fr auto;gap:15px}.candidate h3{margin:0 0 6px}.meta{font-size:13px;color:#666}.candidate p{margin:8px 0;line-height:1.45}.tag{display:inline-block;font-size:11px;border:1px solid #aaa;border-radius:99px;padding:3px 7px;margin-right:5px}
 footer{border-top:1px solid var(--line);background:#fff;padding:18px 5vw;display:flex;justify-content:space-between;align-items:center;color:#666;font-size:12px}
 @media(max-width:760px){header{align-items:start;flex-direction:column}.grid.two{grid-template-columns:1fr}.hero h2,.sectionhead h2{font-size:28px}nav{padding:0 10px}main{padding:25px 15px 55px}.candidate{grid-template-columns:1fr}.sectionhead{align-items:flex-start}.candidate-actions{justify-content:flex-start}}
+
+.introtext{min-height:150px}
+.interview-actions{flex-wrap:wrap}
+.training{margin-top:18px}
+.training-status{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:14px}
+.round{font-size:13px;border:1px solid #aaa;border-radius:999px;padding:5px 9px;white-space:nowrap}
+.training-text{font-size:23px;font-weight:700;line-height:1.35;min-height:150px;padding:18px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.training-settings{margin-top:16px}
+.training-controls{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin-top:18px}
+@media(max-width:760px){
+  .training-text{font-size:21px;min-height:170px}
+  .training-controls{grid-template-columns:1fr 1fr}
+  .training-controls .primary{grid-column:1/-1}
+}

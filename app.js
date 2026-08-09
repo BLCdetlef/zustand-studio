@@ -183,15 +183,29 @@ $("#saveAcquisition").onclick=()=>{
   persist();
 };
 
+function getInterview(c){
+  if(!c)return {intro:"",notes:""};
+  const saved=data.interviews[c.id];
+  // Abwärtskompatibel: alte Version speicherte nur den Leitfaden als String.
+  if(typeof saved==="string")return {intro:"",notes:saved};
+  return saved||{intro:"",notes:""};
+}
+
 $("#iCandidate").onchange=()=>{
   const c=selected("#iCandidate");
-  $("#iNotes").value=c?(data.interviews[c.id]||""):"";
+  const interview=getInterview(c);
+  $("#iIntro").value=interview.intro||"";
+  $("#iNotes").value=interview.notes||"";
+  stopTraining();
 };
 
 $("#saveInterview").onclick=()=>{
   const c=selected("#iCandidate");
   if(!c)return alert("Bitte Kandidaten auswählen.");
-  data.interviews[c.id]=$("#iNotes").value;
+  data.interviews[c.id]={
+    intro:$("#iIntro").value,
+    notes:$("#iNotes").value
+  };
   persist();
 };
 
@@ -222,6 +236,166 @@ $("#clearDemo").onclick=()=>{
     nav("research");
   }
 };
+
+
+// --- Interview-Trainer -------------------------------------------------------
+let trainerItems=[];
+let trainerIndex=0;
+let trainerRound=1;
+let trainerRunning=false;
+let trainerPaused=false;
+let trainerWait=null;
+let trainerVoices=[];
+let trainerWakeLock=null;
+
+function parseTrainingQuestions(text){
+  return String(text||"")
+    .split(/\n\s*\n|\n/)
+    .map(x=>x.replace(/^\s*(?:[-•]|\d+[.)])\s*/,"").trim())
+    .filter(Boolean);
+}
+
+function loadTrainerVoices(){
+  trainerVoices=speechSynthesis.getVoices();
+  const select=$("#trainingVoice");
+  if(!select)return;
+  const old=select.value;
+  const german=trainerVoices.map((v,i)=>({v,i})).filter(x=>/^de/i.test(x.v.lang));
+  const list=german.length?german:trainerVoices.map((v,i)=>({v,i}));
+  select.innerHTML=list.map(({v,i})=>`<option value="${i}">${esc(v.name)} (${esc(v.lang)})</option>`).join("");
+  if([...select.options].some(o=>o.value===old))select.value=old;
+}
+if("speechSynthesis" in window){
+  speechSynthesis.addEventListener?.("voiceschanged",loadTrainerVoices);
+  loadTrainerVoices();
+}
+
+function trainerVoice(){
+  const i=Number($("#trainingVoice")?.value);
+  return trainerVoices[i]||trainerVoices.find(v=>/^de/i.test(v.lang))||trainerVoices[0];
+}
+
+function trainerSpeak(text){
+  return new Promise(resolve=>{
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text);
+    const v=trainerVoice();
+    if(v)u.voice=v;
+    u.lang=v?.lang||"de-DE";
+    u.rate=Number($("#trainingRate").value||0.95);
+    u.onend=resolve;
+    u.onerror=resolve;
+    speechSynthesis.speak(u);
+  });
+}
+
+function trainerDelay(ms){
+  return new Promise(resolve=>{trainerWait=setTimeout(resolve,ms)});
+}
+
+async function trainerLock(){
+  try{if("wakeLock" in navigator)trainerWakeLock=await navigator.wakeLock.request("screen")}catch{}
+}
+function trainerUnlock(){try{trainerWakeLock?.release()}catch{} trainerWakeLock=null}
+
+function buildTraining(){
+  const c=selected("#iCandidate");
+  if(!c)return false;
+  const intro=$("#iIntro").value.trim();
+  const qs=parseTrainingQuestions($("#iNotes").value);
+  trainerItems=[];
+  if(intro)trainerItems.push({kind:"Anmoderation",text:intro});
+  qs.forEach((q,i)=>trainerItems.push({kind:`Frage ${i+1}`,text:q}));
+  return trainerItems.length>0;
+}
+
+async function trainerLoop(){
+  if(!trainerRunning||trainerPaused||!trainerItems.length)return;
+  const item=trainerItems[trainerIndex];
+  $("#trainingStatus").textContent=item.kind;
+  $("#trainingRound").textContent=`Runde ${trainerRound}`;
+  $("#trainingText").textContent=item.text;
+
+  // Die Ansage trennt Anmoderation und Fragen akustisch.
+  await trainerSpeak(item.kind);
+  if(!trainerRunning||trainerPaused)return;
+  await trainerDelay(500);
+  await trainerSpeak(item.text);
+  if(!trainerRunning||trainerPaused)return;
+
+  $("#trainingStatus").textContent=item.kind==="Anmoderation"?"Jetzt Anmoderation laut nachsprechen …":"Jetzt Frage laut sprechen / Antwort üben …";
+  await trainerDelay(Number($("#trainingPause").value||10)*1000);
+  if(!trainerRunning||trainerPaused)return;
+
+  trainerIndex++;
+  if(trainerIndex>=trainerItems.length){
+    trainerIndex=0;
+    trainerRound++;
+  }
+  trainerLoop();
+}
+
+function startTraining(){
+  if(!("speechSynthesis" in window))return alert("Dieser Browser unterstützt die Sprachausgabe leider nicht.");
+  const c=selected("#iCandidate");
+  if(!c)return alert("Bitte zuerst einen Kandidaten auswählen.");
+  // Änderungen vor Trainingsstart automatisch speichern.
+  data.interviews[c.id]={intro:$("#iIntro").value,notes:$("#iNotes").value};
+  storage.save(data);
+
+  if(!buildTraining())return alert("Bitte Anmoderation oder Fragen eintragen.");
+  trainerRunning=true;
+  trainerPaused=false;
+  trainerIndex=0;
+  trainerRound=1;
+  $("#trainingPanel").classList.remove("hidden");
+  $("#trainingPlay").textContent="▶ Läuft";
+  trainerLock();
+  trainerLoop();
+  $("#trainingPanel").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+function pauseTraining(){
+  if(!trainerRunning)return;
+  trainerPaused=true;
+  trainerRunning=false;
+  speechSynthesis.cancel();
+  clearTimeout(trainerWait);
+  $("#trainingStatus").textContent="Pausiert";
+  $("#trainingPlay").textContent="▶ Weiter";
+  trainerUnlock();
+}
+
+function resumeTraining(){
+  if(trainerRunning)return;
+  if(!trainerItems.length){startTraining();return}
+  trainerRunning=true;
+  trainerPaused=false;
+  $("#trainingPlay").textContent="▶ Läuft";
+  trainerLock();
+  trainerLoop();
+}
+
+function stopTraining(){
+  trainerRunning=false;
+  trainerPaused=false;
+  speechSynthesis?.cancel();
+  clearTimeout(trainerWait);
+  trainerUnlock();
+  if($("#trainingStatus"))$("#trainingStatus").textContent="Bereit";
+  if($("#trainingPlay"))$("#trainingPlay").textContent="▶ Training starten";
+}
+
+$("#startTraining").onclick=startTraining;
+$("#trainingPlay").onclick=()=>trainerPaused?resumeTraining():trainerRunning?null:startTraining();
+$("#trainingPauseBtn").onclick=pauseTraining;
+$("#trainingStop").onclick=stopTraining;
+$("#closeTraining").onclick=()=>{stopTraining();$("#trainingPanel").classList.add("hidden")};
+
+document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState==="visible"&&trainerRunning)trainerLock();
+});
+
 
 function renderAll(){renderCandidates();candidateOptions();makeMail()}
 renderAll();
