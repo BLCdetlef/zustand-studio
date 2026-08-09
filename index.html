@@ -37,22 +37,30 @@
     <article class="card">
       <label>Thema</label>
       <input id="topic" placeholder="z. B. Grundwasser, Biodiversität, Ostsee">
+
       <label>Region / Schwerpunkt</label>
       <input id="region" value="Lübeck, Schleswig-Holstein, Norddeutschland, Deutschland, Europa">
+
       <label>Interviewsprache</label>
       <select id="language">
         <option value="Deutsch bevorzugt" selected>Deutsch bevorzugt</option>
         <option value="Deutsch erforderlich">Deutsch erforderlich</option>
         <option value="Englisch möglich">Englisch möglich</option>
       </select>
+
       <label>Zusätzlicher Fokus</label>
       <textarea id="focus" placeholder="optional: z. B. möglichst lange Messreihen, Bauwesen, lokale Auswirkungen"></textarea>
+
       <div class="actions">
         <button class="primary" id="makePrompt">Such-Prompt erzeugen</button>
       </div>
     </article>
+
     <article class="card">
-      <div class="cardhead"><h3>Such-Prompt</h3><button class="ghost" id="copyPrompt">Kopieren</button></div>
+      <div class="cardhead">
+        <h3>Such-Prompt</h3>
+        <button class="ghost" id="copyPrompt">Kopieren</button>
+      </div>
       <textarea class="output tall" id="promptOutput" readonly placeholder="Hier erscheint der Recherche-Prompt."></textarea>
       <p class="hint">In dieser ersten Version führt das Studio selbst noch keine Websuche aus. Der Prompt kann direkt in ChatGPT oder einem freigegebenen Recherchewerkzeug verwendet werden.</p>
     </article>
@@ -61,12 +69,25 @@
 
 <section id="candidates" class="view">
   <div class="sectionhead">
-    <div><div class="kicker">INTERVIEWPOOL</div><h2>Kandidaten</h2></div>
-    <button class="primary" id="newCandidate">+ Kandidat</button>
+    <div>
+      <div class="kicker">INTERVIEWPOOL</div>
+      <h2>Kandidaten</h2>
+    </div>
+    <div class="candidate-actions">
+      <button class="ghost" id="importCandidates">JSON importieren</button>
+      <button class="primary" id="newCandidate">+ Kandidat</button>
+      <input id="candidateImportFile" type="file" accept=".json,application/json" hidden>
+    </div>
   </div>
+
   <div id="candidateList" class="cards"></div>
+
   <div id="candidateForm" class="card form hidden">
-    <div class="cardhead"><h3>Kandidat erfassen</h3><button class="ghost" id="closeCandidate">Schließen</button></div>
+    <div class="cardhead">
+      <h3>Kandidat erfassen</h3>
+      <button class="ghost" id="closeCandidate">Schließen</button>
+    </div>
+
     <div class="grid two">
       <div><label>Name</label><input id="cName"></div>
       <div><label>Institution</label><input id="cInstitution"></div>
@@ -75,53 +96,109 @@
       <div><label>Dienstliche Kontaktadresse</label><input id="cEmail" type="email"></div>
       <div><label>Quellen-URL</label><input id="cSource"></div>
     </div>
-    <label>Warum interessant?</label><textarea id="cWhy"></textarea>
-    <label>Mögliche Kernfrage</label><textarea id="cQuestion"></textarea>
-    <div class="actions"><button class="primary" id="saveCandidate">Speichern</button></div>
+
+    <label>Warum interessant?</label>
+    <textarea id="cWhy"></textarea>
+
+    <label>Mögliche Kernfrage</label>
+    <textarea id="cQuestion"></textarea>
+
+    <div class="actions">
+      <button class="primary" id="saveCandidate">Speichern</button>
+    </div>
   </div>
 </section>
 
 <section id="acquisition" class="view">
-  <div class="sectionhead"><div><div class="kicker">NIEDRIGE KONTAKTSCHWELLE</div><h2>Akquise</h2></div></div>
+  <div class="sectionhead">
+    <div>
+      <div class="kicker">NIEDRIGE KONTAKTSCHWELLE</div>
+      <h2>Akquise</h2>
+    </div>
+  </div>
+
   <div class="grid two">
     <article class="card">
-      <label>Kandidat</label><select id="aCandidate"></select>
+      <label>Kandidat</label>
+      <select id="aCandidate"></select>
+
       <label>Status</label>
       <select id="aStatus">
-        <option>noch nicht angeschrieben</option><option>angefragt</option><option>zugesagt</option>
-        <option>abgesagt</option><option>später nachfragen</option>
+        <option>noch nicht angeschrieben</option>
+        <option>angefragt</option>
+        <option>zugesagt</option>
+        <option>abgesagt</option>
+        <option>später nachfragen</option>
       </select>
-      <label>Notiz</label><textarea id="aNote" placeholder="Keine sensiblen persönlichen Einschätzungen in diesem Prototyp speichern."></textarea>
-      <div class="actions"><button class="primary" id="saveAcquisition">Status speichern</button></div>
+
+      <label>Notiz</label>
+      <textarea id="aNote" placeholder="Keine sensiblen persönlichen Einschätzungen in diesem Prototyp speichern."></textarea>
+
+      <div class="actions">
+        <button class="primary" id="saveAcquisition">Status speichern</button>
+      </div>
     </article>
+
     <article class="card">
-      <div class="cardhead"><h3>Kurze Erstmail</h3><button class="ghost" id="copyMail">Kopieren</button></div>
+      <div class="cardhead">
+        <h3>Kurze Erstmail</h3>
+        <button class="ghost" id="copyMail">Kopieren</button>
+      </div>
       <textarea class="output tall" id="mailOutput" readonly></textarea>
     </article>
   </div>
 </section>
 
 <section id="interview" class="view">
-  <div class="sectionhead"><div><div class="kicker">VORBEREITUNG</div><h2>Interview</h2></div></div>
+  <div class="sectionhead">
+    <div>
+      <div class="kicker">VORBEREITUNG</div>
+      <h2>Interview</h2>
+    </div>
+  </div>
+
   <article class="card">
-    <label>Kandidat</label><select id="iCandidate"></select>
+    <label>Kandidat</label>
+    <select id="iCandidate"></select>
+
     <label>Gesprächsleitfaden / Arbeitsnotizen</label>
     <textarea id="iNotes" class="verytall" placeholder="Was zeigen die Messungen? Wie wissen wir das? Warum geschieht es? Welche Zusammenhänge und Unsicherheiten gibt es?"></textarea>
-    <div class="actions"><button class="primary" id="saveInterview">Lokal speichern</button></div>
+
+    <div class="actions">
+      <button class="primary" id="saveInterview">Lokal speichern</button>
+    </div>
+
     <p class="hint">Einwilligungen, private Kontaktdaten und besonders schutzbedürftige Angaben sind bewusst noch nicht Bestandteil dieses Prototyps.</p>
   </article>
 </section>
 
 <section id="zpanel" class="view">
-  <div class="sectionhead"><div><div class="kicker">VOM GESPRÄCH ZUR ÖFFENTLICHKEIT</div><h2>Z‑Panel-Entwurf</h2></div></div>
+  <div class="sectionhead">
+    <div>
+      <div class="kicker">VOM GESPRÄCH ZUR ÖFFENTLICHKEIT</div>
+      <h2>Z‑Panel-Entwurf</h2>
+    </div>
+  </div>
+
   <div class="grid two">
     <article class="card">
-      <label>Interview / Kandidat</label><select id="zCandidate"></select>
-      <label>Titel</label><input id="zTitle">
-      <label>Kurztext (Ziel: 350–550 Zeichen)</label><textarea id="zSummary" class="tall"></textarea>
-      <label>Quelle / Link</label><input id="zSource">
-      <div class="actions"><button class="primary" id="saveZ">Entwurf speichern</button></div>
+      <label>Interview / Kandidat</label>
+      <select id="zCandidate"></select>
+
+      <label>Titel</label>
+      <input id="zTitle">
+
+      <label>Kurztext (Ziel: 350–550 Zeichen)</label>
+      <textarea id="zSummary" class="tall"></textarea>
+
+      <label>Quelle / Link</label>
+      <input id="zSource">
+
+      <div class="actions">
+        <button class="primary" id="saveZ">Entwurf speichern</button>
+      </div>
     </article>
+
     <article class="card">
       <h3>Redaktioneller Grundsatz</h3>
       <p>Ein Interview kann Anlass für einen Z‑Panel-Beitrag sein. Sachliche Aussagen werden anhand der zugrunde liegenden Quellen geprüft. Wörtliche Zitate, Audio, Bilder oder personenbezogene Aussagen werden nicht automatisch veröffentlicht.</p>
