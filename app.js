@@ -20,7 +20,12 @@ function nav(view){
   $("#"+view).classList.add("active");
   $$("nav button").forEach(x=>x.classList.toggle("active",x.dataset.view===view));
 }
-$$("nav button").forEach(b=>b.onclick=()=>nav(b.dataset.view));
+$$("nav button").forEach(b=>b.onclick=()=>{
+  nav(b.dataset.view);
+  if(b.dataset.view==="interview"){
+    showInterviewForSelectedCandidate(false);
+  }
+});
 
 $("#makePrompt").onclick=()=>{
   const topic=$("#topic").value.trim()||"[THEMA]";
@@ -124,10 +129,16 @@ if(importButton && importFile){
 
 function candidateOptions(){
   const opts='<option value="">Bitte auswählen</option>'+data.candidates.map(c=>`<option value="${c.id}">${esc(c.name)}${c.institution?" · "+esc(c.institution):""}</option>`).join("");
+
   ["#aCandidate","#iCandidate","#zCandidate"].forEach(s=>{
-    const old=$(s).value;
-    $(s).innerHTML=opts;
-    $(s).value=old;
+    const el=$(s);
+    const old=el.value;
+    el.innerHTML=opts;
+    if(old && data.candidates.some(c=>c.id===old)){
+      el.value=old;
+    }else{
+      el.value="";
+    }
   });
 }
 
@@ -186,15 +197,13 @@ $("#saveAcquisition").onclick=()=>{
 function makeInterviewDraft(c){
   if(!c)return {intro:"",notes:""};
 
-  const institution=c.institution?` bei ${c.institution}`:"";
-  const topic=c.topic||"langfristigen Veränderungen des Waldbestands";
-  const period=c.period?` Die zugrunde liegenden Daten reichen ${c.period}.`:"";
-
-  let intro=`Heute geht es um die Frage, wie wir Veränderungen des globalen Waldbestands überhaupt verlässlich messen können. Mein Gast ist ${c.name}${institution}. ${c.name} arbeitet zu ${topic}.${period} Mich interessiert besonders, was Satelliten, Waldinventuren und staatliche Meldungen jeweils zeigen – und wo ihre Grenzen liegen.`;
-
+  const name=c.name||"mein Gast";
+  const institution=c.institution||"";
+  let intro="";
   let questions=[];
 
-  if(/melvin\s+lippe/i.test(c.name)){
+  if(/melvin\s+lippe/i.test(name)){
+    intro=`Heute geht es um die Frage, wie wir Veränderungen des globalen Waldbestands überhaupt verlässlich messen können. Mein Gast ist Dr. Melvin Lippe vom Thünen-Institut für Waldwirtschaft in Hamburg. Er arbeitet mit globalen Wald- und Fernerkundungsdaten und untersucht unter anderem, wie unterschiedliche satellitenbasierte Waldkarten zu bewerten sind. Mich interessiert deshalb nicht nur, wie viel Wald verloren geht, sondern zunächst: Woher wissen wir das eigentlich?`;
     questions=[
       "Herr Lippe, bevor wir über Waldverlust sprechen: Woher wissen wir überhaupt, wie viel Wald es auf der Erde gibt?",
       "Sie vergleichen unterschiedliche globale Wald- und Baumbedeckungsdatensätze. Was misst ein Satellit dabei tatsächlich – und was wird erst durch Auswertung und Klassifikation daraus?",
@@ -208,22 +217,84 @@ function makeInterviewDraft(c){
       "Wo liegen aus Ihrer Sicht die größten Unsicherheiten, wenn heute weltweit Zahlen zum Waldverlust veröffentlicht werden?",
       "Wenn Sie sich eine einzige Verbesserung im globalen Waldmonitoring wünschen könnten: Welche wäre das?"
     ];
-  } else {
+  } else if(/michael\s+köhl/i.test(name)){
+    intro=`Heute möchte ich genauer verstehen, wie globale Waldzahlen eigentlich entstehen. Mein Gast ist Professor Michael Köhl von der Universität Hamburg. Er hat über viele Jahre zu Waldinventuren, internationaler Waldberichterstattung und Fernerkundung gearbeitet. Damit kann er zwei Welten miteinander verbinden: Messungen direkt im Wald und den Blick aus dem Weltraum.`;
     questions=[
-      `Was genau wird in Ihrer Arbeit zu ${topic} gemessen – und wie?`,
-      `Wie weit reicht die zugrunde liegende Messreihe zurück${c.period?` (${c.period})`:""}?`,
+      "Herr Köhl, wenn wir sagen, die Erde habe eine bestimmte Zahl von Milliarden Hektar Wald: Wie kommt eine solche Zahl überhaupt zustande?",
+      "Wie funktioniert eine klassische Waldinventur – was wird draußen im Wald tatsächlich gemessen?",
+      "Was kann eine solche Inventur erfassen, was ein Satellit nicht erkennen kann?",
+      "Und umgekehrt: Was können Satelliten heute besser als nationale Inventuren?",
+      "Die FAO führt die Angaben vieler Staaten zu einer globalen Waldstatistik zusammen. Wie vergleichbar sind diese nationalen Daten wirklich?",
+      "Wie hat sich die Qualität der globalen Waldbeobachtung seit den frühen FAO-Erhebungen beziehungsweise seit 1990 verändert?",
+      "Was ist methodisch schwieriger zu erfassen: vollständige Entwaldung oder die schleichende Degradation eines Waldes?",
+      "Kann die globale Waldfläche relativ stabil aussehen, obwohl sich der ökologische Zustand der Wälder gleichzeitig verschlechtert?",
+      "Welche Bedeutung haben Waldveränderungen für Kohlenstoffspeicherung, Wasserhaushalt und Biodiversität?",
+      "Wie groß sind die Unsicherheiten der Zahlen – und werden diese Unsicherheiten in Medien und Öffentlichkeit ausreichend sichtbar?",
+      "Welche Zahl oder Entwicklung würden Sie einem Publikum besonders gern zeigen, damit es den Zustand der Wälder besser versteht?"
+    ];
+  } else if(/martin\s+herold/i.test(name)){
+    intro=`Mein heutiger Gast ist Professor Martin Herold vom GFZ Helmholtz-Zentrum für Geoforschung in Potsdam. Er beschäftigt sich mit Fernerkundung und der Beobachtung von Veränderungen der Landoberfläche. Beim Wald bedeutet das: Satelliten liefern über Jahre und Jahrzehnte immer wieder Messungen derselben Gebiete. Wir wollen verstehen, was diese Messungen tatsächlich zeigen – und wo ihre Grenzen liegen.`;
+    questions=[
+      "Herr Herold, wenn ein Satellit über einen Wald fliegt: Was misst sein Sensor eigentlich ganz konkret?",
+      "Wie wird aus reflektiertem Licht oder einem Radarsignal anschließend die Aussage: Hier steht Wald oder hier ist Wald verloren gegangen?",
+      "Warum ist die lange Landsat-Messreihe für unser Wissen über globale Waldveränderungen so wichtig?",
+      "Was haben wir durch Satelliten über Entwaldung gelernt, das wir allein aus nationalen Statistiken nicht hätten wissen können?",
+      "Wo stimmen Satellitenbeobachtungen und staatliche Waldmeldungen gut überein – und warum können sie voneinander abweichen?",
+      "Wie zuverlässig können Satelliten zwischen dauerhafter Entwaldung, Waldbrand, Holzeinschlag und späterer Wiederbewaldung unterscheiden?",
+      "Mit Sentinel-Radardaten lassen sich Waldstörungen inzwischen sehr schnell erkennen. Was bedeutet dieser Fortschritt gegenüber älteren Messverfahren?",
+      "Können wir mit Fernerkundung inzwischen auch den Zustand oder die Biomasse eines Waldes beurteilen und nicht nur seine Fläche?",
+      "Welche Veränderungen des globalen Waldes sind in den vergangenen Jahrzehnten besonders deutlich geworden?",
+      "Wie hängen diese Veränderungen mit Klima, Kohlenstoffkreislauf, Wasser und Biodiversität zusammen?",
+      "Wo würden Sie trotz der enormen Datenmengen sagen: Das wissen wir über den globalen Wald noch erstaunlich schlecht?"
+    ];
+  } else if(/christelle\s+vancutsem/i.test(name)){
+    intro=`Heute schauen wir mit Satellitendaten mehr als drei Jahrzehnte zurück. Mein Gast ist Christelle Vancutsem vom Joint Research Centre der Europäischen Kommission. Sie arbeitet am Tropical Moist Forest Monitoring, das Landsat-Aufnahmen tropischer Feuchtwälder seit 1990 systematisch auswertet. Dadurch lassen sich Entwaldung, Schädigung und teilweise auch Regeneration über lange Zeiträume verfolgen.`;
+    questions=[
+      "Ms Vancutsem, your monitoring looks back to 1990. Why is such a long and consistent satellite record scientifically so valuable?",
+      "What exactly do you classify in the Tropical Moist Forest dataset: intact forest, degradation, deforestation and regrowth?",
+      "How can Landsat images with a resolution of about 30 metres reveal changes that happened many years ago?",
+      "What do more than three decades of observations tell us about the overall development of tropical moist forests?",
+      "Which changes can satellite data reveal that may remain hidden in national forest statistics?",
+      "How do you distinguish permanent deforestation from temporary disturbances such as fire, selective logging or storms?",
+      "Can the data show whether forests recover after a disturbance – and whether that regrowth is ecologically comparable to the original forest?",
+      "Where are the strongest regional differences in the long-term trends?",
+      "How are agriculture, fires and infrastructure reflected in the patterns you observe?",
+      "Why are tropical forest changes important not only for carbon emissions but also for biodiversity and the water cycle?",
+      "What is the most important uncertainty that people should keep in mind when interpreting global satellite maps of forest change?"
+    ];
+  } else if(/anssi\s+pekkarinen/i.test(name)){
+    intro=`Heute geht es um eine der ältesten globalen Beobachtungen unserer natürlichen Lebensgrundlagen: die Waldressourcenerhebung der Welternährungsorganisation FAO. Mein Gast ist Anssi Pekkarinen von der FAO Forestry Division. Er arbeitet am Global Forest Resources Assessment, das Informationen der Staaten zusammenführt und mit Fernerkundung ergänzt. Besonders interessiert mich, warum wir im Satellitenzeitalter weiterhin beides brauchen.`;
+    questions=[
+      "Mr Pekkarinen, the FAO has assessed the world's forests for many decades. How far back does this global observation actually reach?",
+      "How does the Global Forest Resources Assessment obtain its data from individual countries?",
+      "How do you make national forest inventories and definitions sufficiently comparable to produce a global trend?",
+      "What is the most important change in global forest area since 1990?",
+      "The net loss of forest has slowed, while deforestation continues. Why is the distinction between net change and gross deforestation so important?",
+      "Why does the FAO still need national reports when satellites can now observe almost the entire land surface?",
+      "What can national forest inventories tell us that satellite images cannot?",
+      "And what does the FAO's Remote Sensing Survey add as an independent source of information?",
+      "Where do satellite observations and national reports tend to disagree, and what can we learn from those differences?",
+      "How well can global statistics capture forest degradation and ecological quality rather than simply forest area?",
+      "If you had to choose one long-term number that best describes the state of the world's forests today, which one would you choose – and why?"
+    ];
+  } else {
+    const topic=c.topic||"der zugrunde liegenden Messreihe";
+    intro=`Mein Gast ist ${name}${institution?` von ${institution}`:""}. ${name} arbeitet zu ${topic}. Im Gespräch möchte ich verstehen, was langfristige Messungen tatsächlich zeigen, wie zuverlässig wir Veränderungen erkennen können und womit sie zusammenhängen.`;
+    questions=[
+      `Was genau wird bei ${topic} gemessen – und wie?`,
+      c.period?`Die Messreihe reicht ${c.period}. Warum ist gerade dieser lange Zeitraum wichtig?`:"Wie weit reicht die Messreihe zurück und warum ist dieser Zeitraum wichtig?",
       "Welche langfristige Veränderung ist in den Daten besonders deutlich zu erkennen?",
-      "Wie unterscheiden sich Fernerkundungsdaten, Waldinventuren und staatliche Meldungen voneinander?",
-      c.question || "Welche Kernfrage lässt sich mit dieser Messreihe besonders gut beantworten?",
-      "Welche Ursachen lassen sich aus den Daten ableiten – und wo beginnen die Unsicherheiten?",
-      "Welche Folgen hat die beobachtete Entwicklung für Klima, Wasserhaushalt und Biodiversität?",
-      "Was wird in der öffentlichen Berichterstattung über diese Daten häufig zu stark vereinfacht?"
+      c.question||"Welche zentrale Frage lässt sich mit diesen Daten beantworten?",
+      "Welche Ursachen lassen sich erkennen und wo beginnt die Interpretation?",
+      "Welche Folgen hat die beobachtete Entwicklung für natürliche Lebensgrundlagen beziehungsweise planetare Grenzen?",
+      "Welche Zusammenhänge werden in der öffentlichen Diskussion häufig übersehen?",
+      "Wo liegen die wichtigsten Unsicherheiten der Messung?",
+      "Welche Entwicklung sollten wir in den kommenden Jahren besonders aufmerksam weiter beobachten?"
     ];
   }
 
-  return {intro,notes:questions.join("\\n\\n")};
+  return {intro,notes:questions.join("\n\n")};
 }
-
 function getInterview(c){
   if(!c)return {intro:"",notes:""};
   const saved=data.interviews[c.id];
@@ -238,12 +309,36 @@ function getInterview(c){
   return makeInterviewDraft(c);
 }
 
-$("#iCandidate").onchange=()=>{
+function showInterviewForSelectedCandidate(forceDraft=false){
   const c=selected("#iCandidate");
-  const interview=getInterview(c);
+  if(!c){
+    $("#iIntro").value="";
+    $("#iNotes").value="";
+    return;
+  }
+
+  let interview;
+  if(forceDraft){
+    interview=makeInterviewDraft(c);
+  }else{
+    interview=getInterview(c);
+  }
+
   $("#iIntro").value=interview.intro||"";
   $("#iNotes").value=interview.notes||"";
   stopTraining();
+}
+
+$("#iCandidate").onchange=()=>showInterviewForSelectedCandidate(false);
+
+$("#loadInterviewDraft").onclick=()=>{
+  const c=selected("#iCandidate");
+  if(!c)return alert("Bitte zuerst einen Kandidaten auswählen.");
+
+  const hasText=$("#iIntro").value.trim() || $("#iNotes").value.trim();
+  if(hasText && !confirm("Den aktuellen Text durch den automatisch erzeugten Vorschlag ersetzen?"))return;
+
+  showInterviewForSelectedCandidate(true);
 };
 
 $("#saveInterview").onclick=()=>{
@@ -444,5 +539,10 @@ document.addEventListener("visibilitychange",()=>{
 });
 
 
-function renderAll(){renderCandidates();candidateOptions();makeMail()}
+function renderAll(){
+  renderCandidates();
+  candidateOptions();
+  makeMail();
+  if($("#iCandidate").value)showInterviewForSelectedCandidate(false);
+}
 renderAll();
