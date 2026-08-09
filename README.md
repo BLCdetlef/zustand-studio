@@ -20,3 +20,6 @@ Die Anwendung besteht nur aus statischem HTML, CSS und JavaScript und ist nicht 
 
 ## Bestehendes Z-Panel
 Das bestehende Z-Panel bleibt unabhängig. Der Z-Panel-Bereich dieser Anwendung erzeugt zunächst nur interne Entwürfe.
+
+## Version 1.1
+Die Recherche enthält jetzt die Auswahl **Deutsch bevorzugt / Deutsch erforderlich / Englisch möglich**.
