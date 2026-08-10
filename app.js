@@ -6,12 +6,20 @@ class LocalDemoStorage {
   load(){ try{return JSON.parse(localStorage.getItem(KEY))||this.empty()}catch{return this.empty()} }
   save(data){ localStorage.setItem(KEY,JSON.stringify(data)) }
   clear(){ localStorage.removeItem(KEY) }
-  empty(){return {candidates:[], acquisition:{}, interviews:{}, zDrafts:{}}}
+  empty(){return {candidates:[], groups:[], acquisition:{}, interviews:{}, zDrafts:{}}}
 }
 
 // Später austauschbar: class NextcloudStorage { load(); save(); ... }
 const storage = new LocalDemoStorage();
 let data=storage.load();
+
+// Abwärtskompatibel zu bereits im Browser gespeicherten Studio-Daten.
+if(!Array.isArray(data.candidates))data.candidates=[];
+if(!Array.isArray(data.groups))data.groups=[];
+if(!data.acquisition)data.acquisition={};
+if(!data.interviews)data.interviews={};
+if(!data.zDrafts)data.zDrafts={};
+data.candidates.forEach(c=>{if(typeof c.groupId!=="string")c.groupId=""});
 
 function persist(){storage.save(data); renderAll()}
 
@@ -59,10 +67,12 @@ $("#saveCandidate").onclick=()=>{
     period:$("#cPeriod").value.trim(),
     email:$("#cEmail").value.trim(),
     source:$("#cSource").value.trim(),
+    groupId:$("#cGroup").value||"",
     why:$("#cWhy").value.trim(),
     question:$("#cQuestion").value.trim()
   });
   ["#cName","#cInstitution","#cTopic","#cPeriod","#cEmail","#cSource","#cWhy","#cQuestion"].forEach(x=>$(x).value="");
+  $("#cGroup").value="";
   $("#candidateForm").classList.add("hidden");
   persist();
 };
@@ -110,6 +120,7 @@ if(importButton && importFile){
           period:String(raw?.period||"").trim(),
           email:String(raw?.email||raw?.contact||"").trim(),
           source:String(raw?.source||raw?.sourceUrl||"").trim(),
+          groupId:resolveImportedGroup(raw),
           why:String(raw?.why||raw?.reason||"").trim(),
           question:String(raw?.question||raw?.coreQuestion||"").trim()
         });
@@ -127,32 +138,194 @@ if(importButton && importFile){
   };
 }
 
+
+function groupById(id){return data.groups.find(g=>g.id===id)}
+function groupName(id){return groupById(id)?.name||""}
+
+function uniqueGroupName(name,excludeId=""){
+  const n=String(name||"").trim().toLocaleLowerCase();
+  return !data.groups.some(g=>g.id!==excludeId && g.name.trim().toLocaleLowerCase()===n);
+}
+
+function resolveImportedGroup(raw){
+  const id=String(raw?.groupId||"").trim();
+  if(id && groupById(id))return id;
+  const name=String(raw?.group||raw?.groupName||raw?.suggestedGroup||"").trim();
+  if(!name)return "";
+  const existing=data.groups.find(g=>g.name.trim().toLocaleLowerCase()===name.toLocaleLowerCase());
+  if(existing)return existing.id;
+  const g={id:crypto.randomUUID(),name};
+  data.groups.push(g);
+  return g.id;
+}
+
+function groupOptions(selected="",includeAll=false){
+  let out=includeAll?'<option value="__all__">Alle Gruppen</option>':'<option value="">Keine Gruppe</option>';
+  out+=data.groups.slice().sort((a,b)=>a.name.localeCompare(b.name,"de"))
+    .map(g=>`<option value="${g.id}" ${g.id===selected?"selected":""}>${esc(g.name)}</option>`).join("");
+  if(includeAll)out+='<option value="__none__">Ohne Gruppe</option>';
+  return out;
+}
+
+function filteredCandidatesByGroup(value){
+  if(!value || value==="__all__")return data.candidates;
+  if(value==="__none__")return data.candidates.filter(c=>!c.groupId);
+  return data.candidates.filter(c=>c.groupId===value);
+}
+
+function renderGroupControls(){
+  const cGroup=$("#cGroup");
+  if(cGroup){
+    const old=cGroup.value;
+    cGroup.innerHTML=groupOptions(old,false);
+    cGroup.value=(old && groupById(old))?old:"";
+  }
+
+  const filter=$("#candidateGroupFilter");
+  if(filter){
+    const old=filter.value||"__all__";
+    filter.innerHTML=groupOptions("",true);
+    filter.value=[...filter.options].some(o=>o.value===old)?old:"__all__";
+  }
+
+  const zFilter=$("#zGroupFilter");
+  if(zFilter){
+    const old=zFilter.value||"__all__";
+    zFilter.innerHTML=groupOptions("",true);
+    zFilter.value=[...zFilter.options].some(o=>o.value===old)?old:"__all__";
+  }
+
+  const list=$("#groupList");
+  if(list){
+    list.innerHTML=data.groups.length
+      ? data.groups.slice().sort((a,b)=>a.name.localeCompare(b.name,"de")).map(g=>{
+          const count=data.candidates.filter(c=>c.groupId===g.id).length;
+          return `<div class="group-row">
+            <input value="${esc(g.name)}" aria-label="Gruppenname" onchange="renameGroup('${g.id}',this.value)">
+            <span class="group-count">${count} Kontakt${count===1?"":"e"}</span>
+            <button class="ghost small" onclick="deleteGroup('${g.id}')">Löschen</button>
+          </div>`;
+        }).join("")
+      : '<p class="hint">Noch keine Gruppen angelegt.</p>';
+  }
+}
+
+window.renameGroup=(id,name)=>{
+  name=String(name||"").trim();
+  if(!name){renderAll();return alert("Der Gruppenname darf nicht leer sein.");}
+  if(!uniqueGroupName(name,id)){renderAll();return alert("Diese Gruppe gibt es bereits.");}
+  const g=groupById(id);
+  if(g){g.name=name;persist();}
+};
+
+window.deleteGroup=id=>{
+  const g=groupById(id);
+  if(!g)return;
+  const count=data.candidates.filter(c=>c.groupId===id).length;
+  const msg=count
+    ? `Gruppe „${g.name}“ löschen? ${count} Kontakt${count===1?"":"e"} bleibt erhalten und wird danach keiner Gruppe zugeordnet.`
+    : `Gruppe „${g.name}“ löschen?`;
+  if(!confirm(msg))return;
+  data.candidates.forEach(c=>{if(c.groupId===id)c.groupId=""});
+  Object.values(data.zDrafts).forEach(z=>{if(z?.groupId===id)z.groupId=""});
+  data.groups=data.groups.filter(x=>x.id!==id);
+  persist();
+};
+
+window.setCandidateGroup=(candidateId,groupId)=>{
+  const c=data.candidates.find(x=>x.id===candidateId);
+  if(!c)return;
+  c.groupId=groupId||"";
+  persist();
+};
+
+$("#manageGroups").onclick=()=>{
+  $("#groupManager").classList.remove("hidden");
+  renderGroupControls();
+};
+$("#closeGroups").onclick=()=>$("#groupManager").classList.add("hidden");
+$("#addGroup").onclick=()=>{
+  const input=$("#newGroupName");
+  const name=input.value.trim();
+  if(!name)return alert("Bitte einen Gruppennamen eintragen.");
+  if(!uniqueGroupName(name))return alert("Diese Gruppe gibt es bereits.");
+  data.groups.push({id:crypto.randomUUID(),name});
+  input.value="";
+  persist();
+  $("#groupManager").classList.remove("hidden");
+};
+$("#newGroupName").addEventListener("keydown",e=>{
+  if(e.key==="Enter"){e.preventDefault();$("#addGroup").click();}
+});
+$("#candidateGroupFilter").onchange=renderCandidates;
+$("#zGroupFilter").onchange=()=>{
+  renderZCandidateOptions();
+  $("#zTitle").value="";
+  $("#zSummary").value="";
+  $("#zSource").value="";
+  $("#zGroupDisplay").value="";
+};
+
 function candidateOptions(){
   const opts='<option value="">Bitte auswählen</option>'+data.candidates.map(c=>`<option value="${c.id}">${esc(c.name)}${c.institution?" · "+esc(c.institution):""}</option>`).join("");
 
-  ["#aCandidate","#iCandidate","#zCandidate"].forEach(s=>{
+  ["#aCandidate","#iCandidate"].forEach(s=>{
     const el=$(s);
     const old=el.value;
     el.innerHTML=opts;
-    if(old && data.candidates.some(c=>c.id===old)){
-      el.value=old;
-    }else{
-      el.value="";
-    }
+    if(old && data.candidates.some(c=>c.id===old))el.value=old;
+    else el.value="";
   });
+
+  renderZCandidateOptions();
 }
 
+function renderZCandidateOptions(){
+  const el=$("#zCandidate");
+  if(!el)return;
+  const old=el.value;
+  const filter=$("#zGroupFilter")?.value||"__all__";
+  const list=filteredCandidatesByGroup(filter);
+  el.innerHTML='<option value="">Bitte auswählen</option>'+list.map(c=>`<option value="${c.id}">${esc(c.name)}${c.institution?" · "+esc(c.institution):""}</option>`).join("");
+  if(old && list.some(c=>c.id===old))el.value=old;
+  else el.value="";
+  showZGroup();
+}
+
+function showZGroup(){
+  const c=selected("#zCandidate");
+  const field=$("#zGroupDisplay");
+  if(field)field.value=c?groupName(c.groupId):"";
+}
 function esc(s=""){
   return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
 }
 
 function renderCandidates(){
   $("#candidateCount").textContent=data.candidates.length;
-  $("#candidateList").innerHTML=data.candidates.length
-    ? data.candidates.map(c=>`<article class="card candidate"><div><h3>${esc(c.name)}</h3><div class="meta">${esc(c.institution)} ${c.period?"· "+esc(c.period):""}</div><p><b>${esc(c.topic)}</b></p>${c.why?`<p>${esc(c.why)}</p>`:""}<span class="tag">${esc((data.acquisition[c.id]||{}).status||"noch nicht angeschrieben")}</span></div><button class="ghost" onclick="removeCandidate('${c.id}')">Entfernen</button></article>`).join("")
-    : '<div class="card"><p>Noch keine Kandidaten. Die erste Recherche kann jetzt beginnen.</p></div>';
-}
+  const filter=$("#candidateGroupFilter")?.value||"__all__";
+  const shown=filteredCandidatesByGroup(filter);
 
+  $("#candidateList").innerHTML=shown.length
+    ? shown.map(c=>`<article class="card candidate">
+        <div>
+          <h3>${esc(c.name)}</h3>
+          <div class="meta">${esc(c.institution)} ${c.period?"· "+esc(c.period):""}</div>
+          <p><b>${esc(c.topic)}</b></p>
+          ${c.why?`<p>${esc(c.why)}</p>`:""}
+          <div class="candidate-bottom">
+            <span class="tag">${esc((data.acquisition[c.id]||{}).status||"noch nicht angeschrieben")}</span>
+            <label class="inline-group">Gruppe
+              <select onchange="setCandidateGroup('${c.id}',this.value)">
+                ${groupOptions(c.groupId,false)}
+              </select>
+            </label>
+          </div>
+        </div>
+        <button class="ghost" onclick="removeCandidate('${c.id}')">Entfernen</button>
+      </article>`).join("")
+    : '<div class="card"><p>Für diesen Filter sind keine Kandidaten vorhanden.</p></div>';
+}
 window.removeCandidate=id=>{
   if(confirm("Kandidaten aus dem lokalen Prototyp entfernen?")){
     data.candidates=data.candidates.filter(c=>c.id!==id);
@@ -357,6 +530,7 @@ $("#zCandidate").onchange=()=>{
   $("#zTitle").value=z.title||"";
   $("#zSummary").value=z.summary||"";
   $("#zSource").value=z.source||(c?c.source:"");
+  showZGroup();
 };
 
 $("#saveZ").onclick=()=>{
@@ -365,7 +539,8 @@ $("#saveZ").onclick=()=>{
   data.zDrafts[c.id]={
     title:$("#zTitle").value,
     summary:$("#zSummary").value,
-    source:$("#zSource").value
+    source:$("#zSource").value,
+    groupId:c.groupId||""
   };
   persist();
 };
@@ -570,9 +745,11 @@ document.addEventListener("visibilitychange",()=>{
 
 
 function renderAll(){
+  renderGroupControls();
   renderCandidates();
   candidateOptions();
   makeMail();
   if($("#iCandidate").value)showInterviewForSelectedCandidate(false);
+  showZGroup();
 }
 renderAll();

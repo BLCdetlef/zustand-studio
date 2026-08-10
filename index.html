@@ -74,10 +74,31 @@
       <h2>Kandidaten</h2>
     </div>
     <div class="candidate-actions">
+      <button class="ghost" id="manageGroups">Gruppen verwalten</button>
       <button class="ghost" id="importCandidates">JSON importieren</button>
       <button class="primary" id="newCandidate">+ Kandidat</button>
       <input id="candidateImportFile" type="file" accept=".json,application/json" hidden>
     </div>
+  </div>
+
+  <div class="card group-filter-card">
+    <label>Kontakte filtern</label>
+    <select id="candidateGroupFilter"></select>
+  </div>
+
+  <div id="groupManager" class="card hidden">
+    <div class="cardhead">
+      <div>
+        <h3>Gruppen verwalten</h3>
+        <p class="sub">Jeder Kontakt gehört höchstens zu einer redaktionellen Gruppe.</p>
+      </div>
+      <button class="ghost" id="closeGroups">Schließen</button>
+    </div>
+    <div class="group-create">
+      <input id="newGroupName" placeholder="z. B. Süßwasser, Biosphäre, Klimawandel">
+      <button class="primary" id="addGroup">+ Gruppe anlegen</button>
+    </div>
+    <div id="groupList" class="group-list"></div>
   </div>
 
   <div id="candidateList" class="cards"></div>
@@ -95,6 +116,7 @@
       <div><label>Zeitraum</label><input id="cPeriod" placeholder="z. B. seit 1990"></div>
       <div><label>Dienstliche Kontaktadresse</label><input id="cEmail" type="email"></div>
       <div><label>Quellen-URL</label><input id="cSource"></div>
+      <div><label>Gruppe</label><select id="cGroup"></select></div>
     </div>
 
     <label>Warum interessant?</label>
@@ -243,8 +265,14 @@
 
   <div class="grid two">
     <article class="card">
+      <label>Gruppe filtern</label>
+      <select id="zGroupFilter"></select>
+
       <label>Interview / Kandidat</label>
       <select id="zCandidate"></select>
+
+      <label>Zugeordnete Gruppe</label>
+      <input id="zGroupDisplay" readonly placeholder="Keine Gruppe">
 
       <label>Titel</label>
       <input id="zTitle">
