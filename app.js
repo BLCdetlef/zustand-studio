@@ -19,7 +19,11 @@ if(!Array.isArray(data.groups))data.groups=[];
 if(!data.acquisition)data.acquisition={};
 if(!data.interviews)data.interviews={};
 if(!data.zDrafts)data.zDrafts={};
-data.candidates.forEach(c=>{if(typeof c.groupId!=="string")c.groupId=""});
+data.candidates.forEach(c=>{
+  if(typeof c.groupId!=="string")c.groupId="";
+  if(typeof c.phone!=="string")c.phone="";
+  if(typeof c.address!=="string")c.address="";
+});
 
 function persist(){storage.save(data); renderAll()}
 
@@ -58,21 +62,35 @@ $("#closeCandidate").onclick=()=>$("#candidateForm").classList.add("hidden");
 
 $("#saveCandidate").onclick=()=>{
   const name=$("#cName").value.trim();
-  if(!name)return alert("Bitte einen Namen eintragen.");
-  data.candidates.push({
-    id:crypto.randomUUID(),
+  if(!name)return alert("Bitte Name eintragen.");
+
+  const editId=$("#saveCandidate").dataset.editId||"";
+  const record={
+    id:editId||crypto.randomUUID(),
     name,
     institution:$("#cInstitution").value.trim(),
     topic:$("#cTopic").value.trim(),
     period:$("#cPeriod").value.trim(),
     email:$("#cEmail").value.trim(),
+    phone:$("#cPhone").value.trim(),
+    address:$("#cAddress").value.trim(),
     source:$("#cSource").value.trim(),
     groupId:$("#cGroup").value||"",
     why:$("#cWhy").value.trim(),
     question:$("#cQuestion").value.trim()
-  });
-  ["#cName","#cInstitution","#cTopic","#cPeriod","#cEmail","#cSource","#cWhy","#cQuestion"].forEach(x=>$(x).value="");
+  };
+
+  if(editId){
+    const idx=data.candidates.findIndex(c=>c.id===editId);
+    if(idx>=0)data.candidates[idx]=record;
+  }else{
+    data.candidates.push(record);
+  }
+
+  ["#cName","#cInstitution","#cTopic","#cPeriod","#cEmail","#cPhone","#cAddress","#cSource","#cWhy","#cQuestion"].forEach(x=>$(x).value="");
   $("#cGroup").value="";
+  delete $("#saveCandidate").dataset.editId;
+  $("#saveCandidate").textContent="Speichern";
   $("#candidateForm").classList.add("hidden");
   persist();
 };
@@ -119,6 +137,8 @@ if(importButton && importFile){
           topic:String(raw?.topic||raw?.measurement||"").trim(),
           period:String(raw?.period||"").trim(),
           email:String(raw?.email||raw?.contact||"").trim(),
+          phone:String(raw?.phone||raw?.telephone||"").trim(),
+          address:String(raw?.address||raw?.postalAddress||"").trim(),
           source:String(raw?.source||raw?.sourceUrl||"").trim(),
           groupId:resolveImportedGroup(raw),
           why:String(raw?.why||raw?.reason||"").trim(),
@@ -301,31 +321,81 @@ function esc(s=""){
   return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
 }
 
+function statusInfo(status){
+  const s=(status||"noch nicht angeschrieben").toLowerCase();
+  if(s.includes("durchgeführt"))return {icon:"✓",label:"Interview durchgeführt"};
+  if(s.includes("zugesagt"))return {icon:"●",label:"zugesagt"};
+  if(s.includes("abgesagt"))return {icon:"●",label:"abgesagt"};
+  if(s.includes("aussteh")||s.includes("warte"))return {icon:"◷",label:"Antwort ausstehend"};
+  if(s.includes("angeschrieben"))return {icon:"✉",label:"angeschrieben"};
+  return {icon:"○",label:"noch nicht angeschrieben"};
+}
+
 function renderCandidates(){
   $("#candidateCount").textContent=data.candidates.length;
   const filter=$("#candidateGroupFilter")?.value||"__all__";
   const shown=filteredCandidatesByGroup(filter);
 
   $("#candidateList").innerHTML=shown.length
-    ? shown.map(c=>`<article class="card candidate">
-        <div>
-          <h3>${esc(c.name)}</h3>
-          <div class="meta">${esc(c.institution)} ${c.period?"· "+esc(c.period):""}</div>
-          <p><b>${esc(c.topic)}</b></p>
-          ${c.why?`<p>${esc(c.why)}</p>`:""}
-          <div class="candidate-bottom">
-            <span class="tag">${esc((data.acquisition[c.id]||{}).status||"noch nicht angeschrieben")}</span>
-            <label class="inline-group">Gruppe
-              <select onchange="setCandidateGroup('${c.id}',this.value)">
-                ${groupOptions(c.groupId,false)}
-              </select>
-            </label>
+    ? shown.map(c=>{
+        const st=statusInfo((data.acquisition[c.id]||{}).status);
+        const grp=groupName(c.groupId);
+        const mail=c.email?`<span class="compact-mail">${esc(c.email)}</span>`:"<span class='muted'>keine E-Mail</span>";
+        return `<article class="card candidate compact-candidate">
+          <div class="compact-main">
+            <div class="compact-line compact-line1">
+              <span class="status-symbol" title="${esc(st.label)}" aria-label="${esc(st.label)}">${st.icon}</span>
+              <strong>${esc(c.name)}</strong>
+              ${c.institution?`<span>· ${esc(c.institution)}</span>`:""}
+              ${grp?`<span>· <b>${esc(grp)}</b></span>`:""}
+            </div>
+            <div class="compact-line compact-line2">
+              <span>${esc(c.topic||"Kein Thema eingetragen")}</span>
+              <span>· ${mail}</span>
+              <button class="text-button" onclick="toggleCandidateDetails('${c.id}')">Details</button>
+              <span>·</span>
+              <button class="text-button" onclick="editCandidate('${c.id}')">Bearbeiten</button>
+            </div>
+            <div id="details-${c.id}" class="candidate-details hidden">
+              ${c.period?`<p><b>Zeitraum:</b> ${esc(c.period)}</p>`:""}
+              ${c.why?`<p><b>Einordnung:</b> ${esc(c.why)}</p>`:""}
+              ${c.question?`<p><b>Kernfrage:</b> ${esc(c.question)}</p>`:""}
+              ${c.phone?`<p><b>Dienstl. Telefon:</b> ${esc(c.phone)}</p>`:""}
+              ${c.address?`<p><b>Dienstl. Postanschrift:</b> ${esc(c.address)}</p>`:""}
+              ${c.source?`<p><b>Profil/Kontakt:</b> <span class="break">${esc(c.source)}</span></p>`:""}
+              <p class="privacy-note">Nur öffentlich bereitgestellte dienstliche Kontaktdaten speichern.</p>
+              <button class="ghost small" onclick="removeCandidate('${c.id}')">Kontakt entfernen</button>
+            </div>
           </div>
-        </div>
-        <button class="ghost" onclick="removeCandidate('${c.id}')">Entfernen</button>
-      </article>`).join("")
+        </article>`;
+      }).join("")
     : '<div class="card"><p>Für diesen Filter sind keine Kandidaten vorhanden.</p></div>';
 }
+
+window.toggleCandidateDetails=id=>{
+  const el=$("#details-"+id);
+  if(el)el.classList.toggle("hidden");
+};
+
+window.editCandidate=id=>{
+  const c=data.candidates.find(x=>x.id===id);
+  if(!c)return;
+  $("#candidateForm").classList.remove("hidden");
+  $("#cName").value=c.name||"";
+  $("#cInstitution").value=c.institution||"";
+  $("#cTopic").value=c.topic||"";
+  $("#cPeriod").value=c.period||"";
+  $("#cEmail").value=c.email||"";
+  $("#cPhone").value=c.phone||"";
+  $("#cAddress").value=c.address||"";
+  $("#cSource").value=c.source||"";
+  $("#cGroup").value=c.groupId||"";
+  $("#cWhy").value=c.why||"";
+  $("#cQuestion").value=c.question||"";
+  $("#saveCandidate").dataset.editId=id;
+  $("#saveCandidate").textContent="Änderungen speichern";
+  $("#candidateForm").scrollIntoView({behavior:"smooth",block:"start"});
+};
 window.removeCandidate=id=>{
   if(confirm("Kandidaten aus dem lokalen Prototyp entfernen?")){
     data.candidates=data.candidates.filter(c=>c.id!==id);
