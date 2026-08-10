@@ -456,22 +456,29 @@ function makeMail(){
   if(!c){$("#mailOutput").value="";return}
 
   $("#mailOutput").value=`Betreff: Interviewanfrage – ZUSTAND / TH Lübeck
+
 Guten Tag ${c.name},
 
 für das Projekt „ZUSTAND – Die Vermessung unserer Zukunft“ an der TH Lübeck suche ich Gesprächspartnerinnen und Gesprächspartner, die langfristige Veränderungen unserer natürlichen Lebensgrundlagen anhand eigener Messungen oder belastbarer Daten verständlich einordnen können.
 
-${c.topic?`Ihre Arbeit zu ${c.topic} finde ich dafür besonders interessant.\n\n`:""}Hätten Sie Interesse an einem etwa 20–30-minütigen Gespräch beim Offenen Kanal Lübeck?
+${c.topic?`Ihre Arbeit zu ${c.topic} finde ich dafür besonders interessant.\n\n`:""}Hätten Sie Interesse an einem etwa 20–30-minütigen Telefongespräch beim Offenen Kanal Lübeck?
+
 Bei Interesse schicke ich Ihnen gern kurz weitere Informationen.
 
 Beste Grüße
 Detlef Hau
-TH Lübeck`;
+Technische Hochschule Lübeck
+Projekt: https://www.th-luebeck.de/zustand
+Mönkhofer Weg 239
+23562 Lübeck
+Tel.: (+49) 0451 300-5660
+Mobil: (+49) 0173 6144597
+E-Mail: detlef.hau@th-luebeck.de`;
 
   const a=data.acquisition[c.id]||{};
   $("#aStatus").value=a.status||"noch nicht angeschrieben";
   $("#aNote").value=a.note||"";
 }
-
 $("#aCandidate").onchange=makeMail;
 $("#saveAcquisition").onclick=()=>{
   const c=selected("#aCandidate");
