@@ -116,19 +116,57 @@ if(importButton && importFile){
       }
 
       let added=0;
+      let updated=0;
       let skipped=0;
+
+      // Bestehende Kontakte werden über Name + Institution erkannt.
+      // Bei ihnen werden nur dienstliche Kontakt-Stammdaten aus der Datei aktualisiert.
+      // Redaktionelle Daten bleiben unangetastet: Gruppe, Akquise-Status,
+      // Interview/Anmoderation und Z-Panel-Entwürfe.
+      const duplicates=incoming.filter(raw=>{
+        const name=String(raw?.name||"").trim().toLocaleLowerCase();
+        const institution=String(raw?.institution||"").trim().toLocaleLowerCase();
+        return name && data.candidates.some(c=>
+          String(c.name||"").trim().toLocaleLowerCase()===name &&
+          String(c.institution||"").trim().toLocaleLowerCase()===institution
+        );
+      });
+
+      let updateExisting=true;
+      if(duplicates.length){
+        updateExisting=confirm(
+          `${duplicates.length} bereits vorhandene${duplicates.length===1?"r Kontakt wird":" Kontakte werden"} erkannt.\n\n`+
+          `Dienstl. E-Mail, Telefon, Postanschrift und offizielle Profil-/Kontaktseite aus der Datei aktualisieren?\n\n`+
+          `Gruppe, Akquise-Status, Interviewtexte und Z-Panel-Entwürfe bleiben unverändert.`
+        );
+      }
 
       for(const raw of incoming){
         const name=String(raw?.name||"").trim();
         if(!name){skipped++; continue}
 
         const institution=String(raw?.institution||"").trim();
-        const duplicate=data.candidates.some(c=>
+        const existing=data.candidates.find(c=>
           String(c.name||"").trim().toLocaleLowerCase()===name.toLocaleLowerCase() &&
           String(c.institution||"").trim().toLocaleLowerCase()===institution.toLocaleLowerCase()
         );
 
-        if(duplicate){skipped++; continue}
+        if(existing){
+          if(!updateExisting){skipped++; continue}
+
+          // Nur öffentlich bereitgestellte dienstliche Kontaktinformationen.
+          const email=String(raw?.email||raw?.contact||"").trim();
+          const phone=String(raw?.phone||raw?.telephone||"").trim();
+          const address=String(raw?.address||raw?.postalAddress||"").trim();
+          const source=String(raw?.source||raw?.sourceUrl||"").trim();
+
+          if(email)existing.email=email;
+          if(phone)existing.phone=phone;
+          if(address)existing.address=address;
+          if(source)existing.source=source;
+          updated++;
+          continue;
+        }
 
         data.candidates.push({
           id:crypto.randomUUID(),
@@ -149,7 +187,12 @@ if(importButton && importFile){
 
       persist();
       nav("candidates");
-      alert(`${added} Kandidat${added===1?"":"en"} importiert.${skipped?` ${skipped} Eintrag${skipped===1?"":"e"} übersprungen (Dubletten oder ohne Namen).`:""}`);
+
+      const parts=[];
+      if(added)parts.push(`${added} neu importiert`);
+      if(updated)parts.push(`${updated} bestehende Kontakt${updated===1?"":"e"} aktualisiert`);
+      if(skipped)parts.push(`${skipped} übersprungen`);
+      alert(parts.length?parts.join(" · "):"Keine Änderungen vorgenommen.");
     }catch(err){
       alert("Import nicht möglich: "+err.message);
     }finally{
