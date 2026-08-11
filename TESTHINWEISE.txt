@@ -1,23 +1,46 @@
-ZUSTAND Studio – Kurztest
-=========================
+ZUSTAND Studio – Kurztest dieses Updates
+========================================
 
-1. Alle drei Webdateien aus diesem ZIP in das Repository übernehmen.
-2. ZUSTAND Studio öffnen und „Akquise“ wählen.
-3. Einen Kandidaten auswählen.
-4. Status „noch nicht angeschrieben“ oder „angefragt“:
-   - Überschrift: „Kurze Erstmail“
-   - bisherige kurze Erstmail sichtbar.
-5. Status auf „zugesagt“ ändern:
-   - Überschrift wechselt sofort auf „Zweite E-Mail nach Zusage“
-   - zweite E-Mail mit den OK-Lübeck-Öffnungszeiten erscheint.
-6. „Status speichern“ klicken und Seite neu laden:
-   - beim erneut ausgewählten Kandidaten muss die zweite E-Mail wieder erscheinen.
-7. „Kopieren“ testen.
-8. Interview und Trainer kurz öffnen:
-   - die bisherigen Funktionen sollen unverändert bleiben.
+1. Allgemein
+- Studio öffnen.
+- Prüfen, dass Kandidaten, Akquise, Interview und Z-Panel weiterhin erreichbar sind.
+- Bei einem Kandidaten mit Status „zugesagt“ prüfen, dass weiterhin die zweite Terminabstimmungs-Mail erscheint.
 
-Technische Prüfung vor dem Packen:
-- JavaScript-Syntaxprüfung (node --check): erfolgreich
-- index.html: unverändert gegenüber der Basis
-- styles.css: unverändert gegenüber der Basis
-- Interview-/Trainer-Anker in app.js/index.html vorhanden
+2. Recherche-Prompt
+- Ein Thema eingeben und „Such-Prompt erzeugen“ wählen.
+- Prüfen, dass der Prompt jetzt ausdrücklich vier Blöcke anfordert:
+  1. Kernaussagen der Forschung
+  2. Messreihen/Monitoring/Datensätze & Veröffentlichungen mit Quellenlinks
+  3. Zahlen/Zusammenhänge/Unsicherheiten
+  4. Einstiegsfrage & höchstens drei Reservefragen
+- Am Ende muss das JSON-Schema „zustand-studio-candidates-v2“ stehen.
+
+3. JSON-Import
+- Ein neues v2-JSON importieren.
+- Bei einem neuen Kandidaten muss die Recherchegrundlage übernommen werden.
+- Wird derselbe Kontakt erneut importiert, kann die neue Recherchegrundlage aktualisiert werden;
+  Gruppe, Akquise-Status, eigene Interviewtexte und Z-Panel-Entwürfe bleiben unangetastet.
+
+4. Interview
+- Kandidaten auswählen.
+- Prüfen, dass folgende Bereiche vorhanden sind:
+  Anmoderation
+  1. Kernaussagen der Forschung
+  2. Messreihen, Monitoring, Datensätze & Quellen
+  3. Zahlen, Zusammenhänge & Unsicherheiten
+  4. Einstiegsfrage & Reservefragen
+- „Interview-Bildschirm öffnen“ testen.
+- In Bereich 2 einen https-Link prüfen: Er muss im Interview-Bildschirm anklickbar sein.
+- In Bereich 4 muss die erste Frage als „Einstiegsfrage“, die folgenden als „Reserve“ angezeigt werden.
+
+5. Trainer
+- „Kernaussagen trainieren“ starten.
+- Der Trainer soll Anmoderation und Kernaussagen vorlesen, nicht die Reservefragen.
+- Nach jeder Kernaussage folgt die eingestellte Pause zum freien Wiedergeben.
+- Windows und Android weiterhin jeweils mit der dort verfügbaren System-/Browserstimme testen.
+
+6. Alte Daten
+- Einen bereits vorhandenen Kandidaten öffnen.
+- Alte Anmoderation und alte Fragen müssen weiterhin lesbar sein.
+- Neue Forschungsblöcke können bei alten Kandidaten leer bzw. zunächst nur mit vorhandener Messreihen-/Profilinformation gefüllt sein,
+  bis eine aktualisierte v2-Recherche importiert wird.

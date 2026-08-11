@@ -1,39 +1,36 @@
-ZUSTAND Studio – Basis und Versionsnachweis
-===========================================
+ZUSTAND Studio – Basis- und Versionsnachweis
+============================================
 
-Projekt: ZUSTAND Studio Web-Version
-Ziel-Repository: BLCdetlef/zustand-studio
-Ziel-Branch: main
+Basis dieses Updates:
+zustand-studio-update-zweite-email-nach-zusage.zip
 
-VERWENDETE ARBEITSBASIS
------------------------
-Datei: zustand-studio-update-interview-windows-fix.zip
-Library-Zeitpunkt: 11.08.2026, 08:10 Uhr MESZ (06:10 UTC)
-Funktionaler Stand: Interview-Bildschirm + Interview-Trainer + Windows-Fix der Fragenanzeige.
+Status der Basis:
+Vom Nutzer im unmittelbar vorherigen Schritt als funktionierend bestätigt.
 
-Wichtig:
-Die aktuelle GitHub-Commit-ID und die von Detlef vergebene Commit-Bezeichnung konnten
-in dieser Sitzung nicht zuverlässig aus GitHub ausgelesen werden, weil der öffentliche
-Abruf einen älteren gecachten Pages-Stand liefert. Deshalb wurden diese Angaben bewusst
-NICHT erfunden.
+SHA-256 der Basis-ZIP:
+b35fceb3ba0db7ab7b4feed5af675180302bbb8909bce16612a6ead6d77c8c10
 
-NEUE ÄNDERUNG
--------------
-Akquise-Status „zugesagt“ zeigt automatisch die zweite E-Mail zur Terminabstimmung.
-Bei allen anderen Statuswerten bleibt die bestehende kurze Erstmail erhalten.
+GitHub-Branch:
+main (Arbeitsziel)
 
-Empfohlene Commit-Bezeichnung:
-Zweite E-Mail nach Zusage ergänzt
+GitHub-Commit-ID / Commit-Bezeichnung der Basis:
+In dieser Sitzung nicht zuverlässig direkt aus GitHub ausgelesen; daher bewusst nicht erfunden.
+Die technische Basis ist stattdessen eindeutig über Dateiname und SHA-256 der funktionierenden ZIP dokumentiert.
 
-PRÜFSUMMEN DER BASIS / NEU
---------------------------
-app.js Basis: 6ba0aeca3bb244056f904697a6652a764777dbbe91537017c287d2a005cc0f37
-app.js Neu:   2c4bc4696bf5d2acd9e2fda819e049fc0a592ba295437ccd8117e3c479bcfe51
+Neue Änderung:
+- Recherche-Prompt fordert Kernaussagen, Messreihen/Monitoring, 1–3 zentrale Publikationen mit Quellenlinks,
+  Zahlen/Zusammenhänge/Unsicherheiten sowie Einstiegs- und Reservefragen an.
+- Neues Importformat: zustand-studio-candidates-v2 (abwärtskompatibel zu bisherigen Kandidaten).
+- Interviewvorbereitung in vier Blöcke gegliedert.
+- Interview-Bildschirm zeigt die vier Blöcke getrennt; http/https-Quellen sind anklickbar.
+- Trainer übt Anmoderation + Kernaussagen statt Fragen.
+- Die erste Frage in Block 4 ist ausdrücklich die Einstiegsfrage; danach nur Reservefragen.
+- Die funktionierende zweite E-Mail nach Zusage bleibt erhalten.
 
-index.html Basis: 2ff66001f03eef4002f3c43a3193117260c5e4347d94a27eaced771b198b9f74
-index.html Neu:   2ff66001f03eef4002f3c43a3193117260c5e4347d94a27eaced771b198b9f74
-(unverändert)
+Empfohlene Commit-Bezeichnung für dieses Update:
+Interviewvorbereitung auf Kernaussagen und Messreihen umgestellt
 
-styles.css Basis: 1d2f59f942142dd7e658fd411a5493fbe921ae17e1152470991300561659cebc
-styles.css Neu:   1d2f59f942142dd7e658fd411a5493fbe921ae17e1152470991300561659cebc
-(unverändert)
+SHA-256 der neuen Dateien:
+app.js:     c972a2457d8f9fc714ff2c791cc404b32f51a61c0f4ae763fb8588e8da66fab2
+index.html: 75dfdde395bb79a44147e5f698af12e0e4979f6c0a53d65f93098bd8e0237197
+styles.css: 11f0b00abb92bd55754481d57ecfb5927854ed3b661b03d37c06d05a52e36f42

@@ -19,10 +19,92 @@ if(!Array.isArray(data.groups))data.groups=[];
 if(!data.acquisition)data.acquisition={};
 if(!data.interviews)data.interviews={};
 if(!data.zDrafts)data.zDrafts={};
+function textList(value){
+  if(Array.isArray(value)){
+    return value.map(item=>{
+      if(typeof item==="string")return item.trim();
+      if(item && typeof item==="object")return String(item.text||item.value||item.statement||item.label||"").trim();
+      return "";
+    }).filter(Boolean);
+  }
+  if(typeof value==="string"){
+    return normalizeStoredLineBreaks(value).split(/\n\s*\n|\n/).map(x=>x.replace(/^\s*(?:[-•]|\d+[.)])\s*/,"").trim()).filter(Boolean);
+  }
+  return [];
+}
+
+function measurementList(value){
+  const rows=Array.isArray(value)?value:(value&&typeof value==="object"?[value]:[]);
+  return rows.map(item=>{
+    if(typeof item==="string")return {name:item.trim(),period:"",measured:"",method:"",role:"",trend:"",sourceUrl:""};
+    return {
+      name:String(item?.name||item?.title||item?.program||"").trim(),
+      period:String(item?.period||item?.timeframe||"").trim(),
+      measured:String(item?.measured||item?.whatMeasured||item?.measurement||"").trim(),
+      method:String(item?.method||item?.methods||"").trim(),
+      role:String(item?.role||item?.personRole||"").trim(),
+      trend:String(item?.trend||item?.change||item?.mainChange||"").trim(),
+      sourceUrl:String(item?.sourceUrl||item?.source||item?.url||"").trim()
+    };
+  }).filter(item=>Object.values(item).some(Boolean));
+}
+
+function publicationList(value){
+  const rows=Array.isArray(value)?value:(value&&typeof value==="object"?[value]:[]);
+  return rows.map(item=>{
+    if(typeof item==="string")return {title:item.trim(),year:"",url:"",relevance:""};
+    return {
+      title:String(item?.title||item?.name||"").trim(),
+      year:String(item?.year||item?.date||item?.publicationYear||"").trim(),
+      url:String(item?.url||item?.sourceUrl||item?.doi||item?.link||"").trim(),
+      relevance:String(item?.relevance||item?.whyRelevant||"").trim()
+    };
+  }).filter(item=>Object.values(item).some(Boolean));
+}
+
+function firstResearchValue(raw,keys){
+  for(const key of keys){
+    if(Object.prototype.hasOwnProperty.call(raw||{},key))return {found:true,value:raw[key]};
+  }
+  return {found:false,value:undefined};
+}
+
+function mergeCandidateResearch(target,raw){
+  const mappings=[
+    ["coreFindings",["coreFindings","keyFindings","researchFindings"],textList],
+    ["measurements",["measurements","measurementPrograms","monitoringPrograms","monitoring"],measurementList],
+    ["publications",["publications","keyPublications"],publicationList],
+    ["keyNumbers",["keyNumbers","numbers","quantitativeFindings"],textList],
+    ["connections",["connections","causalConnections","relationships"],textList],
+    ["uncertainties",["uncertainties","limitations"],textList],
+    ["reserveQuestions",["reserveQuestions","backupQuestions"],textList]
+  ];
+  let changed=false;
+  for(const [targetKey,sourceKeys,normalizer] of mappings){
+    const hit=firstResearchValue(raw,sourceKeys);
+    if(hit.found){target[targetKey]=normalizer(hit.value);changed=true;}
+  }
+  const opening=firstResearchValue(raw,["openingQuestion","interviewOpeningQuestion"]);
+  if(opening.found){target.openingQuestion=String(opening.value||"").trim();changed=true;}
+  return changed;
+}
+
+function ensureCandidateResearch(c){
+  c.coreFindings=textList(c.coreFindings);
+  c.measurements=measurementList(c.measurements||c.measurementPrograms||c.monitoringPrograms||c.monitoring);
+  c.publications=publicationList(c.publications||c.keyPublications);
+  c.keyNumbers=textList(c.keyNumbers);
+  c.connections=textList(c.connections);
+  c.uncertainties=textList(c.uncertainties);
+  c.reserveQuestions=textList(c.reserveQuestions);
+  if(typeof c.openingQuestion!=="string")c.openingQuestion="";
+}
+
 data.candidates.forEach(c=>{
   if(typeof c.groupId!=="string")c.groupId="";
   if(typeof c.phone!=="string")c.phone="";
   if(typeof c.address!=="string")c.address="";
+  ensureCandidateResearch(c);
 });
 
 function persist(){storage.save(data); renderAll()}
@@ -46,11 +128,56 @@ $("#makePrompt").onclick=()=>{
   const language=$("#language").value;
   $("#promptOutput").value=`Suche nicht zuerst nach bekannten Expert:innen, sondern nach interessanten langfristigen Messreihen, Monitoringprogrammen, Datensätzen und wiederholten Untersuchungen zum Thema ${topic}.
 Bevorzuge Untersuchungen, die Veränderungen über mindestens mehrere Jahre, besser Jahrzehnte quantitativ zeigen. Suche anschließend nach den Personen, die diese Daten erheben, auswerten oder wissenschaftlich betreuen. Bevorzuge die tatsächlich mit der Messreihe arbeitenden Fachleute gegenüber bloß medienbekannten Personen oder Institutsleitungen.
-Prüfe je Kandidat: Was wird gemessen und seit wann? Welche Entwicklung ist erkennbar? Warum ist sie für natürliche Lebensgrundlagen bzw. planetare Grenzen relevant? Welche Ursachen, Folgen, Zusammenhänge und Unsicherheiten lassen sich erklären? Gibt es eine seriöse institutionelle Kontaktmöglichkeit?
+
+Prüfe je Kandidat: Was wird gemessen und seit wann? Wie wird gemessen? Welche Entwicklung ist erkennbar? Welche Rolle hat die Person selbst bei Erhebung, Auswertung oder wissenschaftlicher Betreuung? Warum ist die Entwicklung für natürliche Lebensgrundlagen bzw. planetare Grenzen relevant? Welche Ursachen, Folgen, Zusammenhänge und Unsicherheiten lassen sich erklären? Gibt es eine seriöse institutionelle Kontaktmöglichkeit?
+
+Suche für jede wirklich geeignete Person zusätzlich gezielt nach 1–3 zentralen wissenschaftlichen Veröffentlichungen oder offiziellen Auswertungen, an denen sie beteiligt ist und die unmittelbar zu den genannten Messreihen, Monitoringprogrammen oder Datensätzen gehören. Bevorzuge Originalpublikationen, DOI-/Verlagsseiten, institutionelle Repositorien oder offizielle Projektseiten. Gib nach Möglichkeit einen direkten Link zur Quelle an; Medienberichte nur ergänzend, nicht als Hauptbeleg.
+
+Bereite für jeden Kandidaten vier Blöcke für die Interviewvorbereitung vor:
+1. Kernaussagen der Forschung: 4–6 kurze, belastbare Aussagen, die ich in eigenen Worten wiedergeben können sollte. Trenne beobachtete Befunde klar von Interpretation.
+2. Messreihen, Monitoringprogramme, Datensätze & Veröffentlichungen: Name, Zeitraum, räumlicher Bezug, was gemessen wird, Mess-/Auswertungsmethode, Rolle der Person und wichtigste erkennbare Veränderung. Nenne außerdem 1–3 zentrale Veröffentlichungen oder offizielle Auswertungen mit Titel, Jahr und möglichst direktem Quellenlink.
+3. Zahlen, Zusammenhänge & Unsicherheiten: die wichtigsten Größenordnungen oder Trends mit Einheit, relevante Ursachen/Folgen/Wechselwirkungen sowie Grenzen der Aussagekraft.
+4. Gesprächseinstieg & Reservefragen: Formuliere zuerst eine offene, natürliche Einstiegsfrage, die den Gast dazu einlädt, von der eigenen Messung oder Forschung ausgehend zu erklären, woher wir die Veränderung überhaupt kennen. Danach höchstens drei kurze Reservefragen für Aspekte, die im Gespräch sonst fehlen könnten. Die Fragen sind Reserve, kein abzuarbeitender Fragenkatalog.
+
 Regionale Priorität: ${region}.
 Interviewsprache: ${language}. Bei "Deutsch bevorzugt" suche aktiv nach deutschsprachigen Fachleuten mit möglichst vergleichbarer Nähe zu den relevanten Messdaten. Internationale Kandidat:innen dürfen zusätzlich genannt werden, wenn ihre fachliche Eignung außergewöhnlich ist.${focus?`\nZusätzlicher Fokus: ${focus}.`:""}
-Wähle maximal fünf wirklich geeignete Personen. Nenne Messreihe/Untersuchung, Zeitraum, wichtigste Veränderung, Rolle der Person, mögliche Kernfrage fürs Interview und offizielle Kontaktquelle. Kennzeichne hohe Medienpräsenz und bevorzuge bei gleicher Eignung Personen, deren konkrete Forschungsarbeit weniger öffentlich sichtbar ist.
-Ziel ist ein verständliches 20–30-minütiges Interview für ZUSTAND / TH Lübeck und den Offenen Kanal Lübeck: nicht nur „dass“ sich etwas verändert, sondern wie wir es wissen, warum es geschieht und womit es zusammenhängt.`;
+
+Wähle maximal fünf wirklich geeignete Personen. Kennzeichne hohe Medienpräsenz und bevorzuge bei gleicher Eignung Personen, deren konkrete Forschungsarbeit weniger öffentlich sichtbar ist.
+
+Ziel ist ein verständliches 20–30-minütiges Interview für ZUSTAND / TH Lübeck und den Offenen Kanal Lübeck: nicht nur „dass“ sich etwas verändert, sondern wie wir es wissen, warum es geschieht und womit es zusammenhängt. Die Vorbereitung soll inhaltliche Sicherheit geben, ohne den Gesprächsverlauf vorab festzulegen.
+
+Gib am Ende zusätzlich einen JSON-Block zum direkten Import ins ZUSTAND-Studio aus. Verwende dieses Schema und diese Feldnamen:
+{
+  "format": "zustand-studio-candidates-v2",
+  "topic": "...",
+  "candidates": [
+    {
+      "name": "...",
+      "institution": "...",
+      "topic": "Messreihe / Forschungsbezug",
+      "period": "...",
+      "email": "dienstliche E-Mail, falls seriös belegt",
+      "phone": "dienstliche Telefonnummer, falls seriös belegt",
+      "address": "dienstliche Anschrift, falls seriös belegt",
+      "source": "offizielle Profil-/Kontaktseite",
+      "why": "kurze Einordnung der Eignung",
+      "question": "kurze bisherige Kernfrage, optional",
+      "coreFindings": ["..."],
+      "measurements": [
+        {"name":"...","period":"...","measured":"...","method":"...","role":"...","trend":"...","sourceUrl":"..."}
+      ],
+      "publications": [
+        {"title":"...","year":"...","url":"...","relevance":"..."}
+      ],
+      "keyNumbers": ["..."],
+      "connections": ["..."],
+      "uncertainties": ["..."],
+      "openingQuestion": "...",
+      "reserveQuestions": ["...","...","..."]
+    }
+  ]
+}
+Nur Angaben übernehmen, die sich seriös belegen lassen. Keine Kontaktdaten erraten.`;
 };
 
 function copy(id){navigator.clipboard.writeText($(id).value)}
@@ -65,7 +192,9 @@ $("#saveCandidate").onclick=()=>{
   if(!name)return alert("Bitte Name eintragen.");
 
   const editId=$("#saveCandidate").dataset.editId||"";
+  const existingRecord=editId?data.candidates.find(c=>c.id===editId):null;
   const record={
+    ...(existingRecord||{}),
     id:editId||crypto.randomUUID(),
     name,
     institution:$("#cInstitution").value.trim(),
@@ -77,8 +206,10 @@ $("#saveCandidate").onclick=()=>{
     source:$("#cSource").value.trim(),
     groupId:$("#cGroup").value||"",
     why:$("#cWhy").value.trim(),
-    question:$("#cQuestion").value.trim()
+    question:$("#cQuestion").value.trim(),
+    openingQuestion:$("#cQuestion").value.trim()
   };
+  ensureCandidateResearch(record);
 
   if(editId){
     const idx=data.candidates.findIndex(c=>c.id===editId);
@@ -136,8 +267,8 @@ if(importButton && importFile){
       if(duplicates.length){
         updateExisting=confirm(
           `${duplicates.length} bereits vorhandene${duplicates.length===1?"r Kontakt wird":" Kontakte werden"} erkannt.\n\n`+
-          `Dienstl. E-Mail, Telefon, Postanschrift und offizielle Profil-/Kontaktseite aus der Datei aktualisieren?\n\n`+
-          `Gruppe, Akquise-Status, Interviewtexte und Z-Panel-Entwürfe bleiben unverändert.`
+          `Dienstl. Kontaktdaten sowie neu recherchierte Kernaussagen, Messreihen, Publikationen, Zahlen und Unsicherheiten aus der Datei ergänzen/aktualisieren?\n\n`+
+          `Gruppe, Akquise-Status, eigene Interviewtexte und Z-Panel-Entwürfe bleiben unverändert.`
         );
       }
 
@@ -164,11 +295,13 @@ if(importButton && importFile){
           if(phone)existing.phone=phone;
           if(address)existing.address=address;
           if(source)existing.source=source;
+          mergeCandidateResearch(existing,raw);
+          ensureCandidateResearch(existing);
           updated++;
           continue;
         }
 
-        data.candidates.push({
+        const record={
           id:crypto.randomUUID(),
           name,
           institution,
@@ -180,8 +313,19 @@ if(importButton && importFile){
           source:String(raw?.source||raw?.sourceUrl||"").trim(),
           groupId:resolveImportedGroup(raw),
           why:String(raw?.why||raw?.reason||"").trim(),
-          question:String(raw?.question||raw?.coreQuestion||"").trim()
-        });
+          question:String(raw?.question||raw?.coreQuestion||"").trim(),
+          coreFindings:[],
+          measurements:[],
+          publications:[],
+          keyNumbers:[],
+          connections:[],
+          uncertainties:[],
+          openingQuestion:"",
+          reserveQuestions:[]
+        };
+        mergeCandidateResearch(record,raw);
+        ensureCandidateResearch(record);
+        data.candidates.push(record);
         added++;
       }
 
@@ -402,7 +546,8 @@ function renderCandidates(){
             <div id="details-${c.id}" class="candidate-details hidden">
               ${c.period?`<p><b>Zeitraum:</b> ${esc(c.period)}</p>`:""}
               ${c.why?`<p><b>Einordnung:</b> ${esc(c.why)}</p>`:""}
-              ${c.question?`<p><b>Kernfrage:</b> ${esc(c.question)}</p>`:""}
+              ${(c.openingQuestion||c.question)?`<p><b>Einstiegsfrage:</b> ${esc(c.openingQuestion||c.question)}</p>`:""}
+              ${(c.measurements?.length||c.publications?.length)?`<p><b>Recherchegrundlage:</b> ${c.measurements?.length||0} Messreihe${c.measurements?.length===1?"":"n"} · ${c.publications?.length||0} Veröffentlichung${c.publications?.length===1?"":"en"}</p>`:""}
               ${c.phone?`<p><b>Dienstl. Telefon:</b> ${esc(c.phone)}</p>`:""}
               ${c.address?`<p><b>Dienstl. Postanschrift:</b> ${esc(c.address)}</p>`:""}
               ${c.source?`<p><b>Profil/Kontakt:</b> <span class="break">${esc(c.source)}</span></p>`:""}
@@ -434,7 +579,7 @@ window.editCandidate=id=>{
   $("#cSource").value=c.source||"";
   $("#cGroup").value=c.groupId||"";
   $("#cWhy").value=c.why||"";
-  $("#cQuestion").value=c.question||"";
+  $("#cQuestion").value=c.openingQuestion||c.question||"";
   $("#saveCandidate").dataset.editId=id;
   $("#saveCandidate").textContent="Änderungen speichern";
   $("#candidateForm").scrollIntoView({behavior:"smooth",block:"start"});
@@ -530,6 +675,57 @@ $("#saveAcquisition").onclick=()=>{
   persist();
 };
 
+function formatEvidence(c){
+  const blocks=[];
+  const measurements=measurementList(c?.measurements);
+  measurements.forEach((m,index)=>{
+    const lines=[];
+    lines.push(`${index+1}. ${m.name||"Messreihe / Monitoring"}`);
+    if(m.period)lines.push(`Zeitraum: ${m.period}`);
+    if(m.measured)lines.push(`Gemessen: ${m.measured}`);
+    if(m.method)lines.push(`Methode: ${m.method}`);
+    if(m.role)lines.push(`Rolle des Gastes: ${m.role}`);
+    if(m.trend)lines.push(`Wichtigste Veränderung: ${m.trend}`);
+    if(m.sourceUrl)lines.push(`Quelle: ${m.sourceUrl}`);
+    blocks.push(lines.join("\n"));
+  });
+
+  const publications=publicationList(c?.publications);
+  publications.forEach((p,index)=>{
+    const lines=[`Veröffentlichung ${index+1}: ${p.title||"ohne Titel"}${p.year?` (${p.year})`:""}`];
+    if(p.relevance)lines.push(`Bezug: ${p.relevance}`);
+    if(p.url)lines.push(`Quelle: ${p.url}`);
+    blocks.push(lines.join("\n"));
+  });
+
+  if(!blocks.length){
+    const lines=[];
+    if(c?.topic)lines.push(`Messreihe / Forschungsbezug: ${c.topic}`);
+    if(c?.period)lines.push(`Zeitraum: ${c.period}`);
+    if(c?.source)lines.push(`Offizielle Profil-/Kontaktseite: ${c.source}`);
+    if(lines.length)blocks.push(lines.join("\n"));
+  }
+  return blocks.join("\n\n");
+}
+
+function formatConnections(c){
+  const blocks=[];
+  const numbers=textList(c?.keyNumbers);
+  if(numbers.length)blocks.push(`Wichtige Zahlen / Trends\n${numbers.map(x=>`• ${x}`).join("\n")}`);
+  const connections=textList(c?.connections);
+  if(connections.length)blocks.push(`Zusammenhänge\n${connections.map(x=>`• ${x}`).join("\n")}`);
+  const uncertainties=textList(c?.uncertainties);
+  if(uncertainties.length)blocks.push(`Unsicherheiten / Grenzen\n${uncertainties.map(x=>`• ${x}`).join("\n")}`);
+  return blocks.join("\n\n");
+}
+
+function structuredInterviewQuestions(c){
+  const opening=String(c?.openingQuestion||"").trim();
+  const reserve=textList(c?.reserveQuestions);
+  if(!opening && !reserve.length)return "";
+  return [opening,...reserve].filter(Boolean).join("\n\n");
+}
+
 function makeInterviewDraft(c){
   if(!c)return {intro:"",notes:""};
 
@@ -617,50 +813,51 @@ function makeInterviewDraft(c){
     const topic=c.topic||"der zugrunde liegenden Messreihe";
     intro=`Mein Gast ist ${name}${institution?` von ${institution}`:""}. ${name} arbeitet zu ${topic}. Im Gespräch möchte ich verstehen, was langfristige Messungen tatsächlich zeigen, wie zuverlässig wir Veränderungen erkennen können und womit sie zusammenhängen.`;
     questions=[
-      `Was genau wird bei ${topic} gemessen – und wie?`,
-      c.period?`Die Messreihe reicht ${c.period}. Warum ist gerade dieser lange Zeitraum wichtig?`:"Wie weit reicht die Messreihe zurück und warum ist dieser Zeitraum wichtig?",
+      c.openingQuestion||c.question||`Wenn Sie uns zunächst mit in Ihre Arbeit nehmen: Woher wissen wir bei ${topic} überhaupt, dass sich etwas verändert – welche Messung oder Beobachtung ist dafür entscheidend?`,
       "Welche langfristige Veränderung ist in den Daten besonders deutlich zu erkennen?",
-      c.question||"Welche zentrale Frage lässt sich mit diesen Daten beantworten?",
-      "Welche Ursachen lassen sich erkennen und wo beginnt die Interpretation?",
-      "Welche Folgen hat die beobachtete Entwicklung für natürliche Lebensgrundlagen beziehungsweise planetare Grenzen?",
       "Welche Zusammenhänge werden in der öffentlichen Diskussion häufig übersehen?",
-      "Wo liegen die wichtigsten Unsicherheiten der Messung?",
-      "Welche Entwicklung sollten wir in den kommenden Jahren besonders aufmerksam weiter beobachten?"
+      "Wo liegen die wichtigsten Unsicherheiten der Messung?"
     ];
   }
 
-  return {intro,notes:questions.join("\n\n")};
+  const structuredQuestions=structuredInterviewQuestions(c);
+  const coreFindings=textList(c.coreFindings).join("\n\n");
+  return {
+    intro,
+    coreFindings,
+    evidence:formatEvidence(c),
+    connections:formatConnections(c),
+    notes:structuredQuestions||questions.join("\n\n")
+  };
 }
+function completeInterviewShape(c,value){
+  const draft=makeInterviewDraft(c);
+  if(typeof value==="string")return {...draft,notes:value};
+  if(!value || typeof value!=="object")return draft;
+  const result={...draft};
+  for(const key of ["intro","coreFindings","evidence","connections","notes"]){
+    if(Object.prototype.hasOwnProperty.call(value,key))result[key]=String(value[key]||"");
+  }
+  return result;
+}
+
 function getInterview(c){
-  if(!c)return {intro:"",notes:""};
+  if(!c)return {intro:"",coreFindings:"",evidence:"",connections:"",notes:""};
   const saved=data.interviews[c.id];
-
-  // Abwärtskompatibel: alte Version speicherte nur den Leitfaden als String.
-  if(typeof saved==="string")return {intro:"",notes:saved};
-
-  // Eigene Bearbeitungen haben immer Vorrang.
-  if(saved && ((saved.intro||"").trim() || (saved.notes||"").trim()))return saved;
-
-  // Beim ersten Öffnen automatisch einen kandidatenbezogenen Vorschlag erzeugen.
+  if(saved!==undefined)return completeInterviewShape(c,saved);
   return makeInterviewDraft(c);
 }
 
 function showInterviewForSelectedCandidate(forceDraft=false){
   const c=selected("#iCandidate");
-  if(!c){
-    $("#iIntro").value="";
-    $("#iNotes").value="";
-    return;
-  }
+  const fields=["#iIntro","#iCoreFindings","#iEvidence","#iConnections","#iNotes"];
+  if(!c){fields.forEach(id=>$(id).value="");return;}
 
-  let interview;
-  if(forceDraft){
-    interview=makeInterviewDraft(c);
-  }else{
-    interview=getInterview(c);
-  }
-
+  const interview=forceDraft?makeInterviewDraft(c):getInterview(c);
   $("#iIntro").value=interview.intro||"";
+  $("#iCoreFindings").value=interview.coreFindings||"";
+  $("#iEvidence").value=interview.evidence||"";
+  $("#iConnections").value=interview.connections||"";
   $("#iNotes").value=interview.notes||"";
   stopTraining();
 }
@@ -671,25 +868,32 @@ $("#loadInterviewDraft").onclick=()=>{
   const c=selected("#iCandidate");
   if(!c)return alert("Bitte zuerst einen Kandidaten auswählen.");
 
-  const hasText=$("#iIntro").value.trim() || $("#iNotes").value.trim();
-  if(hasText && !confirm("Den aktuellen Text durch den automatisch erzeugten Vorschlag ersetzen?"))return;
+  const hasText=["#iIntro","#iCoreFindings","#iEvidence","#iConnections","#iNotes"].some(id=>$(id).value.trim());
+  if(hasText && !confirm("Die aktuellen Interviewtexte durch den aus den Kandidatendaten erzeugten Vorschlag ersetzen?"))return;
 
   showInterviewForSelectedCandidate(true);
 };
 
+function currentInterviewEditorValues(){
+  return {
+    intro:$("#iIntro").value,
+    coreFindings:$("#iCoreFindings").value,
+    evidence:$("#iEvidence").value,
+    connections:$("#iConnections").value,
+    notes:$("#iNotes").value
+  };
+}
+
 $("#saveInterview").onclick=()=>{
   const c=selected("#iCandidate");
   if(!c)return alert("Bitte Kandidaten auswählen.");
-  data.interviews[c.id]={
-    intro:$("#iIntro").value,
-    notes:$("#iNotes").value
-  };
+  data.interviews[c.id]=currentInterviewEditorValues();
   persist();
 };
 
 // --- Interview-Bildschirm ---------------------------------------------------
-// Reine Anzeige des aktuell bearbeiteten Interviewtexts. Es werden keine neuen
-// Datenfelder angelegt und keine Kontakt- oder Interviewdaten umstrukturiert.
+// Reine Anzeige der aktuell bearbeiteten Interviewvorbereitung.
+// Kontakt- und Akquise-Daten werden dabei nicht verändert.
 let interviewScreenFontSize=26;
 
 function normalizeStoredLineBreaks(text){
@@ -745,47 +949,101 @@ function setInterviewScreenFont(size){
   if(value)value.textContent=String(interviewScreenFontSize);
 }
 
+function appendLinkifiedText(parent,text){
+  const source=String(text||"");
+  const urlRe=/https?:\/\/[^\s]+/g;
+  let last=0;
+  for(const match of source.matchAll(urlRe)){
+    const start=match.index||0;
+    if(start>last)parent.append(document.createTextNode(source.slice(last,start)));
+    let url=match[0];
+    let suffix="";
+    while(/[),.;:]$/.test(url)){
+      suffix=url.slice(-1)+suffix;
+      url=url.slice(0,-1);
+    }
+    const a=document.createElement("a");
+    a.href=url;
+    a.target="_blank";
+    a.rel="noopener noreferrer";
+    a.textContent=url;
+    parent.append(a);
+    if(suffix)parent.append(document.createTextNode(suffix));
+    last=start+match[0].length;
+  }
+  if(last<source.length)parent.append(document.createTextNode(source.slice(last)));
+}
+
+function fillReadText(containerId,text){
+  const box=$(containerId);
+  box.replaceChildren();
+  interviewParagraphs(text).forEach(item=>{
+    const p=document.createElement("p");
+    appendLinkifiedText(p,item);
+    box.appendChild(p);
+  });
+}
+
 function fillInterviewScreen(){
   const c=selected("#iCandidate");
   if(!c)return false;
 
   const intro=$("#iIntro").value.trim();
+  const coreFindings=$("#iCoreFindings").value.trim();
+  const evidence=$("#iEvidence").value.trim();
+  const connections=$("#iConnections").value.trim();
   const notes=$("#iNotes").value.trim();
-  if(!intro && !notes)return false;
+  if(!intro && !coreFindings && !evidence && !connections && !notes)return false;
 
   $("#interviewScreenCandidate").textContent=[c.name,c.institution].filter(Boolean).join(" · ");
 
   const topic=String(c.topic||"").trim();
-  const coreQuestion=String(c.question||"").trim();
+  const period=String(c.period||"").trim();
   $("#interviewScreenTopic").textContent=topic;
-  $("#interviewScreenCoreQuestion").textContent=coreQuestion;
+  $("#interviewScreenCoreQuestion").textContent=period;
   $("#interviewScreenTopicRow").classList.toggle("hidden",!topic);
-  $("#interviewScreenCoreQuestionRow").classList.toggle("hidden",!coreQuestion);
-  $("#interviewScreenContextSection").classList.toggle("hidden",!topic&&!coreQuestion);
+  $("#interviewScreenCoreQuestionRow").classList.toggle("hidden",!period);
+  $("#interviewScreenContextSection").classList.toggle("hidden",!topic&&!period);
 
-  const introBox=$("#interviewScreenIntro");
-  introBox.replaceChildren();
-  for(const text of introParagraphs(intro)){
-    const p=document.createElement("p");
-    p.textContent=text;
-    introBox.appendChild(p);
-  }
+  fillReadText("#interviewScreenIntro",intro);
   $("#interviewScreenIntroSection").classList.toggle("hidden",!intro);
+
+  fillReadText("#interviewScreenCoreFindings",coreFindings);
+  $("#interviewScreenCoreFindingsSection").classList.toggle("hidden",!coreFindings);
+
+  fillReadText("#interviewScreenEvidence",evidence);
+  $("#interviewScreenEvidenceSection").classList.toggle("hidden",!evidence);
+
+  fillReadText("#interviewScreenConnections",connections);
+  $("#interviewScreenConnectionsSection").classList.toggle("hidden",!connections);
 
   const questions=$("#interviewScreenQuestions");
   questions.replaceChildren();
   interviewParagraphs(notes).forEach((text,index)=>{
     const row=document.createElement("div");
-    row.className="interview-question";
+    row.className="interview-question"+(index===0?" interview-opening-question":"");
 
     const number=document.createElement("span");
     number.className="interview-question-number";
     number.textContent=String(index+1);
 
+    const content=document.createElement("div");
+    if(index===0){
+      const role=document.createElement("span");
+      role.className="interview-question-role";
+      role.textContent="Einstiegsfrage";
+      content.appendChild(role);
+    }else{
+      const role=document.createElement("span");
+      role.className="interview-question-role";
+      role.textContent=`Reserve ${index}`;
+      content.appendChild(role);
+    }
     const p=document.createElement("p");
     p.textContent=text;
+    content.appendChild(p);
 
-    row.append(number,p);
+    row.append(number,content);
     questions.appendChild(row);
   });
   $("#interviewScreenQuestionsSection").classList.toggle("hidden",!notes);
@@ -795,7 +1053,7 @@ function fillInterviewScreen(){
 function openInterviewScreen(){
   const c=selected("#iCandidate");
   if(!c)return alert("Bitte zuerst einen Kandidaten auswählen.");
-  if(!fillInterviewScreen())return alert("Bitte Anmoderation oder Fragen eintragen.");
+  if(!fillInterviewScreen())return alert("Bitte mindestens einen Abschnitt der Interviewvorbereitung eintragen.");
 
   stopTraining();
   const screen=$("#interviewScreen");
@@ -906,7 +1164,7 @@ let trainerWait=null;
 let trainerVoices=[];
 let trainerWakeLock=null;
 
-function parseTrainingQuestions(text){
+function parseTrainingStatements(text){
   return normalizeStoredLineBreaks(text)
     .split(/\n\s*\n|\n/)
     .map(x=>x.replace(/^\s*(?:[-•]|\d+[.)])\s*/,"").trim())
@@ -1005,7 +1263,7 @@ function buildTraining(){
   const c=selected("#iCandidate");
   if(!c)return false;
   const intro=$("#iIntro").value.trim();
-  const qs=parseTrainingQuestions($("#iNotes").value);
+  const findings=parseTrainingStatements($("#iCoreFindings").value);
   trainerItems=[];
 
   const introChunks=trainingIntroChunks(intro);
@@ -1014,7 +1272,7 @@ function buildTraining(){
     type:"intro",
     text
   }));
-  qs.forEach((q,i)=>trainerItems.push({kind:`Frage ${i+1}`,type:"question",text:q}));
+  findings.forEach((text,i)=>trainerItems.push({kind:`Kernaussage ${i+1}`,type:"finding",text}));
   return trainerItems.length>0;
 }
 
@@ -1025,14 +1283,14 @@ async function trainerLoop(){
   $("#trainingRound").textContent=`Runde ${trainerRound}`;
   $("#trainingText").textContent=item.text;
 
-  // Die Ansage trennt Anmoderation und Fragen akustisch.
+  // Die Ansage trennt Anmoderation und Kernaussagen akustisch.
   await trainerSpeak(item.kind);
   if(!trainerRunning||trainerPaused)return;
   await trainerDelay(500);
   await trainerSpeak(item.text);
   if(!trainerRunning||trainerPaused)return;
 
-  $("#trainingStatus").textContent=item.type==="intro"?"Jetzt diesen Abschnitt laut nachsprechen …":"Jetzt Frage laut sprechen / Antwort üben …";
+  $("#trainingStatus").textContent=item.type==="intro"?"Jetzt diesen Abschnitt laut nachsprechen …":"Jetzt die Kernaussage in eigenen Worten wiedergeben …";
   await trainerDelay(Number($("#trainingPause").value||10)*1000);
   if(!trainerRunning||trainerPaused)return;
 
@@ -1048,11 +1306,14 @@ function startTraining(){
   if(!("speechSynthesis" in window))return alert("Dieser Browser unterstützt die Sprachausgabe leider nicht.");
   const c=selected("#iCandidate");
   if(!c)return alert("Bitte zuerst einen Kandidaten auswählen.");
+  const findings=parseTrainingStatements($("#iCoreFindings").value);
+  if(!findings.length)return alert("Für diesen Kandidaten sind noch keine Kernaussagen gespeichert. Bitte zuerst die erweiterte Recherche importieren oder Kernaussagen eintragen.");
+
   // Änderungen vor Trainingsstart automatisch speichern.
-  data.interviews[c.id]={intro:$("#iIntro").value,notes:$("#iNotes").value};
+  data.interviews[c.id]=currentInterviewEditorValues();
   storage.save(data);
 
-  if(!buildTraining())return alert("Bitte Anmoderation oder Fragen eintragen.");
+  if(!buildTraining())return alert("Bitte Anmoderation oder Kernaussagen eintragen.");
   trainerRunning=true;
   trainerPaused=false;
   trainerIndex=0;
@@ -1101,7 +1362,7 @@ $("#startTraining").onclick=()=>{
   // Änderungen sichern, aber Audio noch NICHT starten.
   data.interviews[c.id]={intro:$("#iIntro").value,notes:$("#iNotes").value};
   storage.save(data);
-  if(!buildTraining())return alert("Bitte Anmoderation oder Fragen eintragen.");
+  if(!buildTraining())return alert("Bitte mindestens einen Abschnitt der Interviewvorbereitung eintragen.");
   $("#trainingPanel").classList.remove("hidden");
   $("#trainingStatus").textContent="Bereit";
   $("#trainingText").textContent=trainerItems[0]?.text||"Bereit";

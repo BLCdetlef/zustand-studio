@@ -30,7 +30,7 @@
     <div>
       <div class="kicker">ERST MESSREIHE, DANN MENSCH</div>
       <h2>Was möchtest du untersuchen?</h2>
-      <p>Das Studio sucht gedanklich zuerst nach Langzeitmessungen, Monitoringprogrammen und Datensätzen – und anschließend nach den Menschen, die tatsächlich damit arbeiten.</p>
+      <p>Das Studio sucht zuerst nach Langzeitmessungen, Monitoringprogrammen und Datensätzen – anschließend nach den Menschen, die tatsächlich damit arbeiten, und nach den wichtigsten zugehörigen Originalveröffentlichungen.</p>
     </div>
   </div>
   <div class="grid two">
@@ -62,7 +62,7 @@
         <button class="ghost" id="copyPrompt">Kopieren</button>
       </div>
       <textarea class="output tall" id="promptOutput" readonly placeholder="Hier erscheint der Recherche-Prompt."></textarea>
-      <p class="hint">In dieser ersten Version führt das Studio selbst noch keine Websuche aus. Der Prompt kann direkt in ChatGPT oder einem freigegebenen Recherchewerkzeug verwendet werden.</p>
+      <p class="hint">Der Prompt fordert jetzt zusätzlich Kernaussagen, Messreihen/Monitoring, zentrale Veröffentlichungen mit Quellenlinks, Zahlen/Zusammenhänge/Unsicherheiten sowie eine Einstiegsfrage und wenige Reservefragen an. Der erzeugte JSON-Block kann anschließend direkt bei „Kandidaten“ importiert werden.</p>
     </article>
   </div>
 </section>
@@ -124,7 +124,7 @@
     <label>Warum interessant?</label>
     <textarea id="cWhy"></textarea>
 
-    <label>Mögliche Kernfrage</label>
+    <label>Einstiegsfrage / mögliche Kernfrage</label>
     <textarea id="cQuestion"></textarea>
 
     <div class="actions">
@@ -188,24 +188,41 @@
     <label>Anmoderation / kurze Vorstellung des Gastes</label>
     <textarea id="iIntro" class="introtext" placeholder="Wer ist mein Gast, wo arbeitet die Person und warum sprechen wir heute miteinander?"></textarea>
 
-    <label>Gesprächsleitfaden / Fragen</label>
-    <textarea id="iNotes" class="verytall" placeholder="Eine Frage pro Absatz oder Zeile.&#10;&#10;Woher wissen wir das?&#10;&#10;Was hat sich verändert?&#10;&#10;Warum geschieht es?"></textarea>
+    <div class="interview-prep-block">
+      <div class="interview-prep-heading"><span>1</span><strong>Kernaussagen der Forschung</strong></div>
+      <textarea id="iCoreFindings" class="tall" placeholder="4–6 kurze Aussagen, die ich in eigenen Worten wiedergeben können möchte. Beobachtung und Interpretation möglichst trennen."></textarea>
+    </div>
+
+    <div class="interview-prep-block">
+      <div class="interview-prep-heading"><span>2</span><strong>Messreihen, Monitoring, Datensätze & Quellen</strong></div>
+      <textarea id="iEvidence" class="verytall" placeholder="Was wird seit wann und wie gemessen? Welche Rolle hat der Gast? Welche Publikationen oder offiziellen Auswertungen gehören dazu? Quellenlinks können direkt mitgeführt werden."></textarea>
+    </div>
+
+    <div class="interview-prep-block">
+      <div class="interview-prep-heading"><span>3</span><strong>Zahlen, Zusammenhänge & Unsicherheiten</strong></div>
+      <textarea id="iConnections" class="tall" placeholder="Wichtige Größenordnungen mit Einheit, Ursachen, Folgen, Wechselwirkungen sowie Grenzen der Aussagekraft."></textarea>
+    </div>
+
+    <div class="interview-prep-block">
+      <div class="interview-prep-heading"><span>4</span><strong>Einstiegsfrage & Reservefragen</strong></div>
+      <textarea id="iNotes" class="tall" placeholder="Als erstes eine offene Einstiegsfrage. Danach nur wenige Reservefragen – nicht als abzuarbeitender Fragenkatalog."></textarea>
+    </div>
 
     <div class="actions interview-actions">
       <button class="primary" id="saveInterview">Lokal speichern</button>
       <button class="ghost" id="loadInterviewDraft">Vorschlag laden</button>
       <button class="ghost" id="openInterviewScreen">Interview-Bildschirm öffnen</button>
-      <button class="ghost" id="startTraining">🎧 Interview trainieren</button>
+      <button class="ghost" id="startTraining">🎧 Kernaussagen trainieren</button>
     </div>
 
-    <p class="hint">Der Trainer verwendet automatisch diese Anmoderation und diese Fragen. Keine Texte müssen kopiert werden.</p>
+    <p class="hint">Der Trainer übt bewusst nicht den Gesprächsverlauf. Er wiederholt die Anmoderation und die Kernaussagen der Forschung, damit du im Interview frei reagieren kannst.</p>
   </article>
 
   <article id="trainingPanel" class="card training hidden">
     <div class="cardhead">
       <div>
         <div class="kicker">ENDLOSSCHLEIFE</div>
-        <h3>Interview-Training</h3>
+        <h3>Kernaussagen-Training</h3>
       </div>
       <button class="ghost" id="closeTraining">Schließen</button>
     </div>
@@ -218,11 +235,11 @@
       <div id="trainingRound" class="round">Runde 1</div>
     </div>
 
-    <div id="trainingText" class="training-text">Vor dem Start werden Anmoderation und Fragen automatisch übernommen.</div>
+    <div id="trainingText" class="training-text">Vor dem Start werden Anmoderation und Kernaussagen automatisch übernommen.</div>
 
     <div class="grid two training-settings">
       <div>
-        <label>Pause zum Nachsprechen / Antworten</label>
+        <label>Pause zum Nachsprechen / Wiedergeben</label>
         <select id="trainingPause">
           <option value="6">6 Sekunden</option>
           <option value="10" selected>10 Sekunden</option>
@@ -256,7 +273,8 @@
     </div>
 
     <p class="hint"><b>Anmoderation:</b> Der Trainer teilt sie automatisch in kurze Sinnabschnitte. Nach jedem Abschnitt folgt die gewählte Pause zum Nachsprechen.</p>
-    <p class="hint"><b>Für die Fahrradfahrt:</b> vor der Abfahrt starten. Danach läuft Anmoderation in Abschnitten → Fragen → wieder Anmoderation automatisch in Endlosschleife. Während der Fahrt nicht am Handy bedienen.</p>
+    <p class="hint"><b>Kernaussagen:</b> Nach jeder vorgelesenen Aussage folgt eine Pause, in der du sie frei mit eigenen Worten wiedergeben kannst. Reservefragen werden nicht trainiert.</p>
+    <p class="hint"><b>Für die Fahrradfahrt:</b> vor der Abfahrt starten. Danach läuft Anmoderation → Kernaussagen → wieder Anmoderation automatisch in Endlosschleife. Während der Fahrt nicht am Handy bedienen.</p>
   </article>
 </section>
 
@@ -329,7 +347,7 @@
           <strong id="interviewScreenTopic"></strong>
         </div>
         <div id="interviewScreenCoreQuestionRow" class="interview-context-item hidden">
-          <span>Zentrale Frage</span>
+          <span>Zeitraum</span>
           <strong id="interviewScreenCoreQuestion"></strong>
         </div>
       </div>
@@ -340,8 +358,23 @@
       <div id="interviewScreenIntro" class="interview-read-text"></div>
     </section>
 
+    <section id="interviewScreenCoreFindingsSection" class="interview-read-section">
+      <h2>1. Kernaussagen der Forschung</h2>
+      <div id="interviewScreenCoreFindings" class="interview-read-text"></div>
+    </section>
+
+    <section id="interviewScreenEvidenceSection" class="interview-read-section">
+      <h2>2. Messreihen, Monitoring, Datensätze & Quellen</h2>
+      <div id="interviewScreenEvidence" class="interview-read-text"></div>
+    </section>
+
+    <section id="interviewScreenConnectionsSection" class="interview-read-section">
+      <h2>3. Zahlen, Zusammenhänge & Unsicherheiten</h2>
+      <div id="interviewScreenConnections" class="interview-read-text"></div>
+    </section>
+
     <section id="interviewScreenQuestionsSection" class="interview-read-section">
-      <h2>Fragen / Gesprächsleitfaden</h2>
+      <h2>4. Einstiegsfrage & Reservefragen</h2>
       <div id="interviewScreenQuestions" class="interview-read-questions"></div>
     </section>
   </div>
