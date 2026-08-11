@@ -649,10 +649,42 @@ $("#saveInterview").onclick=()=>{
 // Datenfelder angelegt und keine Kontakt- oder Interviewdaten umstrukturiert.
 let interviewScreenFontSize=26;
 
+function sentenceSegments(text){
+  const clean=String(text||"").replace(/\s+/g," ").trim();
+  if(!clean)return [];
+
+  // Intl.Segmenter liefert im Browser die sauberste Satztrennung.
+  try{
+    if(typeof Intl?.Segmenter==="function"){
+      const segmenter=new Intl.Segmenter("de",{granularity:"sentence"});
+      return [...segmenter.segment(clean)].map(x=>x.segment.trim()).filter(Boolean);
+    }
+  }catch{}
+
+  return clean.match(/[^.!?]+(?:[.!?]+|$)/g)?.map(x=>x.trim()).filter(Boolean)||[clean];
+}
+
+function introParagraphs(text){
+  const sentences=sentenceSegments(text);
+  const paragraphs=[];
+  let current="";
+  for(const sentence of sentences){
+    const combined=current?`${current} ${sentence}`:sentence;
+    if(current && combined.length>210){
+      paragraphs.push(current);
+      current=sentence;
+    }else{
+      current=combined;
+    }
+  }
+  if(current)paragraphs.push(current);
+  return paragraphs;
+}
+
 function interviewParagraphs(text){
   return String(text||"")
     .split(/\n\s*\n|\n/)
-    .map(line=>line.trim())
+    .map(line=>line.replace(/^\s*(?:[-•]|\d+[.)])\s*/,"").trim())
     .filter(Boolean);
 }
 
@@ -673,16 +705,40 @@ function fillInterviewScreen(){
   if(!intro && !notes)return false;
 
   $("#interviewScreenCandidate").textContent=[c.name,c.institution].filter(Boolean).join(" · ");
-  $("#interviewScreenIntro").textContent=intro;
+
+  const topic=String(c.topic||"").trim();
+  const coreQuestion=String(c.question||"").trim();
+  $("#interviewScreenTopic").textContent=topic;
+  $("#interviewScreenCoreQuestion").textContent=coreQuestion;
+  $("#interviewScreenTopicRow").classList.toggle("hidden",!topic);
+  $("#interviewScreenCoreQuestionRow").classList.toggle("hidden",!coreQuestion);
+  $("#interviewScreenContextSection").classList.toggle("hidden",!topic&&!coreQuestion);
+
+  const introBox=$("#interviewScreenIntro");
+  introBox.replaceChildren();
+  for(const text of introParagraphs(intro)){
+    const p=document.createElement("p");
+    p.textContent=text;
+    introBox.appendChild(p);
+  }
   $("#interviewScreenIntroSection").classList.toggle("hidden",!intro);
 
   const questions=$("#interviewScreenQuestions");
   questions.replaceChildren();
-  for(const text of interviewParagraphs(notes)){
+  interviewParagraphs(notes).forEach((text,index)=>{
+    const row=document.createElement("div");
+    row.className="interview-question";
+
+    const number=document.createElement("span");
+    number.className="interview-question-number";
+    number.textContent=String(index+1);
+
     const p=document.createElement("p");
     p.textContent=text;
-    questions.appendChild(p);
-  }
+
+    row.append(number,p);
+    questions.appendChild(row);
+  });
   $("#interviewScreenQuestionsSection").classList.toggle("hidden",!notes);
   return true;
 }
@@ -808,6 +864,27 @@ function parseTrainingQuestions(text){
     .filter(Boolean);
 }
 
+function trainerVoiceScore(v){
+  const name=String(v?.name||"");
+  const lang=String(v?.lang||"");
+  let score=0;
+  if(/^de-DE$/i.test(lang))score+=45;
+  else if(/^de/i.test(lang))score+=30;
+  if(/natural|neural|online|premium/i.test(name))score+=80;
+  if(/google/i.test(name))score+=45;
+  if(/microsoft/i.test(name))score+=35;
+  if(/apple/i.test(name))score+=25;
+  if(/katja|hedda|anna|amala|vicki|petra|marlene/i.test(name))score+=12;
+  if(/espeak|mbrola/i.test(name))score-=80;
+  return score;
+}
+
+function preferredTrainerVoice(){
+  const german=trainerVoices.filter(v=>/^de/i.test(v.lang));
+  const pool=german.length?german:trainerVoices;
+  return [...pool].sort((a,b)=>trainerVoiceScore(b)-trainerVoiceScore(a))[0];
+}
+
 function loadTrainerVoices(){
   trainerVoices=speechSynthesis.getVoices();
   const select=$("#trainingVoice");
@@ -815,8 +892,11 @@ function loadTrainerVoices(){
   const old=select.value;
   const german=trainerVoices.map((v,i)=>({v,i})).filter(x=>/^de/i.test(x.v.lang));
   const list=german.length?german:trainerVoices.map((v,i)=>({v,i}));
-  select.innerHTML=list.map(({v,i})=>`<option value="${i}">${esc(v.name)} (${esc(v.lang)})</option>`).join("");
+  const options=[`<option value="auto">Automatisch – beste deutsche Stimme</option>`];
+  options.push(...list.map(({v,i})=>`<option value="${i}">${esc(v.name)} (${esc(v.lang)})</option>`));
+  select.innerHTML=options.join("");
   if([...select.options].some(o=>o.value===old))select.value=old;
+  else select.value="auto";
 }
 if("speechSynthesis" in window){
   speechSynthesis.addEventListener?.("voiceschanged",loadTrainerVoices);
@@ -824,8 +904,10 @@ if("speechSynthesis" in window){
 }
 
 function trainerVoice(){
-  const i=Number($("#trainingVoice")?.value);
-  return trainerVoices[i]||trainerVoices.find(v=>/^de/i.test(v.lang))||trainerVoices[0];
+  const value=$("#trainingVoice")?.value;
+  if(value==="auto" || value==="" || value==null)return preferredTrainerVoice();
+  const i=Number(value);
+  return trainerVoices[i]||preferredTrainerVoice()||trainerVoices[0];
 }
 
 function trainerSpeak(text){
@@ -851,14 +933,39 @@ async function trainerLock(){
 }
 function trainerUnlock(){try{trainerWakeLock?.release()}catch{} trainerWakeLock=null}
 
+function trainingIntroChunks(text){
+  const sentences=sentenceSegments(text);
+  const chunks=[];
+  let current="";
+
+  // Ein Abschnitt soll kurz genug sein, um ihn direkt nachsprechen zu können.
+  for(const sentence of sentences){
+    const combined=current?`${current} ${sentence}`:sentence;
+    if(current && (combined.length>125 || current.length>85)){
+      chunks.push(current);
+      current=sentence;
+    }else{
+      current=combined;
+    }
+  }
+  if(current)chunks.push(current);
+  return chunks;
+}
+
 function buildTraining(){
   const c=selected("#iCandidate");
   if(!c)return false;
   const intro=$("#iIntro").value.trim();
   const qs=parseTrainingQuestions($("#iNotes").value);
   trainerItems=[];
-  if(intro)trainerItems.push({kind:"Anmoderation",text:intro});
-  qs.forEach((q,i)=>trainerItems.push({kind:`Frage ${i+1}`,text:q}));
+
+  const introChunks=trainingIntroChunks(intro);
+  introChunks.forEach((text,i)=>trainerItems.push({
+    kind:`Anmoderation ${i+1}/${introChunks.length}`,
+    type:"intro",
+    text
+  }));
+  qs.forEach((q,i)=>trainerItems.push({kind:`Frage ${i+1}`,type:"question",text:q}));
   return trainerItems.length>0;
 }
 
@@ -876,7 +983,7 @@ async function trainerLoop(){
   await trainerSpeak(item.text);
   if(!trainerRunning||trainerPaused)return;
 
-  $("#trainingStatus").textContent=item.kind==="Anmoderation"?"Jetzt Anmoderation laut nachsprechen …":"Jetzt Frage laut sprechen / Antwort üben …";
+  $("#trainingStatus").textContent=item.type==="intro"?"Jetzt diesen Abschnitt laut nachsprechen …":"Jetzt Frage laut sprechen / Antwort üben …";
   await trainerDelay(Number($("#trainingPause").value||10)*1000);
   if(!trainerRunning||trainerPaused)return;
 

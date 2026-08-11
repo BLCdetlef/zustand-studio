@@ -242,11 +242,12 @@
       </div>
     </div>
 
-    <label>Deutsche Stimme</label>
+    <label>Stimme (kostenlos aus Browser / Betriebssystem)</label>
     <div class="voice-row">
       <select id="trainingVoice"></select>
       <button class="ghost" id="testTrainingVoice">🔊 Stimme testen</button>
     </div>
+    <p class="hint training-voice-hint">„Automatisch“ bevorzugt eine möglichst natürlich klingende deutsche Stimme. Über „Stimme testen“ kannst du die auf deinem Gerät verfügbaren Stimmen vergleichen.</p>
 
     <div class="training-controls">
       <button class="primary" id="trainingPlay">▶ Training starten</button>
@@ -254,7 +255,8 @@
       <button class="ghost" id="trainingStop">■ Beenden</button>
     </div>
 
-    <p class="hint"><b>Für die Fahrradfahrt:</b> vor der Abfahrt starten. Danach läuft Anmoderation → Fragen → wieder Anmoderation automatisch in Endlosschleife. Während der Fahrt nicht am Handy bedienen.</p>
+    <p class="hint"><b>Anmoderation:</b> Der Trainer teilt sie automatisch in kurze Sinnabschnitte. Nach jedem Abschnitt folgt die gewählte Pause zum Nachsprechen.</p>
+    <p class="hint"><b>Für die Fahrradfahrt:</b> vor der Abfahrt starten. Danach läuft Anmoderation in Abschnitten → Fragen → wieder Anmoderation automatisch in Endlosschleife. Während der Fahrt nicht am Handy bedienen.</p>
   </article>
 </section>
 
@@ -319,6 +321,20 @@
   </div>
 
   <div id="interviewScreenBody" class="interview-screen-body" tabindex="0">
+    <section id="interviewScreenContextSection" class="interview-read-section interview-context-section">
+      <h2>Gespräch</h2>
+      <div class="interview-context-grid">
+        <div id="interviewScreenTopicRow" class="interview-context-item hidden">
+          <span>Thema</span>
+          <strong id="interviewScreenTopic"></strong>
+        </div>
+        <div id="interviewScreenCoreQuestionRow" class="interview-context-item hidden">
+          <span>Zentrale Frage</span>
+          <strong id="interviewScreenCoreQuestion"></strong>
+        </div>
+      </div>
+    </section>
+
     <section id="interviewScreenIntroSection" class="interview-read-section">
       <h2>Anmoderation</h2>
       <div id="interviewScreenIntro" class="interview-read-text"></div>
