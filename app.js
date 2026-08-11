@@ -649,8 +649,14 @@ $("#saveInterview").onclick=()=>{
 // Datenfelder angelegt und keine Kontakt- oder Interviewdaten umstrukturiert.
 let interviewScreenFontSize=26;
 
+function normalizeStoredLineBreaks(text){
+  // Ältere/übernommene Studio-Daten können Zeilenumbrüche wörtlich als \n bzw. \r\n enthalten.
+  // Nur für Anzeige/Trainer normalisieren; die gespeicherten Daten werden nicht verändert.
+  return String(text||"").replace(/\\r\\n|\\n|\\r/g,"\n");
+}
+
 function sentenceSegments(text){
-  const clean=String(text||"").replace(/\s+/g," ").trim();
+  const clean=normalizeStoredLineBreaks(text).replace(/\s+/g," ").trim();
   if(!clean)return [];
 
   // Intl.Segmenter liefert im Browser die sauberste Satztrennung.
@@ -682,7 +688,7 @@ function introParagraphs(text){
 }
 
 function interviewParagraphs(text){
-  return String(text||"")
+  return normalizeStoredLineBreaks(text)
     .split(/\n\s*\n|\n/)
     .map(line=>line.replace(/^\s*(?:[-•]|\d+[.)])\s*/,"").trim())
     .filter(Boolean);
@@ -858,7 +864,7 @@ let trainerVoices=[];
 let trainerWakeLock=null;
 
 function parseTrainingQuestions(text){
-  return String(text||"")
+  return normalizeStoredLineBreaks(text)
     .split(/\n\s*\n|\n/)
     .map(x=>x.replace(/^\s*(?:[-•]|\d+[.)])\s*/,"").trim())
     .filter(Boolean);
