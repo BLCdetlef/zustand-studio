@@ -1,0 +1,39 @@
+ZUSTAND Studio – Basis und Versionsnachweis
+===========================================
+
+Projekt: ZUSTAND Studio Web-Version
+Ziel-Repository: BLCdetlef/zustand-studio
+Ziel-Branch: main
+
+VERWENDETE ARBEITSBASIS
+-----------------------
+Datei: zustand-studio-update-interview-windows-fix.zip
+Library-Zeitpunkt: 11.08.2026, 08:10 Uhr MESZ (06:10 UTC)
+Funktionaler Stand: Interview-Bildschirm + Interview-Trainer + Windows-Fix der Fragenanzeige.
+
+Wichtig:
+Die aktuelle GitHub-Commit-ID und die von Detlef vergebene Commit-Bezeichnung konnten
+in dieser Sitzung nicht zuverlässig aus GitHub ausgelesen werden, weil der öffentliche
+Abruf einen älteren gecachten Pages-Stand liefert. Deshalb wurden diese Angaben bewusst
+NICHT erfunden.
+
+NEUE ÄNDERUNG
+-------------
+Akquise-Status „zugesagt“ zeigt automatisch die zweite E-Mail zur Terminabstimmung.
+Bei allen anderen Statuswerten bleibt die bestehende kurze Erstmail erhalten.
+
+Empfohlene Commit-Bezeichnung:
+Zweite E-Mail nach Zusage ergänzt
+
+PRÜFSUMMEN DER BASIS / NEU
+--------------------------
+app.js Basis: 6ba0aeca3bb244056f904697a6652a764777dbbe91537017c287d2a005cc0f37
+app.js Neu:   2c4bc4696bf5d2acd9e2fda819e049fc0a592ba295437ccd8117e3c479bcfe51
+
+index.html Basis: 2ff66001f03eef4002f3c43a3193117260c5e4347d94a27eaced771b198b9f74
+index.html Neu:   2ff66001f03eef4002f3c43a3193117260c5e4347d94a27eaced771b198b9f74
+(unverändert)
+
+styles.css Basis: 1d2f59f942142dd7e658fd411a5493fbe921ae17e1152470991300561659cebc
+styles.css Neu:   1d2f59f942142dd7e658fd411a5493fbe921ae17e1152470991300561659cebc
+(unverändert)

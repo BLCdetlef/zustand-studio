@@ -1,0 +1,23 @@
+ZUSTAND Studio – Kurztest
+=========================
+
+1. Alle drei Webdateien aus diesem ZIP in das Repository übernehmen.
+2. ZUSTAND Studio öffnen und „Akquise“ wählen.
+3. Einen Kandidaten auswählen.
+4. Status „noch nicht angeschrieben“ oder „angefragt“:
+   - Überschrift: „Kurze Erstmail“
+   - bisherige kurze Erstmail sichtbar.
+5. Status auf „zugesagt“ ändern:
+   - Überschrift wechselt sofort auf „Zweite E-Mail nach Zusage“
+   - zweite E-Mail mit den OK-Lübeck-Öffnungszeiten erscheint.
+6. „Status speichern“ klicken und Seite neu laden:
+   - beim erneut ausgewählten Kandidaten muss die zweite E-Mail wieder erscheinen.
+7. „Kopieren“ testen.
+8. Interview und Trainer kurz öffnen:
+   - die bisherigen Funktionen sollen unverändert bleiben.
+
+Technische Prüfung vor dem Packen:
+- JavaScript-Syntaxprüfung (node --check): erfolgreich
+- index.html: unverändert gegenüber der Basis
+- styles.css: unverändert gegenüber der Basis
+- Interview-/Trainer-Anker in app.js/index.html vorhanden

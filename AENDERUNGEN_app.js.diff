@@ -1,0 +1,73 @@
+--- /mnt/data/zustand_web_current/extracted/app.js	2026-08-11 06:09:54.000000000 +0000
++++ /mnt/data/zustand_studio_web_mail2_final/app.js	2026-08-11 20:00:58.237533576 +0000
+@@ -451,10 +451,42 @@
+ 
+ function selected(sel){return data.candidates.find(c=>c.id===$(sel).value)}
+ 
+-function makeMail(){
+-  const c=selected("#aCandidate");
+-  if(!c){$("#mailOutput").value="";return}
++function setAcquisitionMail(c,status){
++  const mailTitle=$("#mailOutput")?.closest(".card")?.querySelector("h3");
++
++  if(!c){
++    $("#mailOutput").value="";
++    if(mailTitle)mailTitle.textContent="Kurze Erstmail";
++    return;
++  }
++
++  if(status==="zugesagt"){
++    if(mailTitle)mailTitle.textContent="Zweite E-Mail nach Zusage";
++    $("#mailOutput").value=`Betreff: Interview für ZUSTAND – Terminabstimmung
++
++Guten Tag ${c.name},
++
++vielen Dank für Ihre Rückmeldung – ich freue mich sehr, dass Sie zu einem Gespräch bereit sind.
++
++Der Offene Kanal Lübeck ist regulär dienstags bis samstags von 12:00 bis 19:00 Uhr geöffnet. Ich kann dort einen Studioplatz reservieren, sofern zu dem gewünschten Zeitpunkt einer frei ist.
++
++Für mich eignen sich besonders Termine von Dienstag bis Freitag, möglichst zwischen 14:00 und 17:00 Uhr. Wenn Sie mir ein oder zwei Tage bzw. Zeitfenster nennen, die für Sie grundsätzlich gut passen würden, prüfe ich anschließend die Verfügbarkeit des Studios.
++
++Danach können wir den konkreten Termin gemeinsam festlegen.
++
++Beste Grüße
++Detlef Hau
++Technische Hochschule Lübeck
++Projekt: https://www.th-luebeck.de/zustand
++Mönkhofer Weg 239
++23562 Lübeck
++Tel.: (+49) 0451 300-5660
++Mobil: (+49) 0173 6144597
++E-Mail: detlef.hau@th-luebeck.de`;
++    return;
++  }
+ 
++  if(mailTitle)mailTitle.textContent="Kurze Erstmail";
+   $("#mailOutput").value=`Betreff: Interviewanfrage – ZUSTAND / TH Lübeck
+ 
+ Guten Tag ${c.name},
+@@ -474,12 +506,23 @@
+ Tel.: (+49) 0451 300-5660
+ Mobil: (+49) 0173 6144597
+ E-Mail: detlef.hau@th-luebeck.de`;
++}
++
++function makeMail(){
++  const c=selected("#aCandidate");
++  if(!c){setAcquisitionMail(null,"");return}
+ 
+   const a=data.acquisition[c.id]||{};
+-  $("#aStatus").value=a.status||"noch nicht angeschrieben";
++  const status=a.status||"noch nicht angeschrieben";
++  $("#aStatus").value=status;
+   $("#aNote").value=a.note||"";
++  setAcquisitionMail(c,status);
+ }
+ $("#aCandidate").onchange=makeMail;
++$("#aStatus").onchange=()=>{
++  const c=selected("#aCandidate");
++  setAcquisitionMail(c,$("#aStatus").value);
++};
+ $("#saveAcquisition").onclick=()=>{
+   const c=selected("#aCandidate");
+   if(!c)return alert("Bitte Kandidaten auswählen.");
