@@ -644,6 +644,122 @@ $("#saveInterview").onclick=()=>{
   persist();
 };
 
+// --- Interview-Bildschirm ---------------------------------------------------
+// Reine Anzeige des aktuell bearbeiteten Interviewtexts. Es werden keine neuen
+// Datenfelder angelegt und keine Kontakt- oder Interviewdaten umstrukturiert.
+let interviewScreenFontSize=26;
+
+function interviewParagraphs(text){
+  return String(text||"")
+    .split(/\n\s*\n|\n/)
+    .map(line=>line.trim())
+    .filter(Boolean);
+}
+
+function setInterviewScreenFont(size){
+  interviewScreenFontSize=Math.max(18,Math.min(42,Number(size)||26));
+  const body=$("#interviewScreenBody");
+  if(body)body.style.setProperty("--interview-font-size",`${interviewScreenFontSize}px`);
+  const value=$("#interviewFontValue");
+  if(value)value.textContent=String(interviewScreenFontSize);
+}
+
+function fillInterviewScreen(){
+  const c=selected("#iCandidate");
+  if(!c)return false;
+
+  const intro=$("#iIntro").value.trim();
+  const notes=$("#iNotes").value.trim();
+  if(!intro && !notes)return false;
+
+  $("#interviewScreenCandidate").textContent=[c.name,c.institution].filter(Boolean).join(" · ");
+  $("#interviewScreenIntro").textContent=intro;
+  $("#interviewScreenIntroSection").classList.toggle("hidden",!intro);
+
+  const questions=$("#interviewScreenQuestions");
+  questions.replaceChildren();
+  for(const text of interviewParagraphs(notes)){
+    const p=document.createElement("p");
+    p.textContent=text;
+    questions.appendChild(p);
+  }
+  $("#interviewScreenQuestionsSection").classList.toggle("hidden",!notes);
+  return true;
+}
+
+function openInterviewScreen(){
+  const c=selected("#iCandidate");
+  if(!c)return alert("Bitte zuerst einen Kandidaten auswählen.");
+  if(!fillInterviewScreen())return alert("Bitte Anmoderation oder Fragen eintragen.");
+
+  stopTraining();
+  const screen=$("#interviewScreen");
+  screen.classList.remove("hidden");
+  document.body.classList.add("interview-screen-open");
+  setInterviewScreenFont(interviewScreenFontSize);
+  requestAnimationFrame(()=>{
+    const body=$("#interviewScreenBody");
+    body.scrollTop=0;
+    body.focus();
+  });
+}
+
+async function closeInterviewScreen(){
+  if(document.fullscreenElement){
+    try{await document.exitFullscreen()}catch{}
+  }
+  $("#interviewScreen").classList.add("hidden");
+  document.body.classList.remove("interview-screen-open");
+}
+
+async function toggleInterviewFullscreen(){
+  const screen=$("#interviewScreen");
+  try{
+    if(document.fullscreenElement){
+      await document.exitFullscreen();
+    }else if(screen.requestFullscreen){
+      await screen.requestFullscreen();
+    }
+  }catch{
+    // Die Anzeige füllt auch ohne Browser-Fullscreen bereits das Fenster.
+  }
+}
+
+$("#openInterviewScreen").onclick=openInterviewScreen;
+$("#closeInterviewScreen").onclick=closeInterviewScreen;
+$("#interviewFontMinus").onclick=()=>setInterviewScreenFont(interviewScreenFontSize-2);
+$("#interviewFontPlus").onclick=()=>setInterviewScreenFont(interviewScreenFontSize+2);
+$("#interviewGoTop").onclick=()=>{
+  const body=$("#interviewScreenBody");
+  body.scrollTo({top:0,behavior:"smooth"});
+  body.focus();
+};
+$("#interviewToggleFullscreen").onclick=toggleInterviewFullscreen;
+$("#printInterviewScreen").onclick=()=>window.print();
+
+document.addEventListener("keydown",e=>{
+  const screen=$("#interviewScreen");
+  if(!screen || screen.classList.contains("hidden"))return;
+
+  const body=$("#interviewScreenBody");
+  if(e.key==="Escape" && !document.fullscreenElement){
+    e.preventDefault();
+    closeInterviewScreen();
+  }else if(e.key==="PageDown" || e.key===" "){
+    e.preventDefault();
+    body.scrollBy({top:Math.max(240,body.clientHeight*.82),behavior:"smooth"});
+  }else if(e.key==="PageUp"){
+    e.preventDefault();
+    body.scrollBy({top:-Math.max(240,body.clientHeight*.82),behavior:"smooth"});
+  }else if(e.key==="Home"){
+    e.preventDefault();
+    body.scrollTo({top:0,behavior:"smooth"});
+  }else if(e.key==="End"){
+    e.preventDefault();
+    body.scrollTo({top:body.scrollHeight,behavior:"smooth"});
+  }
+});
+
 $("#zCandidate").onchange=()=>{
   const c=selected("#zCandidate");
   const z=c?(data.zDrafts[c.id]||{}):{};

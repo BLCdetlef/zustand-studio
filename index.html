@@ -194,6 +194,7 @@
     <div class="actions interview-actions">
       <button class="primary" id="saveInterview">Lokal speichern</button>
       <button class="ghost" id="loadInterviewDraft">Vorschlag laden</button>
+      <button class="ghost" id="openInterviewScreen">Interview-Bildschirm öffnen</button>
       <button class="ghost" id="startTraining">🎧 Interview trainieren</button>
     </div>
 
@@ -298,6 +299,37 @@
   </div>
 </section>
 </main>
+
+<div id="interviewScreen" class="interview-screen hidden" role="dialog" aria-modal="true" aria-labelledby="interviewScreenTitle">
+  <div class="interview-screen-toolbar">
+    <div class="interview-screen-meta">
+      <strong id="interviewScreenTitle">Interview</strong>
+      <span id="interviewScreenCandidate"></span>
+    </div>
+    <div class="interview-screen-controls" aria-label="Interview-Bildschirm steuern">
+      <span class="interview-font-label">Schrift</span>
+      <button class="ghost interview-tool" id="interviewFontMinus" type="button" aria-label="Schrift verkleinern">−</button>
+      <span id="interviewFontValue" class="interview-font-value">26</span>
+      <button class="ghost interview-tool" id="interviewFontPlus" type="button" aria-label="Schrift vergrößern">+</button>
+      <button class="ghost" id="interviewGoTop" type="button">An den Anfang</button>
+      <button class="ghost" id="interviewToggleFullscreen" type="button">Vollbild an/aus</button>
+      <button class="ghost" id="printInterviewScreen" type="button">Drucken</button>
+      <button class="primary" id="closeInterviewScreen" type="button">Schließen</button>
+    </div>
+  </div>
+
+  <div id="interviewScreenBody" class="interview-screen-body" tabindex="0">
+    <section id="interviewScreenIntroSection" class="interview-read-section">
+      <h2>Anmoderation</h2>
+      <div id="interviewScreenIntro" class="interview-read-text"></div>
+    </section>
+
+    <section id="interviewScreenQuestionsSection" class="interview-read-section">
+      <h2>Fragen / Gesprächsleitfaden</h2>
+      <div id="interviewScreenQuestions" class="interview-read-questions"></div>
+    </section>
+  </div>
+</div>
 
 <footer>
   <span>Prototyp · keine produktive Speicherung personenbezogener Daten</span>
