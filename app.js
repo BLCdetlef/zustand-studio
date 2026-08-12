@@ -46,6 +46,9 @@ function migrateLegacyZDrafts(target){
       publicationDate:"",
       imageFile:"",
       imageIdea:"",
+      imageStyle:"Automatisch",
+      imageFormat:"Automatisch",
+      imagePrompt:"",
       interviewUrl:"",
       workflowStatus:"entwurf",
       visibility:"aktiv",
@@ -1368,6 +1371,116 @@ function zKeywordList(value){
   if(Array.isArray(value))return value.map(x=>String(x).trim()).filter(Boolean);
   return String(value||"").split(",").map(x=>x.trim()).filter(Boolean);
 }
+
+const Z_IMAGE_STYLE_HINTS={
+  Natur:"Nutze eine natürliche, glaubwürdige Szenerie mit Landschaft, Tier, Pflanze, Wasser, Boden oder Himmel. Ruhig, realistisch und nicht romantisierend.",
+  Wissenschaft:"Nutze eine glaubwürdige wissenschaftliche Bildsprache, etwa Atmosphäre, Messinstrumente, Proben, Modelle oder sichtbare Prozesse. Keine Science-Fiction-Ästhetik und keine werbliche Laborszene.",
+  Symbolisch:"Nutze eine klare, zurückhaltende visuelle Metapher. Sie soll sofort verständlich, weder plakativ noch werblich wirken.",
+  "Prozess-/Erklärskizze":"Zeige einen fachlich nachvollziehbaren Zusammenhang oder Prozess mit wenigen klaren Formen. Reduziert, ruhig und ohne dekorative Details."
+};
+const Z_IMAGE_AUTO_TERMS={
+  Wissenschaft:["aerosol","atmosphare","halogen","chemie","stickoxid","modellstudie","messung","monitoring","labor","mikroplastik","pfas","emission","nahrstoff","biogeochem","ozon","datensatz"],
+  Symbolisch:["demokratie","bildung","gemeinwohl","gerechtigkeit","frieden","zusammenarbeit","gluck","suffizienz","postwachstum","parlament","lobbyismus","gesellschaft"],
+  Natur:["biodiversitat","vogel","wald","ozean","meer","wasser","arten","okosystem","klima","boden","pflanze","tier","landnutzung"]
+};
+const Z_BOUNDARY_IMAGE_HINTS={
+  KL:"Hitze, Sonne, blauer Himmel, körperliche Hitzebelastung oder sichtbare Klimafolgen",
+  BD:"lebendige Artenvielfalt, Wildpflanzen, Insekten, Vögel, Wald oder Gewässer",
+  LN:"Landschaft, Wald, Landwirtschaft, Versiegelung und Nutzungskonflikte",
+  FW:"Wasser, Fluss, trockener Boden, Regen, Trinkwasser oder Vegetation",
+  NP:"Landwirtschaft, Nährstoffe, Algenblüte, Ackerboden oder Gewässer",
+  OA:"Meer, Muschel, Koralle, Plankton oder empfindliches Meeresleben",
+  OZ:"Atmosphäre, Sonnenlicht und Schutzwirkung der Ozonschicht",
+  AE:"Luft, feine Partikel, Dunst, Stadt und Atemwege",
+  NS:"Kunststoffe, Chemikalien, Labor, Alltagsprodukte oder Mikroplastik",
+  QS:"eine klare, leicht verständliche und glaubwürdige Assoziation zum Artikel"
+};
+
+function zNormalizeImageSearch(value){
+  return String(value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase().replace(/\s+/g," ").trim();
+}
+function zImagePromptContext(){
+  return {
+    title:$("#zTitle")?.value.trim()||"",
+    summary:$("#zSummary")?.value.trim()||"",
+    category:$("#zCategory")?.value||"Zustand",
+    planetaryBoundary:$("#zBoundary")?.value||"QS",
+    keywords:zKeywordList($("#zKeywords")?.value||""),
+    imageIdea:$("#zImageIdea")?.value.trim()||"",
+    imageStyle:$("#zImageStyle")?.value||"Automatisch",
+    imageFormat:$("#zImageFormat")?.value||"Automatisch"
+  };
+}
+function zAutomaticImageStyle(ctx){
+  if(ctx.imageStyle && ctx.imageStyle!=="Automatisch")return ctx.imageStyle;
+  if(["Natur verstehen","Wie wissen wir das?"].includes(ctx.category))return "Prozess-/Erklärskizze";
+  const haystack=zNormalizeImageSearch(`${ctx.title} ${ctx.summary} ${ctx.planetaryBoundary} ${ctx.keywords.join(" ")}`);
+  for(const style of ["Wissenschaft","Symbolisch","Natur"]){
+    if(Z_IMAGE_AUTO_TERMS[style].some(term=>haystack.includes(term)))return style;
+  }
+  return "Natur";
+}
+function zAutomaticImageFormat(ctx,style=zAutomaticImageStyle(ctx)){
+  if(ctx.imageFormat && ctx.imageFormat!=="Automatisch")return ctx.imageFormat;
+  if(style==="Prozess-/Erklärskizze" || ["Natur verstehen","Wie wissen wir das?"].includes(ctx.category))return "SVG";
+  return "JPG";
+}
+function zAutomaticImageIdea(ctx){
+  if(ctx.imageIdea)return ctx.imageIdea;
+  const text=zNormalizeImageSearch(`${ctx.title} ${ctx.summary} ${ctx.keywords.join(" ")}`);
+  if(["demokratie","parlament","lobby","parteienfinanz","wahl","medienkompetenz"].some(term=>text.includes(term)))return "ein heller Sitzungssaal, ein runder Beratungstisch, eine öffentliche Bibliothek oder eine Wahlurne; keine Naturmetapher als Hauptmotiv";
+  if(["bildung","schule","unterricht","studierende","hochschule","lernen","lehr","kompetenz"].some(term=>text.includes(term)))return "ein glaubwürdiger Hörsaal, ein Klassenzimmer, eine Werkstatt oder eine Bibliothek; keine Naturmetapher als Hauptmotiv";
+  if(["gesundheit","krankheit","medizin","pravention","praxis","patient","psychisch","pflege"].some(term=>text.includes(term)))return "eine glaubwürdige Alltagsszene aus Praxis, Prävention, Bewegung oder Gesundheitsversorgung, alternativ ein zurückhaltendes wissenschaftliches Motiv";
+  if(["frieden","zusammenarbeit","gemeinwohl","gesellschaft","gerechtigkeit","dialog"].some(term=>text.includes(term)))return "Menschen im sachlichen Austausch, gemeinsames Arbeiten oder ein ruhiger öffentlicher Begegnungsort; keine gestellte Werbeszene";
+  if(["kreislaufwirtschaft","reparatur","recycling","wiederverwendung","ressourceneffizienz","gebrauchtholz","rückbau","ruckbau"].some(term=>text.includes(term)))return "eine Reparaturwerkstatt, wiederverwendete Bauteile oder klar sortierte Materialien; kein Müllberg als Hauptmotiv";
+  return Z_BOUNDARY_IMAGE_HINTS[ctx.planetaryBoundary]||Z_BOUNDARY_IMAGE_HINTS.QS;
+}
+function zBuildImagePromptText(ctx=zImagePromptContext()){
+  const style=zAutomaticImageStyle(ctx);
+  const format=zAutomaticImageFormat(ctx,style);
+  const idea=zAutomaticImageIdea(ctx);
+  const keywords=ctx.keywords.length?`\nSchlagwörter: ${ctx.keywords.join(", ")}.`:"";
+  const subject=`Artikelthema: ${ctx.title||"noch ohne Titel"}.\nKernaussage: ${ctx.summary||"noch keine Kurzfassung"}.\nBildidee / mögliche Bildassoziation: ${idea}.\nGewählter Bildstil: ${style}. ${Z_IMAGE_STYLE_HINTS[style]||Z_IMAGE_STYLE_HINTS.Natur}${keywords}`;
+
+  if(format==="SVG"){
+    return `Erstelle eine echte, saubere SVG-Vektorgrafik als Titelbild für einen öffentlichen Wissenschafts-Infoscreen. Keine Rastergrafik und kein nur vektorartig aussehendes PNG/JPG.\n\n${subject}\n\nKomposition für den Infoscreen:\n- Hochformat im Seitenverhältnis 8:9; passende viewBox verwenden.\n- Genau ein dominantes, klar erkennbares Hauptmotiv bzw. einen klaren Prozess.\n- Auch aus drei bis fünf Metern Entfernung verständlich.\n- Ruhige Fläche, klare Hierarchie, wenige Formen und Pfade.\n- Wichtige Motive mindestens zehn Prozent vom Bildrand entfernt.\n- Keine Schrift, Buchstaben, Zahlen, Logos, Wasserzeichen oder dekorative Beschriftungen.\n- Pfeile nur, wenn sie für einen Prozess wirklich nötig sind; ohne Textbeschriftung.\n- Keine Collage, keine geteilte Ansicht und keine überladene Infografik.\n\nVerbindliche ZUSTAND-Bildsprache: sachlich, ruhig, hochwertig und wissenschaftsredaktionell. Der Zusammenhang muss sich unmittelbar aus dem Artikelthema ergeben und nicht aus einer beliebigen Naturmetapher.\n\nTechnische SVG-Vorgaben:\n- valides, eigenständiges SVG ohne JavaScript, Event-Handler oder externe Ressourcen,\n- keine eingebetteten Base64-, PNG- oder JPEG-Bilder,\n- einfache Pfade und Formen, möglichst kompakter Code,\n- keine externen Schriften; idealerweise überhaupt kein Text im SVG,\n- für schnelle Webdarstellung optimieren und deutlich unter 500 kB halten.\n\nAusgabe: genau eine vollständige SVG-Datei bzw. vollständigen validen SVG-Code im Hochformat 8:9.`;
+  }
+
+  return `Erzeuge ein einzelnes Titelbild für einen öffentlichen Wissenschafts-Infoscreen.\n\n${subject}\n\nZeige keine erfundene konkrete Nachrichtenszene. Entwickle stattdessen eine natürliche, glaubwürdige und fotorealistische redaktionelle Assoziation, die den Inhalt auf den ersten Blick verständlich macht. Menschen nur dann zeigen, wenn sie inhaltlich sinnvoll sind; dann respektvoll, alltäglich und nicht posierend.\n\nKomposition für den Infoscreen:\n- Hochformat im Seitenverhältnis 8:9.\n- Das Bild füllt die linke Hälfte eines vertikal geteilten 16:9-Bildschirms.\n- Genau ein dominantes, klar erkennbares Hauptmotiv.\n- Auch aus drei bis fünf Metern Entfernung verständlich.\n- Ruhiger Hintergrund und deutliche Hell-Dunkel-Trennung.\n- Wichtige Motive mindestens zehn Prozent vom Bildrand entfernt.\n- Keine Schrift, Buchstaben, Zahlen, Diagramme, Logos, Wasserzeichen, Rahmen oder Collagen.\n- Keine überladene Komposition und keine gestellte Werbeszene.\n\nVerbindliche ZUSTAND-Bildsprache: fotorealistische, glaubwürdige redaktionelle Fotografie für ein hochwertiges deutschsprachiges Wissenschaftsmagazin. Ruhige Bildsprache, natürliches Licht, klare Komposition, realistische Materialien und Hauttöne, dezente Tiefenschärfe. Das Hauptmotiv soll sich unmittelbar aus dem Artikelthema ergeben und nicht aus einer allgemeinen Naturmetapher.\n\nAusgabeziel: genau ein fertiges Bild im Hochformat 8:9, ohne Text im Bild. Bevorzugtes Webformat JPEG/JPG; auf sichtbar hohe Qualität bei einer Zieldateigröße von höchstens 500 kB optimieren. Falls das Bilderzeugungssystem Dateiformat oder Dateigröße nicht direkt steuern kann, das Bild in hoher Qualität erzeugen; die JPG-Konvertierung und Komprimierung erfolgt anschließend separat.`;
+}
+function updateZImageAdvice(){
+  const el=$("#zImageAdvice");
+  if(!el)return;
+  const ctx=zImagePromptContext();
+  const style=zAutomaticImageStyle(ctx);
+  const format=zAutomaticImageFormat(ctx,style);
+  const automatic=[];
+  if(ctx.imageStyle==="Automatisch")automatic.push(`Stil: ${style}`);
+  if(ctx.imageFormat==="Automatisch")automatic.push(`Format: ${format}`);
+  const detail=format==="JPG"?"JPG ist für fotorealistische Motive vorgesehen; Zielgröße max. 500 kB.":"SVG ist für reduzierte Erklär-, Prozess- und Symbolgrafiken vorgesehen; ohne eingebettete Rasterbilder oder Skripte.";
+  el.textContent=`Aktuelle Empfehlung: ${style} · ${format}. ${detail}${automatic.length?` Automatisch gewählt: ${automatic.join(", ")}.`:""}`;
+}
+function buildZImagePrompt(){
+  const prompt=zBuildImagePromptText();
+  $("#zImagePrompt").value=prompt;
+  updateZImageAdvice();
+  updateZPreview();
+}
+async function copyZImagePrompt(){
+  const field=$("#zImagePrompt");
+  if(!field.value.trim())buildZImagePrompt();
+  const text=field.value.trim();
+  if(!text)return;
+  try{
+    await navigator.clipboard.writeText(text);
+  }catch{
+    field.focus();field.select();document.execCommand("copy");
+  }
+  const button=$("#zCopyImagePrompt");
+  const old=button.textContent;
+  button.textContent="Kopiert ✓";
+  setTimeout(()=>button.textContent=old,1400);
+}
 function zNormalizeArticle(a={}){
   return {
     id:String(a.id||crypto.randomUUID()),
@@ -1385,6 +1498,9 @@ function zNormalizeArticle(a={}){
     publicationDate:String(a.publicationDate||""),
     imageFile:String(a.imageFile||""),
     imageIdea:String(a.imageIdea||""),
+    imageStyle:["Automatisch","Natur","Wissenschaft","Symbolisch","Prozess-/Erklärskizze"].includes(String(a.imageStyle||""))?String(a.imageStyle):"Automatisch",
+    imageFormat:["Automatisch","JPG","SVG"].includes(String(a.imageFormat||""))?String(a.imageFormat):"Automatisch",
+    imagePrompt:String(a.imagePrompt||""),
     interviewUrl:String(a.interviewUrl||""),
     workflowStatus:["entwurf","geprueft","freigegeben","veroeffentlicht"].includes(a.workflowStatus)?a.workflowStatus:"entwurf",
     visibility:a.visibility==="archiviert"?"archiviert":"aktiv",
@@ -1520,6 +1636,9 @@ function zFormArticle(){
     publicationDate:$("#zPublicationDate").value,
     imageFile:$("#zImageFile").value.trim(),
     imageIdea:$("#zImageIdea").value.trim(),
+    imageStyle:$("#zImageStyle").value,
+    imageFormat:$("#zImageFormat").value,
+    imagePrompt:$("#zImagePrompt").value.trim(),
     interviewUrl:$("#zInterviewUrl").value.trim(),
     lastModified:zNow()
   });
@@ -1603,7 +1722,11 @@ function clearZEditor(){
   $("#zPublicationDate").value="";
   $("#zImageFile").value="";
   $("#zImageIdea").value="";
+  $("#zImageStyle").value="Automatisch";
+  $("#zImageFormat").value="Automatisch";
+  $("#zImagePrompt").value="";
   $("#zInterviewUrl").value="";
+  updateZImageAdvice();
   updateZEditorState(null);
   updateZPreview();
 }
@@ -1623,7 +1746,11 @@ function populateZEditor(article){
   $("#zPublicationDate").value=a.publicationDate;
   $("#zImageFile").value=a.imageFile;
   $("#zImageIdea").value=a.imageIdea;
+  $("#zImageStyle").value=a.imageStyle;
+  $("#zImageFormat").value=a.imageFormat;
+  $("#zImagePrompt").value=a.imagePrompt;
   $("#zInterviewUrl").value=a.interviewUrl;
+  updateZImageAdvice();
   showZGroup();
   updateZEditorState(a);
   updateZPreview();
@@ -1720,6 +1847,15 @@ function zContentType(a){
 function zPublicArticle(a){
   const id=zPublicId(a);
   const base=(a.publicOriginal && typeof a.publicOriginal==="object")?JSON.parse(JSON.stringify(a.publicOriginal)):{};
+  const imageCtx={...a,keywords:zKeywordList(a.keywords)};
+  const resolvedImageStyle=zAutomaticImageStyle(imageCtx);
+  const resolvedImageFormat=zAutomaticImageFormat(imageCtx,resolvedImageStyle);
+  const publicImageStyle=({
+    Natur:"nature",
+    Wissenschaft:"scientific-editorial",
+    Symbolisch:"symbolic-editorial",
+    "Prozess-/Erklärskizze":"vector-explainer"
+  })[resolvedImageStyle]||"nature";
   const out={
     ...base,
     id,
@@ -1743,8 +1879,8 @@ function zPublicArticle(a){
     license:base.license||"",
     contentType:base.contentType||zContentType(a),
     category:a.category||base.category||"",
-    visualMode:base.visualMode||(a.category==="Natur verstehen"||a.category==="Wie wissen wir das?"?"process-sketch":"editorial-photo"),
-    imageStyle:base.imageStyle||(a.category==="Natur verstehen"||a.category==="Wie wissen wir das?"?"monochrome-editorial-sketch":"nature")
+    visualMode:base.visualMode||(resolvedImageFormat==="SVG"?"process-sketch":"editorial-photo"),
+    imageStyle:base.imageStyle||publicImageStyle
   };
   if(a.interviewUrl && !out.links.some(link=>link?.url===a.interviewUrl))out.links.push({label:"Zum Interview",url:a.interviewUrl});
   if(a.imageFile)out.imageFile=a.imageFile;
@@ -1920,9 +2056,11 @@ $("#zPreviewFull").onclick=()=>setZPreviewMode("full");
 $("#zExportNews").onclick=exportZNews;
 $("#zCandidate").onchange=()=>{showZGroup();updateZPreview();};
 $("#zImportCandidateProfile").onclick=importCandidateProfileToZArticle;
-["#zTitle","#zSummary","#zCategory","#zBoundary","#zKeywords","#zSourceTitle","#zSource","#zPublicationDate","#zImageFile","#zImageIdea","#zInterviewUrl"].forEach(sel=>{
-  $(sel).addEventListener("input",updateZPreview);
-  $(sel).addEventListener("change",updateZPreview);
+$("#zBuildImagePrompt").onclick=buildZImagePrompt;
+$("#zCopyImagePrompt").onclick=()=>void copyZImagePrompt();
+["#zTitle","#zSummary","#zCategory","#zBoundary","#zKeywords","#zSourceTitle","#zSource","#zPublicationDate","#zImageFile","#zImageIdea","#zImageStyle","#zImageFormat","#zImagePrompt","#zInterviewUrl"].forEach(sel=>{
+  $(sel).addEventListener("input",()=>{updateZPreview();updateZImageAdvice();});
+  $(sel).addEventListener("change",()=>{updateZPreview();updateZImageAdvice();});
 });
 
 $("#downloadStudioBackup").onclick=()=>downloadStudioBackup();

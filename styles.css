@@ -206,3 +206,14 @@ body.interview-screen-open{overflow:hidden}
   .schedule-person{grid-column:1/-1}
 }
 
+
+/* Z-Panel: Bildidee und reproduzierbarer Bildprompt */
+.z-image-workflow{margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:10px;background:#fafaf8}
+.z-image-options label{margin-top:0}
+.z-image-advice{margin:10px 0 0;line-height:1.45}
+.z-image-actions{margin-top:10px;flex-wrap:wrap}
+.image-prompt-output{min-height:220px;font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;font-size:12px;line-height:1.45;background:#fff}
+@media(max-width:620px){
+  .z-image-workflow{padding:12px}
+  .z-image-actions button{flex:1 1 180px}
+}

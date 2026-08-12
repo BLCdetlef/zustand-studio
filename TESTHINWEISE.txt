@@ -1,42 +1,56 @@
-ZUSTAND Studio – Testhinweise Terminübersicht
-==============================================
+ZUSTAND Studio – Testhinweise Bildprompt JPG/SVG
+=================================================
 
-1. Studio öffnen und zum Bereich „Interview“ wechseln.
+1. Studio öffnen und „Z-Panel Redaktion“ aufrufen.
 
-2. Kandidat auswählen.
-   Unter der Kandidatenauswahl sollten jetzt die Felder „Aufnahme“ und „Sendung“ erscheinen.
+2. Neuen Beitrag anlegen oder vorhandenen Entwurf öffnen.
+   Titel, Kurztext, Beitragstyp, planetare Grenze und Schlagwörter eintragen.
 
-3. Beispiel eintragen:
-   Aufnahme: 18.08.2026 15:00
-   Sendung: 21.08.2026 16:00
-   Danach „Lokal speichern“ wählen.
+3. Feld „Bildidee / redaktioneller Hinweis (intern)“ testen.
+   Beispiel:
+   alter Holzbalken im Prüfstand; Werkstattatmosphäre; keine Waldmetapher
 
-4. Erwartete Terminübersicht oben:
-   Di 18.08.2026 · 15:00   Aufnahme   [Kandidat]
-   Fr 21.08.2026 · 16:00   Sendung    [Kandidat]
+4. Bildstil = Automatisch, Ausgabeformat = Automatisch.
+   Bei einem normalen Zustands-/Lösungsbeitrag sollte die Empfehlung in der Regel JPG sein.
 
-5. Termine bei mehreren Kandidat:innen eintragen.
-   Erwartet: Alle kommenden Aufnahme- und Sendetermine stehen in einer gemeinsamen,
-   chronologisch aufsteigenden Liste – unabhängig davon, zu welchem Kandidaten sie gehören.
+5. Beitragstyp „Natur verstehen“ oder „Wie wissen wir das?“ auswählen.
+   Erwartet: Automatische Empfehlung „Prozess-/Erklärskizze · SVG“.
 
-6. Auf einen Termin in der Übersicht klicken/tippen.
-   Erwartet: Der betreffende Kandidat wird im Interview-Editor ausgewählt.
+6. „Bildprompt erzeugen“ wählen.
+   Erwartet:
+   - Titel, Kurztext, Bildidee und Schlagwörter werden übernommen.
+   - JPG-Prompt fordert Hochformat 8:9 und max. 500 kB als Ziel.
+   - SVG-Prompt fordert echtes valides SVG ohne Rasterbild, Skript oder externe Ressourcen.
 
-7. Einen Termin in die Vergangenheit setzen.
-   Erwartet: Er erscheint nicht zwischen den kommenden Terminen, sondern unter
-   „Vergangene Termine“.
+7. „Prompt kopieren“ wählen.
+   Erwartet: Button zeigt kurz „Kopiert ✓“.
+   Wenn vorher noch kein Prompt erzeugt wurde, wird er automatisch erzeugt und kopiert.
 
-8. Bei einem Kandidaten mit gesetztem Termin „Vorschlag laden“ verwenden.
-   Erwartet: Interviewtexte werden neu erzeugt, Aufnahme- und Sendetermin bleiben erhalten.
+8. Prompt im Textfeld manuell ändern und „Entwurf speichern“.
+   Beitrag neu öffnen.
+   Erwartet: Bildstil, Ausgabeformat und bearbeiteter Prompt bleiben erhalten.
 
-9. Trainer starten und danach den Kandidaten erneut öffnen.
-   Erwartet: Termine und alle Interviewvorbereitungsfelder bleiben erhalten.
+9. Alte Studio-Sicherung wiederherstellen.
+   Erwartet: Sie bleibt lesbar; neue Bildfelder stehen bei alten Beiträgen auf Automatisch bzw. leer.
+   Backup-Format bleibt Version 1.
 
-10. Alte Studio-Sicherung wiederherstellen.
-    Erwartet: Sie bleibt lesbar; bei alten Datensätzen sind Aufnahme und Sendung zunächst leer.
-    Backup-Format bleibt Version 1, weil nur neue optionale Felder ergänzt wurden.
+10. news.json exportieren (nur nach dem bekannten Baseline-Import).
+    Erwartet: Das interne Feld imagePrompt erscheint nicht als neues öffentliches Feld.
+    Bestehende publicOriginal-/imageMetadata-Felder importierter Altbeiträge bleiben erhalten.
+
+11. Bilddatei-Feld testen:
+    assets/images/test.jpg
+    assets/images/test.svg
+    Beide Pfade sollen in der Studio-Vorschau grundsätzlich akzeptiert werden, sofern die Datei am aufgerufenen Ort erreichbar ist.
+
+Wichtig:
+Dieses Update erzeugt den Prompt und verwaltet Stil/Format. Es konvertiert eine vorhandene PNG-Datei noch nicht automatisch in JPG und komprimiert sie noch nicht auf <= 500 kB.
 
 Technische Prüfung:
 - app.js mit node --check geprüft
-- HTML-IDs und zugehörige JS-Zugriffe statisch geprüft
+- keine doppelten HTML-IDs
+- alle direkten JS-#ID-Zugriffe haben ein HTML-Ziel
+- Prompt-Automatik separat mit JPG- und SVG-Fall getestet
+- alter Z-Panel-Datensatz ohne neue Bildfelder wird mit Automatisch/leer normalisiert
+- imagePrompt ist nicht Bestandteil des neuen zPublicArticle-Exports
 - Änderungen als AENDERUNGEN.diff enthalten

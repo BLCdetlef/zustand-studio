@@ -2,7 +2,10 @@ ZUSTAND Studio Web – Basisversion
 ================================
 
 Basis-Paket:
-zustand-studio-update-sicherung-wiederherstellung.zip
+zustand-studio-update-interviewtermine.zip
+
+Basis-ZIP SHA-256:
+457d7d7b8f8694688b9dabdc95897b32012d7071874c8b59ccbdc23636c97e6a
 
 Quelle:
 Letzte bekannte Arbeitsversion aus der ChatGPT-Dateibibliothek vor diesem Update.
@@ -12,27 +15,36 @@ GitHub-Repository BLCdetlef/zustand-studio
 Branch: main
 
 Update:
-Chronologische Interview-Terminübersicht
+Z-Panel Bildprompt mit JPG/SVG-Auswahl
 
 Änderungen:
-- Interview erhält zwei Datums-/Zeitfelder: Aufnahme und Sendung
-- gemeinsame Terminübersicht aller Kandidat:innen im Interview-Bereich
-- kommende Aufnahme- und Sendetermine chronologisch nach Datum/Uhrzeit sortiert
-- Wochentagskürzel Mo, Di, Mi, Do, Fr, Sa, So werden direkt angezeigt
-- vergangene Termine bleiben in einem aufklappbaren Abschnitt erhalten
-- Klick auf einen Termin öffnet den zugehörigen Kandidaten im Interview-Editor
-- bestehende Interviewdaten und alte Backups bleiben kompatibel; neue Felder sind additive Ergänzungen
+- alter Bildprompt-Workflow des Offline-Studios in die Web-Z-Panel-Redaktion übertragen
+- Bildidee / redaktioneller Hinweis bleibt als kurzes internes, editierbares Feld erhalten
+- neue Bildstile: Automatisch, Natur, Wissenschaft, Symbolisch, Prozess-/Erklärskizze
+- neue Ausgabeformate: Automatisch, JPG, SVG
+- Automatik bevorzugt SVG bei „Natur verstehen“ und „Wie wissen wir das?“ sowie bei Prozess-/Erklärskizzen
+- sonst bevorzugt die Automatik JPG für redaktionelle Fotografie
+- JPG-Prompt: 8:9, ein starkes Hauptmotiv, 10 % Sicherheitsabstand, keine Schrift/Logos/Diagramme, Ziel max. 500 kB
+- SVG-Prompt: echtes valides SVG, keine eingebetteten Rasterbilder, kein JavaScript, keine externen Ressourcen, kompakte Webdarstellung
+- erzeugter Prompt bleibt intern editierbar und wird mit dem Z-Panel-Beitrag im Browser/Backup gespeichert
+- interner imagePrompt wird nicht in neue öffentliche news.json-Felder übernommen
+- bestehende veröffentlichte Zusatzfelder aus importierter news.json werden weiterhin unverändert erhalten
+- alte Studio-Backups bleiben kompatibel; imageStyle, imageFormat und imagePrompt sind additive optionale Felder
 - Backup-Format bleibt zustand-studio-backup-v1 / Version 1
-- beim Laden eines neuen Interview-Textvorschlags bleiben bereits gesetzte Termine erhalten
-- Speicherlogik des Trainers korrigiert: alle Interviewfelder bleiben beim Trainingsstart erhalten
 
 Geänderte Webdateien:
 - index.html
 - app.js
 - styles.css
 
+SHA-256 der Webdateien:
+index.html  208650b1a293d3acbca05a460457a3d1e1f0bbf0a75fb11ac72f1cc0d50a159c
+app.js      53813cd1368749e97e1879c389f6a98d047142098b8ce44f48d8fff589ec2012
+styles.css  473d52d4af1fc8bb329aaa6b9bcc5c28e25d6e5684e44a2437047a754df564b2
+
 Empfohlene Commit-Bezeichnung:
-Interviewtermine chronologisch mit Wochentagen anzeigen
+Z-Panel Bildprompt mit JPG und SVG ergänzt
 
 Hinweis:
 Ein konkreter GitHub-Commit-Hash wurde in dieser Sitzung nicht live verifiziert.
+Die automatische Konvertierung einer vorhandenen Rasterdatei nach JPG <= 500 kB ist noch NICHT Bestandteil dieses Updates.

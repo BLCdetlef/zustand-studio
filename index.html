@@ -414,7 +414,7 @@
       <div class="grid two">
         <div>
           <label>Bilddatei im Z‑Panel (optional)</label>
-          <input id="zImageFile" placeholder="assets/images/…png">
+          <input id="zImageFile" placeholder="assets/images/…jpg oder …svg">
         </div>
         <div>
           <label>Interview-Link (optional)</label>
@@ -423,7 +423,37 @@
       </div>
 
       <label>Bildidee / redaktioneller Hinweis (intern)</label>
-      <textarea id="zImageIdea" placeholder="Wird nicht in news.json veröffentlicht."></textarea>
+      <textarea id="zImageIdea" placeholder="Kurze Bildidee, z. B. alter Holzbalken im Prüfstand; keine Waldmetapher. Wird nicht in news.json veröffentlicht."></textarea>
+
+      <div class="z-image-workflow">
+        <div class="grid two z-image-options">
+          <div>
+            <label>Bildstil</label>
+            <select id="zImageStyle">
+              <option value="Automatisch">Automatisch</option>
+              <option value="Natur">Natur</option>
+              <option value="Wissenschaft">Wissenschaft</option>
+              <option value="Symbolisch">Symbolisch</option>
+              <option value="Prozess-/Erklärskizze">Prozess-/Erklärskizze</option>
+            </select>
+          </div>
+          <div>
+            <label>Ausgabeformat</label>
+            <select id="zImageFormat">
+              <option value="Automatisch">Automatisch</option>
+              <option value="JPG">JPG · Fotografie</option>
+              <option value="SVG">SVG · Vektorgrafik</option>
+            </select>
+          </div>
+        </div>
+        <p class="hint z-image-advice" id="zImageAdvice">Automatisch wählt für redaktionelle Fotografie JPG und für einfache Erklär-/Prozessdarstellungen SVG.</p>
+        <div class="actions z-image-actions">
+          <button class="ghost" id="zBuildImagePrompt" type="button">Bildprompt erzeugen</button>
+          <button class="ghost" id="zCopyImagePrompt" type="button">Prompt kopieren</button>
+        </div>
+        <label>Erzeugter Bildprompt (intern)</label>
+        <textarea id="zImagePrompt" class="image-prompt-output" placeholder="Hier erscheint der fertige Prompt. Er bleibt intern und kann vor dem Kopieren bearbeitet werden."></textarea>
+      </div>
 
       <div class="actions z-save-actions">
         <button class="primary" id="saveZ">Entwurf speichern</button>

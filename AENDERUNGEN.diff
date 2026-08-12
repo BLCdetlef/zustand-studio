@@ -1,344 +1,282 @@
---- /mnt/data/termin_update_pristine/index.html	2026-08-12 08:39:13.000000000 +0000
-+++ /mnt/data/termin_update_work/index.html	2026-08-12 09:13:22.401253419 +0000
-@@ -181,10 +181,33 @@
-     </div>
-   </div>
+--- a/index.html
++++ b/index.html
+@@ -414,7 +414,7 @@
+       <div class="grid two">
+         <div>
+           <label>Bilddatei im Z‑Panel (optional)</label>
+-          <input id="zImageFile" placeholder="assets/images/…png">
++          <input id="zImageFile" placeholder="assets/images/…jpg oder …svg">
+         </div>
+         <div>
+           <label>Interview-Link (optional)</label>
+@@ -423,7 +423,37 @@
+       </div>
  
-+  <article class="card schedule-card">
-+    <div class="cardhead schedule-head">
-+      <div>
-+        <div class="kicker">AUFNAHME & SENDUNG</div>
-+        <h3>Terminübersicht</h3>
+       <label>Bildidee / redaktioneller Hinweis (intern)</label>
+-      <textarea id="zImageIdea" placeholder="Wird nicht in news.json veröffentlicht."></textarea>
++      <textarea id="zImageIdea" placeholder="Kurze Bildidee, z. B. alter Holzbalken im Prüfstand; keine Waldmetapher. Wird nicht in news.json veröffentlicht."></textarea>
++
++      <div class="z-image-workflow">
++        <div class="grid two z-image-options">
++          <div>
++            <label>Bildstil</label>
++            <select id="zImageStyle">
++              <option value="Automatisch">Automatisch</option>
++              <option value="Natur">Natur</option>
++              <option value="Wissenschaft">Wissenschaft</option>
++              <option value="Symbolisch">Symbolisch</option>
++              <option value="Prozess-/Erklärskizze">Prozess-/Erklärskizze</option>
++            </select>
++          </div>
++          <div>
++            <label>Ausgabeformat</label>
++            <select id="zImageFormat">
++              <option value="Automatisch">Automatisch</option>
++              <option value="JPG">JPG · Fotografie</option>
++              <option value="SVG">SVG · Vektorgrafik</option>
++            </select>
++          </div>
++        </div>
++        <p class="hint z-image-advice" id="zImageAdvice">Automatisch wählt für redaktionelle Fotografie JPG und für einfache Erklär-/Prozessdarstellungen SVG.</p>
++        <div class="actions z-image-actions">
++          <button class="ghost" id="zBuildImagePrompt" type="button">Bildprompt erzeugen</button>
++          <button class="ghost" id="zCopyImagePrompt" type="button">Prompt kopieren</button>
++        </div>
++        <label>Erzeugter Bildprompt (intern)</label>
++        <textarea id="zImagePrompt" class="image-prompt-output" placeholder="Hier erscheint der fertige Prompt. Er bleibt intern und kann vor dem Kopieren bearbeitet werden."></textarea>
 +      </div>
-+      <span class="schedule-note">kommende Termine chronologisch</span>
-+    </div>
-+    <div id="interviewSchedule" class="schedule-list"></div>
-+  </article>
-+
-   <article class="card">
-     <label>Kandidat</label>
-     <select id="iCandidate"></select>
  
-+    <div class="grid two interview-date-grid">
-+      <div>
-+        <label>Aufnahme</label>
-+        <input id="iRecordingAt" type="datetime-local">
-+      </div>
-+      <div>
-+        <label>Sendung</label>
-+        <input id="iBroadcastAt" type="datetime-local">
-+      </div>
-+    </div>
-+    <p class="hint">Die Termine erscheinen oben automatisch nach Datum und Uhrzeit sortiert – mit Wochentag, z. B. Di 18.08.2026 · 15:00.</p>
-+
-     <label>Anmoderation / kurze Vorstellung des Gastes</label>
-     <textarea id="iIntro" class="introtext" placeholder="Wer ist mein Gast, wo arbeitet die Person und warum sprechen wir heute miteinander?"></textarea>
- 
---- /mnt/data/termin_update_pristine/app.js	2026-08-12 08:38:33.000000000 +0000
-+++ /mnt/data/termin_update_work/app.js	2026-08-12 09:13:22.401859058 +0000
-@@ -986,18 +986,18 @@
-   };
+       <div class="actions z-save-actions">
+         <button class="primary" id="saveZ">Entwurf speichern</button>
+--- a/app.js
++++ b/app.js
+@@ -46,6 +46,9 @@
+       publicationDate:"",
+       imageFile:"",
+       imageIdea:"",
++      imageStyle:"Automatisch",
++      imageFormat:"Automatisch",
++      imagePrompt:"",
+       interviewUrl:"",
+       workflowStatus:"entwurf",
+       visibility:"aktiv",
+@@ -1368,6 +1371,116 @@
+   if(Array.isArray(value))return value.map(x=>String(x).trim()).filter(Boolean);
+   return String(value||"").split(",").map(x=>x.trim()).filter(Boolean);
  }
- function completeInterviewShape(c,value){
--  const draft=makeInterviewDraft(c);
-+  const draft={...makeInterviewDraft(c),recordingAt:"",broadcastAt:""};
-   if(typeof value==="string")return {...draft,notes:value};
-   if(!value || typeof value!=="object")return draft;
-   const result={...draft};
--  for(const key of ["intro","coreFindings","evidence","connections","notes"]){
-+  for(const key of ["intro","coreFindings","evidence","connections","notes","recordingAt","broadcastAt"]){
-     if(Object.prototype.hasOwnProperty.call(value,key))result[key]=String(value[key]||"");
-   }
-   return result;
- }
- 
- function getInterview(c){
--  if(!c)return {intro:"",coreFindings:"",evidence:"",connections:"",notes:""};
-+  if(!c)return {intro:"",coreFindings:"",evidence:"",connections:"",notes:"",recordingAt:"",broadcastAt:""};
-   const saved=data.interviews[c.id];
-   if(saved!==undefined)return completeInterviewShape(c,saved);
-   return makeInterviewDraft(c);
-@@ -1005,15 +1005,19 @@
- 
- function showInterviewForSelectedCandidate(forceDraft=false){
-   const c=selected("#iCandidate");
--  const fields=["#iIntro","#iCoreFindings","#iEvidence","#iConnections","#iNotes"];
-+  const fields=["#iIntro","#iCoreFindings","#iEvidence","#iConnections","#iNotes","#iRecordingAt","#iBroadcastAt"];
-   if(!c){fields.forEach(id=>$(id).value="");return;}
- 
--  const interview=forceDraft?makeInterviewDraft(c):getInterview(c);
-+  // Beim Laden eines neuen Textvorschlags bleiben bereits eingetragene Termine erhalten.
-+  const saved=getInterview(c);
-+  const interview=forceDraft?{...makeInterviewDraft(c),recordingAt:saved.recordingAt||"",broadcastAt:saved.broadcastAt||""}:saved;
-   $("#iIntro").value=interview.intro||"";
-   $("#iCoreFindings").value=interview.coreFindings||"";
-   $("#iEvidence").value=interview.evidence||"";
-   $("#iConnections").value=interview.connections||"";
-   $("#iNotes").value=interview.notes||"";
-+  $("#iRecordingAt").value=interview.recordingAt||"";
-+  $("#iBroadcastAt").value=interview.broadcastAt||"";
-   stopTraining();
- }
- 
-@@ -1035,7 +1039,9 @@
-     coreFindings:$("#iCoreFindings").value,
-     evidence:$("#iEvidence").value,
-     connections:$("#iConnections").value,
--    notes:$("#iNotes").value
-+    notes:$("#iNotes").value,
-+    recordingAt:$("#iRecordingAt").value,
-+    broadcastAt:$("#iBroadcastAt").value
-   };
- }
- 
-@@ -1046,6 +1052,75 @@
-   persist();
- };
- 
-+function parseLocalDateTime(value){
-+  const text=String(value||"").trim();
-+  if(!text)return null;
-+  const match=text.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
-+  if(!match)return null;
-+  const [,y,m,d,h,min]=match.map((part,index)=>index?Number(part):part);
-+  const date=new Date(y,m-1,d,h,min,0,0);
-+  return Number.isNaN(date.getTime())?null:date;
-+}
 +
-+function formatStudioAppointment(value){
-+  const date=parseLocalDateTime(value);
-+  if(!date)return "";
-+  const weekdays=["So","Mo","Di","Mi","Do","Fr","Sa"];
-+  const dd=String(date.getDate()).padStart(2,"0");
-+  const mm=String(date.getMonth()+1).padStart(2,"0");
-+  const yyyy=date.getFullYear();
-+  const hh=String(date.getHours()).padStart(2,"0");
-+  const min=String(date.getMinutes()).padStart(2,"0");
-+  return `${weekdays[date.getDay()]} ${dd}.${mm}.${yyyy} · ${hh}:${min}`;
-+}
-+
-+function interviewAppointments(){
-+  const items=[];
-+  data.candidates.forEach(c=>{
-+    const interview=getInterview(c);
-+    [["recordingAt","Aufnahme"],["broadcastAt","Sendung"]].forEach(([field,type])=>{
-+      const value=interview[field]||"";
-+      const date=parseLocalDateTime(value);
-+      if(date)items.push({candidateId:c.id,name:c.name||"Unbekannt",institution:c.institution||"",type,value,date});
-+    });
-+  });
-+  return items;
-+}
-+
-+function renderInterviewSchedule(){
-+  const target=$("#interviewSchedule");
-+  if(!target)return;
-+  const now=new Date();
-+  const items=interviewAppointments();
-+  const upcoming=items.filter(item=>item.date>=now).sort((a,b)=>a.date-b.date);
-+  const past=items.filter(item=>item.date<now).sort((a,b)=>b.date-a.date);
-+
-+  const row=item=>`<button class="schedule-row" type="button" onclick="openInterviewCandidate('${item.candidateId}')">
-+    <span class="schedule-date">${esc(formatStudioAppointment(item.value))}</span>
-+    <span class="schedule-type ${item.type==='Aufnahme'?'recording':'broadcast'}">${item.type}</span>
-+    <span class="schedule-person"><strong>${esc(item.name)}</strong>${item.institution?`<small>${esc(item.institution)}</small>`:""}</span>
-+  </button>`;
-+
-+  let html="";
-+  if(upcoming.length){
-+    html+=`<div class="schedule-group"><div class="schedule-group-title">Kommende Termine</div>${upcoming.map(row).join("")}</div>`;
-+  }else{
-+    html+=`<p class="schedule-empty">Noch keine kommenden Aufnahme- oder Sendetermine eingetragen.</p>`;
-+  }
-+  if(past.length){
-+    html+=`<details class="schedule-past"><summary>Vergangene Termine (${past.length})</summary><div class="schedule-group">${past.map(row).join("")}</div></details>`;
-+  }
-+  target.innerHTML=html;
-+}
-+
-+window.openInterviewCandidate=id=>{
-+  const select=$("#iCandidate");
-+  if(!select)return;
-+  select.value=id;
-+  showInterviewForSelectedCandidate(false);
-+  select.scrollIntoView({behavior:"smooth",block:"center"});
++const Z_IMAGE_STYLE_HINTS={
++  Natur:"Nutze eine natürliche, glaubwürdige Szenerie mit Landschaft, Tier, Pflanze, Wasser, Boden oder Himmel. Ruhig, realistisch und nicht romantisierend.",
++  Wissenschaft:"Nutze eine glaubwürdige wissenschaftliche Bildsprache, etwa Atmosphäre, Messinstrumente, Proben, Modelle oder sichtbare Prozesse. Keine Science-Fiction-Ästhetik und keine werbliche Laborszene.",
++  Symbolisch:"Nutze eine klare, zurückhaltende visuelle Metapher. Sie soll sofort verständlich, weder plakativ noch werblich wirken.",
++  "Prozess-/Erklärskizze":"Zeige einen fachlich nachvollziehbaren Zusammenhang oder Prozess mit wenigen klaren Formen. Reduziert, ruhig und ohne dekorative Details."
++};
++const Z_IMAGE_AUTO_TERMS={
++  Wissenschaft:["aerosol","atmosphare","halogen","chemie","stickoxid","modellstudie","messung","monitoring","labor","mikroplastik","pfas","emission","nahrstoff","biogeochem","ozon","datensatz"],
++  Symbolisch:["demokratie","bildung","gemeinwohl","gerechtigkeit","frieden","zusammenarbeit","gluck","suffizienz","postwachstum","parlament","lobbyismus","gesellschaft"],
++  Natur:["biodiversitat","vogel","wald","ozean","meer","wasser","arten","okosystem","klima","boden","pflanze","tier","landnutzung"]
++};
++const Z_BOUNDARY_IMAGE_HINTS={
++  KL:"Hitze, Sonne, blauer Himmel, körperliche Hitzebelastung oder sichtbare Klimafolgen",
++  BD:"lebendige Artenvielfalt, Wildpflanzen, Insekten, Vögel, Wald oder Gewässer",
++  LN:"Landschaft, Wald, Landwirtschaft, Versiegelung und Nutzungskonflikte",
++  FW:"Wasser, Fluss, trockener Boden, Regen, Trinkwasser oder Vegetation",
++  NP:"Landwirtschaft, Nährstoffe, Algenblüte, Ackerboden oder Gewässer",
++  OA:"Meer, Muschel, Koralle, Plankton oder empfindliches Meeresleben",
++  OZ:"Atmosphäre, Sonnenlicht und Schutzwirkung der Ozonschicht",
++  AE:"Luft, feine Partikel, Dunst, Stadt und Atemwege",
++  NS:"Kunststoffe, Chemikalien, Labor, Alltagsprodukte oder Mikroplastik",
++  QS:"eine klare, leicht verständliche und glaubwürdige Assoziation zum Artikel"
 +};
 +
- // --- Interview-Bildschirm ---------------------------------------------------
- // Reine Anzeige der aktuell bearbeiteten Interviewvorbereitung.
- // Kontakt- und Akquise-Daten werden dabei nicht verändert.
-@@ -2079,7 +2154,8 @@
-   const c=selected("#iCandidate");
-   if(!c)return alert("Bitte zuerst einen Kandidaten auswählen.");
-   // Änderungen sichern, aber Audio noch NICHT starten.
--  data.interviews[c.id]={intro:$("#iIntro").value,notes:$("#iNotes").value};
-+  // Alle Interviewfelder einschließlich Aufnahme-/Sendetermin bleiben erhalten.
-+  data.interviews[c.id]=currentInterviewEditorValues();
-   storage.save(data);
-   if(!buildTraining())return alert("Bitte mindestens einen Abschnitt der Interviewvorbereitung eintragen.");
-   $("#trainingPanel").classList.remove("hidden");
-@@ -2122,6 +2198,7 @@
-   candidateOptions();
-   makeMail();
-   if($("#iCandidate").value)showInterviewForSelectedCandidate(false);
-+  renderInterviewSchedule();
-   showZGroup();
-   renderZPanel();
-   if(!currentZArticleId && data.zArticles.length){
---- /mnt/data/termin_update_pristine/styles.css	2026-08-12 08:38:08.000000000 +0000
-+++ /mnt/data/termin_update_work/styles.css	2026-08-12 09:13:22.401757738 +0000
-@@ -178,3 +178,31 @@
-   .z-preview-card.mode-th .z-preview-image{min-height:260px}
-   .z-preview-copy{padding:24px 20px}
- }
-+
-+/* Interviewtermine: kompakte chronologische Übersicht */
-+.schedule-card{margin-bottom:18px}
-+.schedule-head{margin-bottom:12px}
-+.schedule-note{font-size:12px;color:var(--muted);white-space:nowrap}
-+.schedule-list{display:grid;gap:8px}
-+.schedule-group{display:grid;gap:7px}
-+.schedule-group-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:2px 0 3px}
-+.schedule-row{width:100%;display:grid;grid-template-columns:minmax(190px,auto) 90px 1fr;gap:12px;align-items:center;text-align:left;border:1px solid var(--line);border-radius:9px;background:#fff;padding:10px 12px;cursor:pointer;color:inherit}
-+.schedule-row:hover{background:#f7f7f5}
-+.schedule-date{font-weight:800;font-variant-numeric:tabular-nums}
-+.schedule-type{justify-self:start;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;border:1px solid #aaa;border-radius:999px;padding:4px 7px}
-+.schedule-person{min-width:0;display:flex;flex-direction:column;gap:2px}
-+.schedule-person strong,.schedule-person small{overflow-wrap:anywhere}
-+.schedule-person small{font-size:12px;color:var(--muted)}
-+.schedule-empty{margin:0;color:var(--muted);font-size:13px}
-+.schedule-past{margin-top:5px;border-top:1px solid var(--line);padding-top:9px}
-+.schedule-past summary{cursor:pointer;color:var(--muted);font-size:12px;font-weight:700;margin-bottom:8px}
-+.interview-date-grid{margin-top:4px}
-+@media(max-width:760px){
-+  .schedule-head{align-items:flex-start;flex-direction:column;gap:4px}
-+  .schedule-note{white-space:normal}
-+  .schedule-row{grid-template-columns:1fr auto;gap:6px 10px}
-+  .schedule-date{grid-column:1/2}
-+  .schedule-type{grid-column:2/3;grid-row:1}
-+  .schedule-person{grid-column:1/-1}
++function zNormalizeImageSearch(value){
++  return String(value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase().replace(/\s+/g," ").trim();
 +}
++function zImagePromptContext(){
++  return {
++    title:$("#zTitle")?.value.trim()||"",
++    summary:$("#zSummary")?.value.trim()||"",
++    category:$("#zCategory")?.value||"Zustand",
++    planetaryBoundary:$("#zBoundary")?.value||"QS",
++    keywords:zKeywordList($("#zKeywords")?.value||""),
++    imageIdea:$("#zImageIdea")?.value.trim()||"",
++    imageStyle:$("#zImageStyle")?.value||"Automatisch",
++    imageFormat:$("#zImageFormat")?.value||"Automatisch"
++  };
++}
++function zAutomaticImageStyle(ctx){
++  if(ctx.imageStyle && ctx.imageStyle!=="Automatisch")return ctx.imageStyle;
++  if(["Natur verstehen","Wie wissen wir das?"].includes(ctx.category))return "Prozess-/Erklärskizze";
++  const haystack=zNormalizeImageSearch(`${ctx.title} ${ctx.summary} ${ctx.planetaryBoundary} ${ctx.keywords.join(" ")}`);
++  for(const style of ["Wissenschaft","Symbolisch","Natur"]){
++    if(Z_IMAGE_AUTO_TERMS[style].some(term=>haystack.includes(term)))return style;
++  }
++  return "Natur";
++}
++function zAutomaticImageFormat(ctx,style=zAutomaticImageStyle(ctx)){
++  if(ctx.imageFormat && ctx.imageFormat!=="Automatisch")return ctx.imageFormat;
++  if(style==="Prozess-/Erklärskizze" || ["Natur verstehen","Wie wissen wir das?"].includes(ctx.category))return "SVG";
++  return "JPG";
++}
++function zAutomaticImageIdea(ctx){
++  if(ctx.imageIdea)return ctx.imageIdea;
++  const text=zNormalizeImageSearch(`${ctx.title} ${ctx.summary} ${ctx.keywords.join(" ")}`);
++  if(["demokratie","parlament","lobby","parteienfinanz","wahl","medienkompetenz"].some(term=>text.includes(term)))return "ein heller Sitzungssaal, ein runder Beratungstisch, eine öffentliche Bibliothek oder eine Wahlurne; keine Naturmetapher als Hauptmotiv";
++  if(["bildung","schule","unterricht","studierende","hochschule","lernen","lehr","kompetenz"].some(term=>text.includes(term)))return "ein glaubwürdiger Hörsaal, ein Klassenzimmer, eine Werkstatt oder eine Bibliothek; keine Naturmetapher als Hauptmotiv";
++  if(["gesundheit","krankheit","medizin","pravention","praxis","patient","psychisch","pflege"].some(term=>text.includes(term)))return "eine glaubwürdige Alltagsszene aus Praxis, Prävention, Bewegung oder Gesundheitsversorgung, alternativ ein zurückhaltendes wissenschaftliches Motiv";
++  if(["frieden","zusammenarbeit","gemeinwohl","gesellschaft","gerechtigkeit","dialog"].some(term=>text.includes(term)))return "Menschen im sachlichen Austausch, gemeinsames Arbeiten oder ein ruhiger öffentlicher Begegnungsort; keine gestellte Werbeszene";
++  if(["kreislaufwirtschaft","reparatur","recycling","wiederverwendung","ressourceneffizienz","gebrauchtholz","rückbau","ruckbau"].some(term=>text.includes(term)))return "eine Reparaturwerkstatt, wiederverwendete Bauteile oder klar sortierte Materialien; kein Müllberg als Hauptmotiv";
++  return Z_BOUNDARY_IMAGE_HINTS[ctx.planetaryBoundary]||Z_BOUNDARY_IMAGE_HINTS.QS;
++}
++function zBuildImagePromptText(ctx=zImagePromptContext()){
++  const style=zAutomaticImageStyle(ctx);
++  const format=zAutomaticImageFormat(ctx,style);
++  const idea=zAutomaticImageIdea(ctx);
++  const keywords=ctx.keywords.length?`\nSchlagwörter: ${ctx.keywords.join(", ")}.`:"";
++  const subject=`Artikelthema: ${ctx.title||"noch ohne Titel"}.\nKernaussage: ${ctx.summary||"noch keine Kurzfassung"}.\nBildidee / mögliche Bildassoziation: ${idea}.\nGewählter Bildstil: ${style}. ${Z_IMAGE_STYLE_HINTS[style]||Z_IMAGE_STYLE_HINTS.Natur}${keywords}`;
 +
---- /mnt/data/termin_update_pristine/BASIS_VERSION.txt	2026-08-12 08:38:55.000000000 +0000
-+++ /mnt/data/termin_update_work/BASIS_VERSION.txt	2026-08-12 09:13:56.103988264 +0000
-@@ -2,7 +2,7 @@
- ================================
- 
- Basis-Paket:
--zustand-studio-update-zpanel-kandidatenprofil.zip
-+zustand-studio-update-sicherung-wiederherstellung.zip
- 
- Quelle:
- Letzte bekannte Arbeitsversion aus der ChatGPT-Dateibibliothek vor diesem Update.
-@@ -12,21 +12,19 @@
- Branch: main
- 
- Update:
--Studio-Sicherung und Wiederherstellung
-+Chronologische Interview-Terminübersicht
- 
- Änderungen:
--- vollständige lokale Studio-Sicherung als JSON-Datei
--- Wiederherstellung einer geprüften ZUSTAND-Studio-Sicherung
--- Sicherungsformat: zustand-studio-backup-v1
--- Sicherung enthält Kandidaten, Gruppen, Akquise, Interviews, Forschungsprofile,
--  Z-Panel-Redaktion und importierten öffentlichen Z-Panel-Basisstand
--- Bilddateien selbst sind nicht Bestandteil der Sicherung; Bildpfade und
--  Bild-Metadaten im Studio-Datensatz werden mitgesichert
--- Wiederherstellung zeigt vor dem Überschreiben eine Bestandszusammenfassung
--- bisheriger Löschknopf in einen Gefahrenbereich verschoben
--- endgültiges Löschen nur nach Eingabe von LÖSCHEN
--- vor dem Löschen wird automatisch eine Notfall-Sicherung zum Download angeboten
--- mobile Darstellung der Sicherungsfunktionen angepasst
-+- Interview erhält zwei Datums-/Zeitfelder: Aufnahme und Sendung
-+- gemeinsame Terminübersicht aller Kandidat:innen im Interview-Bereich
-+- kommende Aufnahme- und Sendetermine chronologisch nach Datum/Uhrzeit sortiert
-+- Wochentagskürzel Mo, Di, Mi, Do, Fr, Sa, So werden direkt angezeigt
-+- vergangene Termine bleiben in einem aufklappbaren Abschnitt erhalten
-+- Klick auf einen Termin öffnet den zugehörigen Kandidaten im Interview-Editor
-+- bestehende Interviewdaten und alte Backups bleiben kompatibel; neue Felder sind additive Ergänzungen
-+- Backup-Format bleibt zustand-studio-backup-v1 / Version 1
-+- beim Laden eines neuen Interview-Textvorschlags bleiben bereits gesetzte Termine erhalten
-+- Speicherlogik des Trainers korrigiert: alle Interviewfelder bleiben beim Trainingsstart erhalten
- 
- Geänderte Webdateien:
- - index.html
-@@ -34,7 +32,7 @@
- - styles.css
- 
- Empfohlene Commit-Bezeichnung:
--Studio-Sicherung und sichere Wiederherstellung ergänzt
-+Interviewtermine chronologisch mit Wochentagen anzeigen
- 
- Hinweis:
- Ein konkreter GitHub-Commit-Hash wurde in dieser Sitzung nicht live verifiziert.
---- /mnt/data/termin_update_pristine/TESTHINWEISE.txt	2026-08-12 08:38:55.000000000 +0000
-+++ /mnt/data/termin_update_work/TESTHINWEISE.txt	2026-08-12 09:13:56.104730976 +0000
-@@ -1,38 +1,42 @@
--ZUSTAND Studio – Testhinweise für Studio-Sicherung
--===================================================
-+ZUSTAND Studio – Testhinweise Terminübersicht
-+==============================================
- 
--1. Studio normal öffnen und prüfen, ob die vorhandenen Kandidaten und Z-Panel-Daten weiterhin sichtbar sind.
-+1. Studio öffnen und zum Bereich „Interview“ wechseln.
- 
--2. Unten auf „Studio-Sicherung herunterladen“ tippen/klicken.
--   Erwartet: Eine Datei ähnlich
--   zustand-studio-backup_2026-08-12_10-36.json
--   wird heruntergeladen.
-+2. Kandidat auswählen.
-+   Unter der Kandidatenauswahl sollten jetzt die Felder „Aufnahme“ und „Sendung“ erscheinen.
- 
--3. Die JSON-Datei nicht bearbeiten. Danach im Studio testweise eine kleine,
--   eindeutig erkennbare Änderung vornehmen und speichern.
-+3. Beispiel eintragen:
-+   Aufnahme: 18.08.2026 15:00
-+   Sendung: 21.08.2026 16:00
-+   Danach „Lokal speichern“ wählen.
- 
--4. „Sicherung wiederherstellen“ wählen und die zuvor heruntergeladene Datei auswählen.
--   Erwartet: Vor dem Überschreiben erscheint eine Zusammenfassung mit Anzahl
--   Kandidat:innen, Interview-Datensätzen und Z-Panel-Beiträgen.
-+4. Erwartete Terminübersicht oben:
-+   Di 18.08.2026 · 15:00   Aufnahme   [Kandidat]
-+   Fr 21.08.2026 · 16:00   Sendung    [Kandidat]
- 
--5. Wiederherstellung bestätigen.
--   Erwartet: Der frühere Stand ist wieder da.
-+5. Termine bei mehreren Kandidat:innen eintragen.
-+   Erwartet: Alle kommenden Aufnahme- und Sendetermine stehen in einer gemeinsamen,
-+   chronologisch aufsteigenden Liste – unabhängig davon, zu welchem Kandidaten sie gehören.
- 
--6. Test mit einer falschen JSON-Datei:
--   Erwartet: Die Datei wird abgelehnt; der vorhandene Studio-Datenstand bleibt unverändert.
-+6. Auf einen Termin in der Übersicht klicken/tippen.
-+   Erwartet: Der betreffende Kandidat wird im Interview-Editor ausgewählt.
- 
--7. Gefahrenbereich öffnen und Löschfunktion testen, aber nur wenn eine Sicherung vorhanden ist.
--   - andere Eingabe als LÖSCHEN: nichts wird gelöscht
--   - exakte Eingabe LÖSCHEN: vor dem Löschen wird eine Notfall-Sicherung angeboten
-+7. Einen Termin in die Vergangenheit setzen.
-+   Erwartet: Er erscheint nicht zwischen den kommenden Terminen, sondern unter
-+   „Vergangene Termine“.
- 
--8. Windows und Android:
--   Dieselbe Sicherungsdatei kann auf beiden Geräten über „Sicherung wiederherstellen“ eingelesen werden.
--   Dabei ersetzt sie jeweils den lokalen Datenstand des verwendeten Browsers.
-+8. Bei einem Kandidaten mit gesetztem Termin „Vorschlag laden“ verwenden.
-+   Erwartet: Interviewtexte werden neu erzeugt, Aufnahme- und Sendetermin bleiben erhalten.
- 
--Wichtig zu Bildern:
--Die Studio-Sicherung enthält keine eigentlichen PNG/JPG-Dateien. Vorhandene Bildpfade
--und Metadaten werden mitgesichert. Die Bilddateien bleiben separat im Z-Panel-/GitHub-Bestand.
-+9. Trainer starten und danach den Kandidaten erneut öffnen.
-+   Erwartet: Termine und alle Interviewvorbereitungsfelder bleiben erhalten.
++  if(format==="SVG"){
++    return `Erstelle eine echte, saubere SVG-Vektorgrafik als Titelbild für einen öffentlichen Wissenschafts-Infoscreen. Keine Rastergrafik und kein nur vektorartig aussehendes PNG/JPG.\n\n${subject}\n\nKomposition für den Infoscreen:\n- Hochformat im Seitenverhältnis 8:9; passende viewBox verwenden.\n- Genau ein dominantes, klar erkennbares Hauptmotiv bzw. einen klaren Prozess.\n- Auch aus drei bis fünf Metern Entfernung verständlich.\n- Ruhige Fläche, klare Hierarchie, wenige Formen und Pfade.\n- Wichtige Motive mindestens zehn Prozent vom Bildrand entfernt.\n- Keine Schrift, Buchstaben, Zahlen, Logos, Wasserzeichen oder dekorative Beschriftungen.\n- Pfeile nur, wenn sie für einen Prozess wirklich nötig sind; ohne Textbeschriftung.\n- Keine Collage, keine geteilte Ansicht und keine überladene Infografik.\n\nVerbindliche ZUSTAND-Bildsprache: sachlich, ruhig, hochwertig und wissenschaftsredaktionell. Der Zusammenhang muss sich unmittelbar aus dem Artikelthema ergeben und nicht aus einer beliebigen Naturmetapher.\n\nTechnische SVG-Vorgaben:\n- valides, eigenständiges SVG ohne JavaScript, Event-Handler oder externe Ressourcen,\n- keine eingebetteten Base64-, PNG- oder JPEG-Bilder,\n- einfache Pfade und Formen, möglichst kompakter Code,\n- keine externen Schriften; idealerweise überhaupt kein Text im SVG,\n- für schnelle Webdarstellung optimieren und deutlich unter 500 kB halten.\n\nAusgabe: genau eine vollständige SVG-Datei bzw. vollständigen validen SVG-Code im Hochformat 8:9.`;
++  }
 +
-+10. Alte Studio-Sicherung wiederherstellen.
-+    Erwartet: Sie bleibt lesbar; bei alten Datensätzen sind Aufnahme und Sendung zunächst leer.
-+    Backup-Format bleibt Version 1, weil nur neue optionale Felder ergänzt wurden.
++  return `Erzeuge ein einzelnes Titelbild für einen öffentlichen Wissenschafts-Infoscreen.\n\n${subject}\n\nZeige keine erfundene konkrete Nachrichtenszene. Entwickle stattdessen eine natürliche, glaubwürdige und fotorealistische redaktionelle Assoziation, die den Inhalt auf den ersten Blick verständlich macht. Menschen nur dann zeigen, wenn sie inhaltlich sinnvoll sind; dann respektvoll, alltäglich und nicht posierend.\n\nKomposition für den Infoscreen:\n- Hochformat im Seitenverhältnis 8:9.\n- Das Bild füllt die linke Hälfte eines vertikal geteilten 16:9-Bildschirms.\n- Genau ein dominantes, klar erkennbares Hauptmotiv.\n- Auch aus drei bis fünf Metern Entfernung verständlich.\n- Ruhiger Hintergrund und deutliche Hell-Dunkel-Trennung.\n- Wichtige Motive mindestens zehn Prozent vom Bildrand entfernt.\n- Keine Schrift, Buchstaben, Zahlen, Diagramme, Logos, Wasserzeichen, Rahmen oder Collagen.\n- Keine überladene Komposition und keine gestellte Werbeszene.\n\nVerbindliche ZUSTAND-Bildsprache: fotorealistische, glaubwürdige redaktionelle Fotografie für ein hochwertiges deutschsprachiges Wissenschaftsmagazin. Ruhige Bildsprache, natürliches Licht, klare Komposition, realistische Materialien und Hauttöne, dezente Tiefenschärfe. Das Hauptmotiv soll sich unmittelbar aus dem Artikelthema ergeben und nicht aus einer allgemeinen Naturmetapher.\n\nAusgabeziel: genau ein fertiges Bild im Hochformat 8:9, ohne Text im Bild. Bevorzugtes Webformat JPEG/JPG; auf sichtbar hohe Qualität bei einer Zieldateigröße von höchstens 500 kB optimieren. Falls das Bilderzeugungssystem Dateiformat oder Dateigröße nicht direkt steuern kann, das Bild in hoher Qualität erzeugen; die JPG-Konvertierung und Komprimierung erfolgt anschließend separat.`;
++}
++function updateZImageAdvice(){
++  const el=$("#zImageAdvice");
++  if(!el)return;
++  const ctx=zImagePromptContext();
++  const style=zAutomaticImageStyle(ctx);
++  const format=zAutomaticImageFormat(ctx,style);
++  const automatic=[];
++  if(ctx.imageStyle==="Automatisch")automatic.push(`Stil: ${style}`);
++  if(ctx.imageFormat==="Automatisch")automatic.push(`Format: ${format}`);
++  const detail=format==="JPG"?"JPG ist für fotorealistische Motive vorgesehen; Zielgröße max. 500 kB.":"SVG ist für reduzierte Erklär-, Prozess- und Symbolgrafiken vorgesehen; ohne eingebettete Rasterbilder oder Skripte.";
++  el.textContent=`Aktuelle Empfehlung: ${style} · ${format}. ${detail}${automatic.length?` Automatisch gewählt: ${automatic.join(", ")}.`:""}`;
++}
++function buildZImagePrompt(){
++  const prompt=zBuildImagePromptText();
++  $("#zImagePrompt").value=prompt;
++  updateZImageAdvice();
++  updateZPreview();
++}
++async function copyZImagePrompt(){
++  const field=$("#zImagePrompt");
++  if(!field.value.trim())buildZImagePrompt();
++  const text=field.value.trim();
++  if(!text)return;
++  try{
++    await navigator.clipboard.writeText(text);
++  }catch{
++    field.focus();field.select();document.execCommand("copy");
++  }
++  const button=$("#zCopyImagePrompt");
++  const old=button.textContent;
++  button.textContent="Kopiert ✓";
++  setTimeout(()=>button.textContent=old,1400);
++}
+ function zNormalizeArticle(a={}){
+   return {
+     id:String(a.id||crypto.randomUUID()),
+@@ -1385,6 +1498,9 @@
+     publicationDate:String(a.publicationDate||""),
+     imageFile:String(a.imageFile||""),
+     imageIdea:String(a.imageIdea||""),
++    imageStyle:["Automatisch","Natur","Wissenschaft","Symbolisch","Prozess-/Erklärskizze"].includes(String(a.imageStyle||""))?String(a.imageStyle):"Automatisch",
++    imageFormat:["Automatisch","JPG","SVG"].includes(String(a.imageFormat||""))?String(a.imageFormat):"Automatisch",
++    imagePrompt:String(a.imagePrompt||""),
+     interviewUrl:String(a.interviewUrl||""),
+     workflowStatus:["entwurf","geprueft","freigegeben","veroeffentlicht"].includes(a.workflowStatus)?a.workflowStatus:"entwurf",
+     visibility:a.visibility==="archiviert"?"archiviert":"aktiv",
+@@ -1520,6 +1636,9 @@
+     publicationDate:$("#zPublicationDate").value,
+     imageFile:$("#zImageFile").value.trim(),
+     imageIdea:$("#zImageIdea").value.trim(),
++    imageStyle:$("#zImageStyle").value,
++    imageFormat:$("#zImageFormat").value,
++    imagePrompt:$("#zImagePrompt").value.trim(),
+     interviewUrl:$("#zInterviewUrl").value.trim(),
+     lastModified:zNow()
+   });
+@@ -1603,7 +1722,11 @@
+   $("#zPublicationDate").value="";
+   $("#zImageFile").value="";
+   $("#zImageIdea").value="";
++  $("#zImageStyle").value="Automatisch";
++  $("#zImageFormat").value="Automatisch";
++  $("#zImagePrompt").value="";
+   $("#zInterviewUrl").value="";
++  updateZImageAdvice();
+   updateZEditorState(null);
+   updateZPreview();
+ }
+@@ -1623,7 +1746,11 @@
+   $("#zPublicationDate").value=a.publicationDate;
+   $("#zImageFile").value=a.imageFile;
+   $("#zImageIdea").value=a.imageIdea;
++  $("#zImageStyle").value=a.imageStyle;
++  $("#zImageFormat").value=a.imageFormat;
++  $("#zImagePrompt").value=a.imagePrompt;
+   $("#zInterviewUrl").value=a.interviewUrl;
++  updateZImageAdvice();
+   showZGroup();
+   updateZEditorState(a);
+   updateZPreview();
+@@ -1720,6 +1847,15 @@
+ function zPublicArticle(a){
+   const id=zPublicId(a);
+   const base=(a.publicOriginal && typeof a.publicOriginal==="object")?JSON.parse(JSON.stringify(a.publicOriginal)):{};
++  const imageCtx={...a,keywords:zKeywordList(a.keywords)};
++  const resolvedImageStyle=zAutomaticImageStyle(imageCtx);
++  const resolvedImageFormat=zAutomaticImageFormat(imageCtx,resolvedImageStyle);
++  const publicImageStyle=({
++    Natur:"nature",
++    Wissenschaft:"scientific-editorial",
++    Symbolisch:"symbolic-editorial",
++    "Prozess-/Erklärskizze":"vector-explainer"
++  })[resolvedImageStyle]||"nature";
+   const out={
+     ...base,
+     id,
+@@ -1743,8 +1879,8 @@
+     license:base.license||"",
+     contentType:base.contentType||zContentType(a),
+     category:a.category||base.category||"",
+-    visualMode:base.visualMode||(a.category==="Natur verstehen"||a.category==="Wie wissen wir das?"?"process-sketch":"editorial-photo"),
+-    imageStyle:base.imageStyle||(a.category==="Natur verstehen"||a.category==="Wie wissen wir das?"?"monochrome-editorial-sketch":"nature")
++    visualMode:base.visualMode||(resolvedImageFormat==="SVG"?"process-sketch":"editorial-photo"),
++    imageStyle:base.imageStyle||publicImageStyle
+   };
+   if(a.interviewUrl && !out.links.some(link=>link?.url===a.interviewUrl))out.links.push({label:"Zum Interview",url:a.interviewUrl});
+   if(a.imageFile)out.imageFile=a.imageFile;
+@@ -1920,9 +2056,11 @@
+ $("#zExportNews").onclick=exportZNews;
+ $("#zCandidate").onchange=()=>{showZGroup();updateZPreview();};
+ $("#zImportCandidateProfile").onclick=importCandidateProfileToZArticle;
+-["#zTitle","#zSummary","#zCategory","#zBoundary","#zKeywords","#zSourceTitle","#zSource","#zPublicationDate","#zImageFile","#zImageIdea","#zInterviewUrl"].forEach(sel=>{
+-  $(sel).addEventListener("input",updateZPreview);
+-  $(sel).addEventListener("change",updateZPreview);
++$("#zBuildImagePrompt").onclick=buildZImagePrompt;
++$("#zCopyImagePrompt").onclick=()=>void copyZImagePrompt();
++["#zTitle","#zSummary","#zCategory","#zBoundary","#zKeywords","#zSourceTitle","#zSource","#zPublicationDate","#zImageFile","#zImageIdea","#zImageStyle","#zImageFormat","#zImagePrompt","#zInterviewUrl"].forEach(sel=>{
++  $(sel).addEventListener("input",()=>{updateZPreview();updateZImageAdvice();});
++  $(sel).addEventListener("change",()=>{updateZPreview();updateZImageAdvice();});
+ });
  
- Technische Prüfung:
- - app.js mit node --check geprüft
-+- HTML-IDs und zugehörige JS-Zugriffe statisch geprüft
- - Änderungen als AENDERUNGEN.diff enthalten
+ $("#downloadStudioBackup").onclick=()=>downloadStudioBackup();
+--- a/styles.css
++++ b/styles.css
+@@ -206,3 +206,14 @@
+   .schedule-person{grid-column:1/-1}
+ }
+ 
++
++/* Z-Panel: Bildidee und reproduzierbarer Bildprompt */
++.z-image-workflow{margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:10px;background:#fafaf8}
++.z-image-options label{margin-top:0}
++.z-image-advice{margin:10px 0 0;line-height:1.45}
++.z-image-actions{margin-top:10px;flex-wrap:wrap}
++.image-prompt-output{min-height:220px;font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;font-size:12px;line-height:1.45;background:#fff}
++@media(max-width:620px){
++  .z-image-workflow{padding:12px}
++  .z-image-actions button{flex:1 1 180px}
++}
