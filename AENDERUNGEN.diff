@@ -1,181 +1,48 @@
---- /mnt/data/zustand_profile_update_pristine/index.html	2026-08-11 23:49:46.000000000 +0000
-+++ /mnt/data/zustand_profile_update_work/index.html	2026-08-12 00:11:29.936318774 +0000
-@@ -58,11 +58,11 @@
+--- app.js (Basis)
++++ app.js (neu)
+@@ -608,7 +608,7 @@
  
-     <article class="card">
-       <div class="cardhead">
--        <h3>Such-Prompt</h3>
-+        <h3 id="promptTitle">Such-Prompt</h3>
-         <button class="ghost" id="copyPrompt">Kopieren</button>
-       </div>
-       <textarea class="output tall" id="promptOutput" readonly placeholder="Hier erscheint der Recherche-Prompt."></textarea>
--      <p class="hint">Der Prompt fordert jetzt zusätzlich Kernaussagen, Messreihen/Monitoring, zentrale Veröffentlichungen mit Quellenlinks, Zahlen/Zusammenhänge/Unsicherheiten sowie eine Einstiegsfrage und wenige Reservefragen an. Der erzeugte JSON-Block kann anschließend direkt bei „Kandidaten“ importiert werden.</p>
-+      <p class="hint" id="promptHint">Der Prompt fordert jetzt zusätzlich Kernaussagen, Messreihen/Monitoring, zentrale Veröffentlichungen mit Quellenlinks, Zahlen/Zusammenhänge/Unsicherheiten sowie eine Einstiegsfrage und wenige Reservefragen an. Der erzeugte JSON-Block kann anschließend direkt bei „Kandidaten“ importiert werden.</p>
-     </article>
-   </div>
- </section>
---- /mnt/data/zustand_profile_update_pristine/app.js	2026-08-11 23:49:46.000000000 +0000
-+++ /mnt/data/zustand_profile_update_work/app.js	2026-08-12 00:11:30.523619637 +0000
-@@ -100,6 +100,22 @@
-   if(typeof c.openingQuestion!=="string")c.openingQuestion="";
+   setPromptPanel(
+     `Forschungsprofil: ${c.name}`,
+-    "Dieser Prompt sucht keine weiteren Kandidaten. Er ergänzt ausschließlich das Forschungsprofil der ausgewählten Person. Den JSON-Block danach bei „Kandidaten“ importieren; der vorhandene Datensatz wird über seine interne ID aktualisiert."
++    "Dieser Prompt sucht keine weiteren Kandidaten. Er ergänzt ausschließlich das Forschungsprofil der ausgewählten Person. Die Recherche soll zusätzlich eine fertige JSON-Datei zum Herunterladen bereitstellen; diese danach bei „Kandidaten“ importieren."
+   );
+ 
+   $("#promptOutput").value=`Recherchiere ausschließlich zur bereits ausgewählten Interviewperson. Suche NICHT nach anderen Expert:innen oder Kandidat:innen.
+@@ -629,10 +629,10 @@
+ 
+ Suche zusätzlich gezielt nach 1–3 zentralen wissenschaftlichen Veröffentlichungen oder offiziellen Auswertungen, an denen diese Person beteiligt ist und die unmittelbar zu den genannten Messreihen oder Datensätzen gehören. Bevorzuge Originalpublikationen, DOI-/Verlagsseiten, institutionelle Repositorien und offizielle Projektseiten. Gib möglichst direkte Quellenlinks an. Medienberichte nur ergänzend verwenden.
+ 
+-Bereite vier Blöcke vor:
+-1. Kernaussagen der Forschung: 4–6 kurze, belastbare Aussagen, die ich in eigenen Worten wiedergeben können sollte. Beobachtete Befunde klar von Interpretation trennen.
+-2. Messreihen, Monitoringprogramme, Datensätze & Veröffentlichungen: Name, Zeitraum, räumlicher Bezug, Messgröße, Methode, Rolle der Person, wichtigste Veränderung und Quellenlink; dazu 1–3 zentrale Veröffentlichungen mit Titel, Jahr, Link und kurzer Relevanz.
+-3. Zahlen, Zusammenhänge & Unsicherheiten: wichtigste quantitative Trends mit Einheit, Ursachen/Folgen/Wechselwirkungen und Grenzen der Aussagekraft.
++Bereite die sichtbare Zusammenfassung bewusst kompakt vor; keine langen Fließtexte. Zielumfang ungefähr halb so lang wie eine ausführliche Forschungsdarstellung. Verwende diese vier Blöcke:
++1. Kernaussagen der Forschung: 4–5 kurze, belastbare Aussagen, die ich in eigenen Worten wiedergeben können sollte. Beobachtete Befunde klar von Interpretation trennen.
++2. Messreihen, Monitoringprogramme, Datensätze & Veröffentlichungen: nur die 2–3 wichtigsten Programme/Datensätze mit Zeitraum, Messgröße, Methode, Rolle der Person, wichtigstem Trend und Quellenlink; dazu 1–3 zentrale Veröffentlichungen mit Titel, Jahr, Link und einem kurzen Satz zur Relevanz.
++3. Zahlen, Zusammenhänge & Unsicherheiten: 3–5 besonders wichtige quantitative Angaben mit Einheit und Zeitraum; anschließend die wichtigsten Ursachen/Folgen/Wechselwirkungen und 2–4 Grenzen der Aussagekraft.
+ 4. Gesprächseinstieg & Reservefragen: zuerst eine offene, natürliche Einstiegsfrage, die den Gast von der eigenen Messung oder Forschung aus erklären lässt, woher wir die Veränderung kennen. Danach höchstens drei kurze Reservefragen. Kein Fragenkatalog.
+ 
+ Regionale Einordnung für die Auswahl relevanter Arbeiten: ${region}.
+@@ -640,7 +640,11 @@
+ 
+ Wichtig: Recherchiere die konkrete Forschungsarbeit der genannten Person. Schreibe ihr keine Ergebnisse anderer Forschender zu. Falls eine Beteiligung oder Zuordnung nicht sicher belegbar ist, kennzeichne das oder lasse die Angabe weg.
+ 
+-Gib am Ende zusätzlich GENAU EINEN JSON-Kandidaten zum direkten Import ins ZUSTAND-Studio aus. Die Felder "targetCandidateId", "name" und "institution" müssen exakt wie unten vorgegeben übernommen werden, damit der bestehende Datensatz sicher aktualisiert und kein neuer Kandidat angelegt wird:
++Erstelle ZUSÄTZLICH zur kurzen sichtbaren Zusammenfassung eine gültige JSON-Datei zum direkten Import ins ZUSTAND-Studio und stelle sie als herunterladbare Datei bereit. Gib den vollständigen JSON-Inhalt nicht noch einmal im Fließtext oder als Codeblock aus. Die JSON-Datei darf die recherchierten Angaben vollständig enthalten, auch wenn die sichtbare Zusammenfassung bewusst kurz gehalten ist.
++
++Dateiname nach Möglichkeit: forschungsprofil_${String(c.name||"person").toLowerCase().replace(/[^a-z0-9äöüß]+/gi,"_").replace(/^_+|_+$/g,"")}.json
++
++Die Felder "targetCandidateId", "name" und "institution" müssen in der Datei exakt wie unten vorgegeben übernommen werden, damit der bestehende Datensatz sicher aktualisiert und kein neuer Kandidat angelegt wird. Verwende exakt dieses Datenformat:
+ {
+   "format": "zustand-studio-candidates-v2",
+   "candidates": [
+@@ -671,7 +675,7 @@
+   ]
  }
  
-+function hasResearchProfile(c){
-+  ensureCandidateResearch(c);
-+  // Ein vollständiges Profil braucht mindestens belastbare Kernaussagen und
-+  // eine konkrete Datengrundlage. Veröffentlichungen sind erwünscht, aber
-+  // nicht für jede Monitoringreihe zwingend vorhanden.
-+  return c.coreFindings.length>=2 && c.measurements.length>=1 &&
-+    (c.publications.length>=1 || c.keyNumbers.length>=1);
-+}
-+
-+function setPromptPanel(title,hint){
-+  const titleEl=$("#promptTitle");
-+  const hintEl=$("#promptHint");
-+  if(titleEl)titleEl.textContent=title||"Such-Prompt";
-+  if(hintEl)hintEl.textContent=hint||"";
-+}
-+
- data.candidates.forEach(c=>{
-   if(typeof c.groupId!=="string")c.groupId="";
-   if(typeof c.phone!=="string")c.phone="";
-@@ -126,6 +142,10 @@
-   const region=$("#region").value.trim();
-   const focus=$("#focus").value.trim();
-   const language=$("#language").value;
-+  setPromptPanel(
-+    "Such-Prompt",
-+    "Der Prompt sucht zuerst Messreihen und Datensätze und anschließend geeignete Personen. Neue Kandidaten werden bereits mit vollständigem Forschungsprofil vorbereitet."
-+  );
-   $("#promptOutput").value=`Suche nicht zuerst nach bekannten Expert:innen, sondern nach interessanten langfristigen Messreihen, Monitoringprogrammen, Datensätzen und wiederholten Untersuchungen zum Thema ${topic}.
- Bevorzuge Untersuchungen, die Veränderungen über mindestens mehrere Jahre, besser Jahrzehnte quantitativ zeigen. Suche anschließend nach den Personen, die diese Daten erheben, auswerten oder wissenschaftlich betreuen. Bevorzuge die tatsächlich mit der Messreihe arbeitenden Fachleute gegenüber bloß medienbekannten Personen oder Institutsleitungen.
+-Nur seriös belegte Angaben übernehmen. Keine Kontaktdaten erraten.`;
++Nur seriös belegte Angaben übernehmen. Keine Kontaktdaten erraten. Die JSON-Datei vor der Bereitstellung auf gültige JSON-Syntax prüfen.`;
  
-@@ -255,6 +275,8 @@
-       // Redaktionelle Daten bleiben unangetastet: Gruppe, Akquise-Status,
-       // Interview/Anmoderation und Z-Panel-Entwürfe.
-       const duplicates=incoming.filter(raw=>{
-+        const targetId=String(raw?.targetCandidateId||"").trim();
-+        if(targetId && data.candidates.some(c=>c.id===targetId))return true;
-         const name=String(raw?.name||"").trim().toLocaleLowerCase();
-         const institution=String(raw?.institution||"").trim().toLocaleLowerCase();
-         return name && data.candidates.some(c=>
-@@ -277,7 +299,8 @@
-         if(!name){skipped++; continue}
- 
-         const institution=String(raw?.institution||"").trim();
--        const existing=data.candidates.find(c=>
-+        const targetId=String(raw?.targetCandidateId||"").trim();
-+        const existing=(targetId?data.candidates.find(c=>c.id===targetId):null) || data.candidates.find(c=>
-           String(c.name||"").trim().toLocaleLowerCase()===name.toLocaleLowerCase() &&
-           String(c.institution||"").trim().toLocaleLowerCase()===institution.toLocaleLowerCase()
-         );
-@@ -295,6 +318,12 @@
-           if(phone)existing.phone=phone;
-           if(address)existing.address=address;
-           if(source)existing.source=source;
-+          // Bei manuell angelegten oder älteren Kandidaten dürfen fehlende
-+          // Forschungs-Stammdaten ergänzt werden, vorhandene redaktionelle
-+          // Angaben werden dabei nicht überschrieben.
-+          if(!String(existing.topic||"").trim())existing.topic=String(raw?.topic||raw?.measurement||"").trim();
-+          if(!String(existing.period||"").trim())existing.period=String(raw?.period||"").trim();
-+          if(!String(existing.why||"").trim())existing.why=String(raw?.why||raw?.reason||"").trim();
-           mergeCandidateResearch(existing,raw);
-           ensureCandidateResearch(existing);
-           updated++;
-@@ -548,6 +577,7 @@
-               ${c.why?`<p><b>Einordnung:</b> ${esc(c.why)}</p>`:""}
-               ${(c.openingQuestion||c.question)?`<p><b>Einstiegsfrage:</b> ${esc(c.openingQuestion||c.question)}</p>`:""}
-               ${(c.measurements?.length||c.publications?.length)?`<p><b>Recherchegrundlage:</b> ${c.measurements?.length||0} Messreihe${c.measurements?.length===1?"":"n"} · ${c.publications?.length||0} Veröffentlichung${c.publications?.length===1?"":"en"}</p>`:""}
-+              ${!hasResearchProfile(c)?`<p><button class="ghost small" onclick="researchCandidateProfile('${c.id}')">Forschungsprofil ergänzen</button></p>`:""}
-               ${c.phone?`<p><b>Dienstl. Telefon:</b> ${esc(c.phone)}</p>`:""}
-               ${c.address?`<p><b>Dienstl. Postanschrift:</b> ${esc(c.address)}</p>`:""}
-               ${c.source?`<p><b>Profil/Kontakt:</b> <span class="break">${esc(c.source)}</span></p>`:""}
-@@ -565,6 +595,88 @@
-   if(el)el.classList.toggle("hidden");
- };
- 
-+window.researchCandidateProfile=id=>{
-+  const c=data.candidates.find(x=>x.id===id);
-+  if(!c)return;
-+  ensureCandidateResearch(c);
-+
-+  const region=$("#region")?.value?.trim()||"Lübeck, Schleswig-Holstein, Norddeutschland, Deutschland, Europa";
-+  const language=$("#language")?.value||"Deutsch bevorzugt";
-+  const knownTopic=String(c.topic||"").trim();
-+  const knownPeriod=String(c.period||"").trim();
-+  const knownSource=String(c.source||"").trim();
-+
-+  setPromptPanel(
-+    `Forschungsprofil: ${c.name}`,
-+    "Dieser Prompt sucht keine weiteren Kandidaten. Er ergänzt ausschließlich das Forschungsprofil der ausgewählten Person. Den JSON-Block danach bei „Kandidaten“ importieren; der vorhandene Datensatz wird über seine interne ID aktualisiert."
-+  );
-+
-+  $("#promptOutput").value=`Recherchiere ausschließlich zur bereits ausgewählten Interviewperson. Suche NICHT nach anderen Expert:innen oder Kandidat:innen.
-+
-+Ausgewählte Person:
-+Name: ${c.name}
-+Institution: ${c.institution||"[noch nicht eingetragen]"}${knownTopic?`\nBisher bekannter Forschungsbezug: ${knownTopic}`:""}${knownPeriod?`\nBisher bekannter Zeitraum: ${knownPeriod}`:""}${knownSource?`\nBekannte offizielle Profil-/Kontaktquelle: ${knownSource}`:""}
-+
-+Ziel: Ergänze für ZUSTAND / TH Lübeck und den Offenen Kanal Lübeck das Forschungsprofil dieser Person als Vorbereitung für ein verständliches 20–30-minütiges Interview. Im Mittelpunkt stehen langfristige Messreihen, Monitoringprogramme, Datensätze und wiederholte Untersuchungen, an denen die Person selbst beteiligt war oder ist.
-+
-+Prüfe sorgfältig:
-+- An welchen langfristigen Messreihen, Monitoringprogrammen, Datensätzen oder wiederholten Untersuchungen arbeitet oder arbeitete die Person tatsächlich?
-+- Was wird dort gemessen, seit wann, in welchem räumlichen Bezug und mit welcher Methode?
-+- Welche konkrete Rolle hat die Person bei Erhebung, Auswertung, Entwicklung der Methode oder wissenschaftlicher Betreuung?
-+- Welche quantitativen Veränderungen sind erkennbar? Nenne wichtige Größenordnungen möglichst mit Einheit und Zeitraum.
-+- Welche Ursachen, Folgen und Wechselwirkungen lassen sich aus der Forschung erklären?
-+- Welche Unsicherheiten, methodischen Grenzen oder Definitionsprobleme sind wichtig?
-+
-+Suche zusätzlich gezielt nach 1–3 zentralen wissenschaftlichen Veröffentlichungen oder offiziellen Auswertungen, an denen diese Person beteiligt ist und die unmittelbar zu den genannten Messreihen oder Datensätzen gehören. Bevorzuge Originalpublikationen, DOI-/Verlagsseiten, institutionelle Repositorien und offizielle Projektseiten. Gib möglichst direkte Quellenlinks an. Medienberichte nur ergänzend verwenden.
-+
-+Bereite vier Blöcke vor:
-+1. Kernaussagen der Forschung: 4–6 kurze, belastbare Aussagen, die ich in eigenen Worten wiedergeben können sollte. Beobachtete Befunde klar von Interpretation trennen.
-+2. Messreihen, Monitoringprogramme, Datensätze & Veröffentlichungen: Name, Zeitraum, räumlicher Bezug, Messgröße, Methode, Rolle der Person, wichtigste Veränderung und Quellenlink; dazu 1–3 zentrale Veröffentlichungen mit Titel, Jahr, Link und kurzer Relevanz.
-+3. Zahlen, Zusammenhänge & Unsicherheiten: wichtigste quantitative Trends mit Einheit, Ursachen/Folgen/Wechselwirkungen und Grenzen der Aussagekraft.
-+4. Gesprächseinstieg & Reservefragen: zuerst eine offene, natürliche Einstiegsfrage, die den Gast von der eigenen Messung oder Forschung aus erklären lässt, woher wir die Veränderung kennen. Danach höchstens drei kurze Reservefragen. Kein Fragenkatalog.
-+
-+Regionale Einordnung für die Auswahl relevanter Arbeiten: ${region}.
-+Interviewsprache: ${language}. Die Recherche selbst darf internationale Originalquellen verwenden.
-+
-+Wichtig: Recherchiere die konkrete Forschungsarbeit der genannten Person. Schreibe ihr keine Ergebnisse anderer Forschender zu. Falls eine Beteiligung oder Zuordnung nicht sicher belegbar ist, kennzeichne das oder lasse die Angabe weg.
-+
-+Gib am Ende zusätzlich GENAU EINEN JSON-Kandidaten zum direkten Import ins ZUSTAND-Studio aus. Die Felder "targetCandidateId", "name" und "institution" müssen exakt wie unten vorgegeben übernommen werden, damit der bestehende Datensatz sicher aktualisiert und kein neuer Kandidat angelegt wird:
-+{
-+  "format": "zustand-studio-candidates-v2",
-+  "candidates": [
-+    {
-+      "targetCandidateId": "${c.id}",
-+      "name": ${JSON.stringify(c.name)},
-+      "institution": ${JSON.stringify(c.institution||"")},
-+      "topic": "präzisierter Forschungsbezug, falls sinnvoll",
-+      "period": "Zeitraum der wichtigsten Langzeitdaten",
-+      "email": "dienstliche E-Mail nur falls seriös belegt",
-+      "phone": "dienstliche Telefonnummer nur falls seriös belegt",
-+      "address": "dienstliche Anschrift nur falls seriös belegt",
-+      "source": "offizielle Profil-/Kontaktseite",
-+      "why": "kurze Einordnung der Eignung",
-+      "coreFindings": ["..."],
-+      "measurements": [
-+        {"name":"...","period":"...","measured":"...","method":"...","role":"...","trend":"...","sourceUrl":"..."}
-+      ],
-+      "publications": [
-+        {"title":"...","year":"...","url":"...","relevance":"..."}
-+      ],
-+      "keyNumbers": ["..."],
-+      "connections": ["..."],
-+      "uncertainties": ["..."],
-+      "openingQuestion": "...",
-+      "reserveQuestions": ["...","...","..."]
-+    }
-+  ]
-+}
-+
-+Nur seriös belegte Angaben übernehmen. Keine Kontaktdaten erraten.`;
-+
-+  nav("research");
-+  $("#promptOutput")?.scrollIntoView({behavior:"smooth",block:"center"});
-+};
-+
- window.editCandidate=id=>{
-   const c=data.candidates.find(x=>x.id===id);
-   if(!c)return;
+   nav("research");
+   $("#promptOutput")?.scrollIntoView({behavior:"smooth",block:"center"});

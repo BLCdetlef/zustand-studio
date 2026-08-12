@@ -1,51 +1,9 @@
-ZUSTAND Studio – Kurztest Forschungsprofil ergänzen
-====================================================
+ZUSTAND Studio – Kurztest Prompt-Anpassung
+==========================================
 
-1. Bestehender alter Kandidat
-- Kandidaten öffnen und bei einem älteren Kandidaten „Details“ aufklappen.
-- Wenn noch kein vollständiges v2-Forschungsprofil vorhanden ist, muss der Knopf
-  „Forschungsprofil ergänzen“ erscheinen.
-- Knopf anklicken.
-- Das Studio wechselt zu „Recherche“ und zeigt einen Prompt mit dem Titel
-  „Forschungsprofil: [Name]“.
-- Im Prompt muss ausdrücklich stehen, dass KEINE anderen Kandidat:innen gesucht werden.
-
-2. Prompt verwenden
-- Prompt kopieren und in ChatGPT für die Recherche verwenden.
-- Am Ende der Recherche muss genau ein JSON-Kandidat ausgegeben werden.
-- Im JSON müssen targetCandidateId, name und institution entsprechend der Vorgabe enthalten sein.
-
-3. Profil zurück ins Studio
-- Den JSON-Block als .json-Datei speichern und bei „Kandidaten“ über „JSON importieren“ laden.
-- Das Studio muss erkennen, dass ein vorhandener Kontakt aktualisiert wird.
-- Die Ergänzung bestätigen.
-- Prüfen, dass Kernaussagen, Messreihen, Publikationen, Zahlen, Zusammenhänge,
-  Unsicherheiten, Einstiegsfrage und Reservefragen übernommen wurden.
-
-4. Schutz vorhandener Arbeit
-- Gruppe muss unverändert bleiben.
-- Akquise-Status muss unverändert bleiben.
-- Eigene Anmoderation / Interviewtexte müssen unverändert bleiben.
-- Z-Panel-Entwürfe müssen unverändert bleiben.
-- Bereits vorhandene Angaben zu Thema, Zeitraum und Einordnung dürfen nicht durch
-  anders formulierte Recherchetexte überschrieben werden; nur leere Felder werden ergänzt.
-
-5. Knopf verschwindet
-- Nach Import eines ausreichenden Forschungsprofils Kandidatenansicht neu prüfen.
-- „Forschungsprofil ergänzen“ soll bei diesem Kandidaten nicht mehr angezeigt werden.
-
-6. Manuell bekannte Person
-- Über „Kandidat hinzufügen“ eine bekannte Forscherin / einen bekannten Forscher anlegen.
-- Nur Name, Institution und ggf. bekanntes Thema/Profilquelle eintragen.
-- In „Details“ muss „Forschungsprofil ergänzen“ erscheinen.
-- Personbezogene Recherche und Import wie oben durchführen.
-
-7. Normale zukünftige Themenrecherche
-- Einen neuen v2-Kandidaten mit Kernaussagen + Messreihe + Publikation oder Zahl importieren.
-- Bei einem ausreichend gefüllten Profil soll „Forschungsprofil ergänzen“ nicht erscheinen.
-
-8. Bestehende Funktionen
-- Zweite E-Mail bei Status „zugesagt“ prüfen.
-- Interview-Bildschirm öffnen.
-- Trainer „Kernaussagen trainieren“ starten.
-- Windows und Android weiterhin kurz testen.
+1. Bei einem Kandidaten ohne vollständiges Forschungsprofil „Forschungsprofil ergänzen“ öffnen.
+2. Prüfen, dass der Prompt ausdrücklich eine kompakte sichtbare Zusammenfassung verlangt.
+3. Prüfen, dass der Prompt eine herunterladbare JSON-Datei verlangt und nicht einen JSON-Codeblock.
+4. Prüfen, dass targetCandidateId, name und institution weiterhin fest vorgegeben sind.
+5. Normale Themenrecherche, Kandidaten, Akquise, E-Mails, Interviewbildschirm und Trainer kurz öffnen;
+   diese Bereiche wurden nicht geändert.

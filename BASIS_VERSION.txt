@@ -2,10 +2,10 @@ ZUSTAND Studio – Basis- und Versionsnachweis
 ============================================
 
 Basis dieses Updates:
-zustand-studio-update-recherche-und-kernaussagen.zip
+zustand-studio-update-forschungsprofil-ergaenzen.zip
 
 SHA-256 der Basis-ZIP:
-5df86ef23fe6ba06a5ed93584265ab6ed7b71be2bf3d3dc2145fb2f4419e1cfb
+93b61441898d0b237eb0a2f42f25348614df6063ddbf02f7231dcd52c8718198
 
 GitHub-Branch:
 main (Arbeitsziel)
@@ -14,30 +14,20 @@ GitHub-Commit-ID / Commit-Bezeichnung der Basis:
 In dieser Sitzung nicht zuverlässig direkt aus GitHub ausgelesen; daher bewusst nicht erfunden.
 Die technische Basis ist eindeutig über Dateiname und SHA-256 der Basis-ZIP dokumentiert.
 
-Neue Änderung:
-- Bei Kandidaten ohne vollständiges Forschungsprofil erscheint in „Details“ der Knopf
-  „Forschungsprofil ergänzen“.
-- Der Knopf erzeugt einen personenbezogenen Recherche-Prompt für genau diese Person;
-  es werden ausdrücklich keine weiteren Kandidat:innen gesucht.
-- Der Prompt fordert dieselben vier Vorbereitungsblöcke wie die normale v2-Recherche an:
-  Kernaussagen; Messreihen/Monitoring/Datensätze & Veröffentlichungen; Zahlen/
-  Zusammenhänge/Unsicherheiten; Einstiegsfrage & Reservefragen.
-- Der personenbezogene Prompt enthält die interne targetCandidateId des ausgewählten
-  Kandidaten. Beim JSON-Import wird damit gezielt der vorhandene Datensatz ergänzt.
-- Fallback bleibt Name + Institution, falls targetCandidateId nicht vorhanden ist.
-- Bei vorhandenen Kandidaten werden Gruppe, Akquise-Status, eigene Interviewtexte und
-  Z-Panel-Entwürfe nicht überschrieben.
-- Fehlende Forschungs-Stammdaten (Thema, Zeitraum, Einordnung) dürfen ergänzt werden;
-  bereits vorhandene Angaben werden nicht überschrieben.
-- Sobald ein ausreichendes Forschungsprofil vorhanden ist, wird der Knopf nicht mehr angezeigt.
-- Neue Kandidat:innen aus der normalen v2-Themenrecherche benötigen diesen Zusatzschritt
-  in der Regel nicht.
-- Manuell angelegte Personen erhalten den Knopf automatisch, solange das Forschungsprofil fehlt.
+Neue Änderung – ausschließlich Prompttext:
+- Personenbezogene Forschungsrecherche soll sichtbar ungefähr halb so lang ausfallen.
+- Vorgaben: 4–5 Kernaussagen, 2–3 wichtigste Messprogramme/Datensätze, 1–3 Publikationen,
+  3–5 Kennzahlen, kompakte Zusammenhänge/Unsicherheiten, 1 Einstiegsfrage + max. 3 Reservefragen.
+- Der Prompt verlangt zusätzlich eine echte, herunterladbare JSON-Datei im Format
+  zustand-studio-candidates-v2.
+- Vollständiger JSON-Inhalt soll nicht zusätzlich als langer Codeblock ausgegeben werden.
+- Die JSON-Datei soll vor Bereitstellung auf gültige Syntax geprüft werden.
+- Keine Funktionslogik, Datenstruktur, Interviewansicht, Trainer, E-Mail oder Oberfläche geändert.
 
 Empfohlene Commit-Bezeichnung für dieses Update:
-Forschungsprofile für Bestandskandidaten ergänzbar
+Forschungsprofil-Prompt gekürzt und JSON-Download ergänzt
 
 SHA-256 der neuen Dateien:
-app.js:     e4816aeb4d3017a7d370ba1b432a883e75c36a36b57cb3d8b741b4002b0af5cc
+app.js:     499d721c196af9172c21578a2b094b82905b58d2bc76ec155a0b6b47ab4d86a1
 index.html: bdfc76a7c4da92acb0f7696d16257c9ee8731bbd7749185f3840f2853e330728
 styles.css: 11f0b00abb92bd55754481d57ecfb5927854ed3b661b03d37c06d05a52e36f42

@@ -608,7 +608,7 @@ window.researchCandidateProfile=id=>{
 
   setPromptPanel(
     `Forschungsprofil: ${c.name}`,
-    "Dieser Prompt sucht keine weiteren Kandidaten. Er ergänzt ausschließlich das Forschungsprofil der ausgewählten Person. Den JSON-Block danach bei „Kandidaten“ importieren; der vorhandene Datensatz wird über seine interne ID aktualisiert."
+    "Dieser Prompt sucht keine weiteren Kandidaten. Er ergänzt ausschließlich das Forschungsprofil der ausgewählten Person. Die Recherche soll zusätzlich eine fertige JSON-Datei zum Herunterladen bereitstellen; diese danach bei „Kandidaten“ importieren."
   );
 
   $("#promptOutput").value=`Recherchiere ausschließlich zur bereits ausgewählten Interviewperson. Suche NICHT nach anderen Expert:innen oder Kandidat:innen.
@@ -629,10 +629,10 @@ Prüfe sorgfältig:
 
 Suche zusätzlich gezielt nach 1–3 zentralen wissenschaftlichen Veröffentlichungen oder offiziellen Auswertungen, an denen diese Person beteiligt ist und die unmittelbar zu den genannten Messreihen oder Datensätzen gehören. Bevorzuge Originalpublikationen, DOI-/Verlagsseiten, institutionelle Repositorien und offizielle Projektseiten. Gib möglichst direkte Quellenlinks an. Medienberichte nur ergänzend verwenden.
 
-Bereite vier Blöcke vor:
-1. Kernaussagen der Forschung: 4–6 kurze, belastbare Aussagen, die ich in eigenen Worten wiedergeben können sollte. Beobachtete Befunde klar von Interpretation trennen.
-2. Messreihen, Monitoringprogramme, Datensätze & Veröffentlichungen: Name, Zeitraum, räumlicher Bezug, Messgröße, Methode, Rolle der Person, wichtigste Veränderung und Quellenlink; dazu 1–3 zentrale Veröffentlichungen mit Titel, Jahr, Link und kurzer Relevanz.
-3. Zahlen, Zusammenhänge & Unsicherheiten: wichtigste quantitative Trends mit Einheit, Ursachen/Folgen/Wechselwirkungen und Grenzen der Aussagekraft.
+Bereite die sichtbare Zusammenfassung bewusst kompakt vor; keine langen Fließtexte. Zielumfang ungefähr halb so lang wie eine ausführliche Forschungsdarstellung. Verwende diese vier Blöcke:
+1. Kernaussagen der Forschung: 4–5 kurze, belastbare Aussagen, die ich in eigenen Worten wiedergeben können sollte. Beobachtete Befunde klar von Interpretation trennen.
+2. Messreihen, Monitoringprogramme, Datensätze & Veröffentlichungen: nur die 2–3 wichtigsten Programme/Datensätze mit Zeitraum, Messgröße, Methode, Rolle der Person, wichtigstem Trend und Quellenlink; dazu 1–3 zentrale Veröffentlichungen mit Titel, Jahr, Link und einem kurzen Satz zur Relevanz.
+3. Zahlen, Zusammenhänge & Unsicherheiten: 3–5 besonders wichtige quantitative Angaben mit Einheit und Zeitraum; anschließend die wichtigsten Ursachen/Folgen/Wechselwirkungen und 2–4 Grenzen der Aussagekraft.
 4. Gesprächseinstieg & Reservefragen: zuerst eine offene, natürliche Einstiegsfrage, die den Gast von der eigenen Messung oder Forschung aus erklären lässt, woher wir die Veränderung kennen. Danach höchstens drei kurze Reservefragen. Kein Fragenkatalog.
 
 Regionale Einordnung für die Auswahl relevanter Arbeiten: ${region}.
@@ -640,7 +640,11 @@ Interviewsprache: ${language}. Die Recherche selbst darf internationale Original
 
 Wichtig: Recherchiere die konkrete Forschungsarbeit der genannten Person. Schreibe ihr keine Ergebnisse anderer Forschender zu. Falls eine Beteiligung oder Zuordnung nicht sicher belegbar ist, kennzeichne das oder lasse die Angabe weg.
 
-Gib am Ende zusätzlich GENAU EINEN JSON-Kandidaten zum direkten Import ins ZUSTAND-Studio aus. Die Felder "targetCandidateId", "name" und "institution" müssen exakt wie unten vorgegeben übernommen werden, damit der bestehende Datensatz sicher aktualisiert und kein neuer Kandidat angelegt wird:
+Erstelle ZUSÄTZLICH zur kurzen sichtbaren Zusammenfassung eine gültige JSON-Datei zum direkten Import ins ZUSTAND-Studio und stelle sie als herunterladbare Datei bereit. Gib den vollständigen JSON-Inhalt nicht noch einmal im Fließtext oder als Codeblock aus. Die JSON-Datei darf die recherchierten Angaben vollständig enthalten, auch wenn die sichtbare Zusammenfassung bewusst kurz gehalten ist.
+
+Dateiname nach Möglichkeit: forschungsprofil_${String(c.name||"person").toLowerCase().replace(/[^a-z0-9äöüß]+/gi,"_").replace(/^_+|_+$/g,"")}.json
+
+Die Felder "targetCandidateId", "name" und "institution" müssen in der Datei exakt wie unten vorgegeben übernommen werden, damit der bestehende Datensatz sicher aktualisiert und kein neuer Kandidat angelegt wird. Verwende exakt dieses Datenformat:
 {
   "format": "zustand-studio-candidates-v2",
   "candidates": [
@@ -671,7 +675,7 @@ Gib am Ende zusätzlich GENAU EINEN JSON-Kandidaten zum direkten Import ins ZUST
   ]
 }
 
-Nur seriös belegte Angaben übernehmen. Keine Kontaktdaten erraten.`;
+Nur seriös belegte Angaben übernehmen. Keine Kontaktdaten erraten. Die JSON-Datei vor der Bereitstellung auf gültige JSON-Syntax prüfen.`;
 
   nav("research");
   $("#promptOutput")?.scrollIntoView({behavior:"smooth",block:"center"});
