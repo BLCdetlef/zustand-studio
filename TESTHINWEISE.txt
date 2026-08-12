@@ -1,38 +1,42 @@
-ZUSTAND Studio – Testhinweise für Studio-Sicherung
-===================================================
+ZUSTAND Studio – Testhinweise Terminübersicht
+==============================================
 
-1. Studio normal öffnen und prüfen, ob die vorhandenen Kandidaten und Z-Panel-Daten weiterhin sichtbar sind.
+1. Studio öffnen und zum Bereich „Interview“ wechseln.
 
-2. Unten auf „Studio-Sicherung herunterladen“ tippen/klicken.
-   Erwartet: Eine Datei ähnlich
-   zustand-studio-backup_2026-08-12_10-36.json
-   wird heruntergeladen.
+2. Kandidat auswählen.
+   Unter der Kandidatenauswahl sollten jetzt die Felder „Aufnahme“ und „Sendung“ erscheinen.
 
-3. Die JSON-Datei nicht bearbeiten. Danach im Studio testweise eine kleine,
-   eindeutig erkennbare Änderung vornehmen und speichern.
+3. Beispiel eintragen:
+   Aufnahme: 18.08.2026 15:00
+   Sendung: 21.08.2026 16:00
+   Danach „Lokal speichern“ wählen.
 
-4. „Sicherung wiederherstellen“ wählen und die zuvor heruntergeladene Datei auswählen.
-   Erwartet: Vor dem Überschreiben erscheint eine Zusammenfassung mit Anzahl
-   Kandidat:innen, Interview-Datensätzen und Z-Panel-Beiträgen.
+4. Erwartete Terminübersicht oben:
+   Di 18.08.2026 · 15:00   Aufnahme   [Kandidat]
+   Fr 21.08.2026 · 16:00   Sendung    [Kandidat]
 
-5. Wiederherstellung bestätigen.
-   Erwartet: Der frühere Stand ist wieder da.
+5. Termine bei mehreren Kandidat:innen eintragen.
+   Erwartet: Alle kommenden Aufnahme- und Sendetermine stehen in einer gemeinsamen,
+   chronologisch aufsteigenden Liste – unabhängig davon, zu welchem Kandidaten sie gehören.
 
-6. Test mit einer falschen JSON-Datei:
-   Erwartet: Die Datei wird abgelehnt; der vorhandene Studio-Datenstand bleibt unverändert.
+6. Auf einen Termin in der Übersicht klicken/tippen.
+   Erwartet: Der betreffende Kandidat wird im Interview-Editor ausgewählt.
 
-7. Gefahrenbereich öffnen und Löschfunktion testen, aber nur wenn eine Sicherung vorhanden ist.
-   - andere Eingabe als LÖSCHEN: nichts wird gelöscht
-   - exakte Eingabe LÖSCHEN: vor dem Löschen wird eine Notfall-Sicherung angeboten
+7. Einen Termin in die Vergangenheit setzen.
+   Erwartet: Er erscheint nicht zwischen den kommenden Terminen, sondern unter
+   „Vergangene Termine“.
 
-8. Windows und Android:
-   Dieselbe Sicherungsdatei kann auf beiden Geräten über „Sicherung wiederherstellen“ eingelesen werden.
-   Dabei ersetzt sie jeweils den lokalen Datenstand des verwendeten Browsers.
+8. Bei einem Kandidaten mit gesetztem Termin „Vorschlag laden“ verwenden.
+   Erwartet: Interviewtexte werden neu erzeugt, Aufnahme- und Sendetermin bleiben erhalten.
 
-Wichtig zu Bildern:
-Die Studio-Sicherung enthält keine eigentlichen PNG/JPG-Dateien. Vorhandene Bildpfade
-und Metadaten werden mitgesichert. Die Bilddateien bleiben separat im Z-Panel-/GitHub-Bestand.
+9. Trainer starten und danach den Kandidaten erneut öffnen.
+   Erwartet: Termine und alle Interviewvorbereitungsfelder bleiben erhalten.
+
+10. Alte Studio-Sicherung wiederherstellen.
+    Erwartet: Sie bleibt lesbar; bei alten Datensätzen sind Aufnahme und Sendung zunächst leer.
+    Backup-Format bleibt Version 1, weil nur neue optionale Felder ergänzt wurden.
 
 Technische Prüfung:
 - app.js mit node --check geprüft
+- HTML-IDs und zugehörige JS-Zugriffe statisch geprüft
 - Änderungen als AENDERUNGEN.diff enthalten

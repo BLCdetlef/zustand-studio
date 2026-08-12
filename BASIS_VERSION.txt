@@ -2,7 +2,7 @@ ZUSTAND Studio Web – Basisversion
 ================================
 
 Basis-Paket:
-zustand-studio-update-zpanel-kandidatenprofil.zip
+zustand-studio-update-sicherung-wiederherstellung.zip
 
 Quelle:
 Letzte bekannte Arbeitsversion aus der ChatGPT-Dateibibliothek vor diesem Update.
@@ -12,21 +12,19 @@ GitHub-Repository BLCdetlef/zustand-studio
 Branch: main
 
 Update:
-Studio-Sicherung und Wiederherstellung
+Chronologische Interview-Terminübersicht
 
 Änderungen:
-- vollständige lokale Studio-Sicherung als JSON-Datei
-- Wiederherstellung einer geprüften ZUSTAND-Studio-Sicherung
-- Sicherungsformat: zustand-studio-backup-v1
-- Sicherung enthält Kandidaten, Gruppen, Akquise, Interviews, Forschungsprofile,
-  Z-Panel-Redaktion und importierten öffentlichen Z-Panel-Basisstand
-- Bilddateien selbst sind nicht Bestandteil der Sicherung; Bildpfade und
-  Bild-Metadaten im Studio-Datensatz werden mitgesichert
-- Wiederherstellung zeigt vor dem Überschreiben eine Bestandszusammenfassung
-- bisheriger Löschknopf in einen Gefahrenbereich verschoben
-- endgültiges Löschen nur nach Eingabe von LÖSCHEN
-- vor dem Löschen wird automatisch eine Notfall-Sicherung zum Download angeboten
-- mobile Darstellung der Sicherungsfunktionen angepasst
+- Interview erhält zwei Datums-/Zeitfelder: Aufnahme und Sendung
+- gemeinsame Terminübersicht aller Kandidat:innen im Interview-Bereich
+- kommende Aufnahme- und Sendetermine chronologisch nach Datum/Uhrzeit sortiert
+- Wochentagskürzel Mo, Di, Mi, Do, Fr, Sa, So werden direkt angezeigt
+- vergangene Termine bleiben in einem aufklappbaren Abschnitt erhalten
+- Klick auf einen Termin öffnet den zugehörigen Kandidaten im Interview-Editor
+- bestehende Interviewdaten und alte Backups bleiben kompatibel; neue Felder sind additive Ergänzungen
+- Backup-Format bleibt zustand-studio-backup-v1 / Version 1
+- beim Laden eines neuen Interview-Textvorschlags bleiben bereits gesetzte Termine erhalten
+- Speicherlogik des Trainers korrigiert: alle Interviewfelder bleiben beim Trainingsstart erhalten
 
 Geänderte Webdateien:
 - index.html
@@ -34,7 +32,7 @@ Geänderte Webdateien:
 - styles.css
 
 Empfohlene Commit-Bezeichnung:
-Studio-Sicherung und sichere Wiederherstellung ergänzt
+Interviewtermine chronologisch mit Wochentagen anzeigen
 
 Hinweis:
 Ein konkreter GitHub-Commit-Hash wurde in dieser Sitzung nicht live verifiziert.

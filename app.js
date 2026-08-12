@@ -986,18 +986,18 @@ function makeInterviewDraft(c){
   };
 }
 function completeInterviewShape(c,value){
-  const draft=makeInterviewDraft(c);
+  const draft={...makeInterviewDraft(c),recordingAt:"",broadcastAt:""};
   if(typeof value==="string")return {...draft,notes:value};
   if(!value || typeof value!=="object")return draft;
   const result={...draft};
-  for(const key of ["intro","coreFindings","evidence","connections","notes"]){
+  for(const key of ["intro","coreFindings","evidence","connections","notes","recordingAt","broadcastAt"]){
     if(Object.prototype.hasOwnProperty.call(value,key))result[key]=String(value[key]||"");
   }
   return result;
 }
 
 function getInterview(c){
-  if(!c)return {intro:"",coreFindings:"",evidence:"",connections:"",notes:""};
+  if(!c)return {intro:"",coreFindings:"",evidence:"",connections:"",notes:"",recordingAt:"",broadcastAt:""};
   const saved=data.interviews[c.id];
   if(saved!==undefined)return completeInterviewShape(c,saved);
   return makeInterviewDraft(c);
@@ -1005,15 +1005,19 @@ function getInterview(c){
 
 function showInterviewForSelectedCandidate(forceDraft=false){
   const c=selected("#iCandidate");
-  const fields=["#iIntro","#iCoreFindings","#iEvidence","#iConnections","#iNotes"];
+  const fields=["#iIntro","#iCoreFindings","#iEvidence","#iConnections","#iNotes","#iRecordingAt","#iBroadcastAt"];
   if(!c){fields.forEach(id=>$(id).value="");return;}
 
-  const interview=forceDraft?makeInterviewDraft(c):getInterview(c);
+  // Beim Laden eines neuen Textvorschlags bleiben bereits eingetragene Termine erhalten.
+  const saved=getInterview(c);
+  const interview=forceDraft?{...makeInterviewDraft(c),recordingAt:saved.recordingAt||"",broadcastAt:saved.broadcastAt||""}:saved;
   $("#iIntro").value=interview.intro||"";
   $("#iCoreFindings").value=interview.coreFindings||"";
   $("#iEvidence").value=interview.evidence||"";
   $("#iConnections").value=interview.connections||"";
   $("#iNotes").value=interview.notes||"";
+  $("#iRecordingAt").value=interview.recordingAt||"";
+  $("#iBroadcastAt").value=interview.broadcastAt||"";
   stopTraining();
 }
 
@@ -1035,7 +1039,9 @@ function currentInterviewEditorValues(){
     coreFindings:$("#iCoreFindings").value,
     evidence:$("#iEvidence").value,
     connections:$("#iConnections").value,
-    notes:$("#iNotes").value
+    notes:$("#iNotes").value,
+    recordingAt:$("#iRecordingAt").value,
+    broadcastAt:$("#iBroadcastAt").value
   };
 }
 
@@ -1044,6 +1050,75 @@ $("#saveInterview").onclick=()=>{
   if(!c)return alert("Bitte Kandidaten auswählen.");
   data.interviews[c.id]=currentInterviewEditorValues();
   persist();
+};
+
+function parseLocalDateTime(value){
+  const text=String(value||"").trim();
+  if(!text)return null;
+  const match=text.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+  if(!match)return null;
+  const [,y,m,d,h,min]=match.map((part,index)=>index?Number(part):part);
+  const date=new Date(y,m-1,d,h,min,0,0);
+  return Number.isNaN(date.getTime())?null:date;
+}
+
+function formatStudioAppointment(value){
+  const date=parseLocalDateTime(value);
+  if(!date)return "";
+  const weekdays=["So","Mo","Di","Mi","Do","Fr","Sa"];
+  const dd=String(date.getDate()).padStart(2,"0");
+  const mm=String(date.getMonth()+1).padStart(2,"0");
+  const yyyy=date.getFullYear();
+  const hh=String(date.getHours()).padStart(2,"0");
+  const min=String(date.getMinutes()).padStart(2,"0");
+  return `${weekdays[date.getDay()]} ${dd}.${mm}.${yyyy} · ${hh}:${min}`;
+}
+
+function interviewAppointments(){
+  const items=[];
+  data.candidates.forEach(c=>{
+    const interview=getInterview(c);
+    [["recordingAt","Aufnahme"],["broadcastAt","Sendung"]].forEach(([field,type])=>{
+      const value=interview[field]||"";
+      const date=parseLocalDateTime(value);
+      if(date)items.push({candidateId:c.id,name:c.name||"Unbekannt",institution:c.institution||"",type,value,date});
+    });
+  });
+  return items;
+}
+
+function renderInterviewSchedule(){
+  const target=$("#interviewSchedule");
+  if(!target)return;
+  const now=new Date();
+  const items=interviewAppointments();
+  const upcoming=items.filter(item=>item.date>=now).sort((a,b)=>a.date-b.date);
+  const past=items.filter(item=>item.date<now).sort((a,b)=>b.date-a.date);
+
+  const row=item=>`<button class="schedule-row" type="button" onclick="openInterviewCandidate('${item.candidateId}')">
+    <span class="schedule-date">${esc(formatStudioAppointment(item.value))}</span>
+    <span class="schedule-type ${item.type==='Aufnahme'?'recording':'broadcast'}">${item.type}</span>
+    <span class="schedule-person"><strong>${esc(item.name)}</strong>${item.institution?`<small>${esc(item.institution)}</small>`:""}</span>
+  </button>`;
+
+  let html="";
+  if(upcoming.length){
+    html+=`<div class="schedule-group"><div class="schedule-group-title">Kommende Termine</div>${upcoming.map(row).join("")}</div>`;
+  }else{
+    html+=`<p class="schedule-empty">Noch keine kommenden Aufnahme- oder Sendetermine eingetragen.</p>`;
+  }
+  if(past.length){
+    html+=`<details class="schedule-past"><summary>Vergangene Termine (${past.length})</summary><div class="schedule-group">${past.map(row).join("")}</div></details>`;
+  }
+  target.innerHTML=html;
+}
+
+window.openInterviewCandidate=id=>{
+  const select=$("#iCandidate");
+  if(!select)return;
+  select.value=id;
+  showInterviewForSelectedCandidate(false);
+  select.scrollIntoView({behavior:"smooth",block:"center"});
 };
 
 // --- Interview-Bildschirm ---------------------------------------------------
@@ -2079,7 +2154,8 @@ $("#startTraining").onclick=()=>{
   const c=selected("#iCandidate");
   if(!c)return alert("Bitte zuerst einen Kandidaten auswählen.");
   // Änderungen sichern, aber Audio noch NICHT starten.
-  data.interviews[c.id]={intro:$("#iIntro").value,notes:$("#iNotes").value};
+  // Alle Interviewfelder einschließlich Aufnahme-/Sendetermin bleiben erhalten.
+  data.interviews[c.id]=currentInterviewEditorValues();
   storage.save(data);
   if(!buildTraining())return alert("Bitte mindestens einen Abschnitt der Interviewvorbereitung eintragen.");
   $("#trainingPanel").classList.remove("hidden");
@@ -2122,6 +2198,7 @@ function renderAll(){
   candidateOptions();
   makeMail();
   if($("#iCandidate").value)showInterviewForSelectedCandidate(false);
+  renderInterviewSchedule();
   showZGroup();
   renderZPanel();
   if(!currentZArticleId && data.zArticles.length){

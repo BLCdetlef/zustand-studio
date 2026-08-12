@@ -181,9 +181,32 @@
     </div>
   </div>
 
+  <article class="card schedule-card">
+    <div class="cardhead schedule-head">
+      <div>
+        <div class="kicker">AUFNAHME & SENDUNG</div>
+        <h3>Terminübersicht</h3>
+      </div>
+      <span class="schedule-note">kommende Termine chronologisch</span>
+    </div>
+    <div id="interviewSchedule" class="schedule-list"></div>
+  </article>
+
   <article class="card">
     <label>Kandidat</label>
     <select id="iCandidate"></select>
+
+    <div class="grid two interview-date-grid">
+      <div>
+        <label>Aufnahme</label>
+        <input id="iRecordingAt" type="datetime-local">
+      </div>
+      <div>
+        <label>Sendung</label>
+        <input id="iBroadcastAt" type="datetime-local">
+      </div>
+    </div>
+    <p class="hint">Die Termine erscheinen oben automatisch nach Datum und Uhrzeit sortiert – mit Wochentag, z. B. Di 18.08.2026 · 15:00.</p>
 
     <label>Anmoderation / kurze Vorstellung des Gastes</label>
     <textarea id="iIntro" class="introtext" placeholder="Wer ist mein Gast, wo arbeitet die Person und warum sprechen wir heute miteinander?"></textarea>

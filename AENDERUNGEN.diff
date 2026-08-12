@@ -1,236 +1,344 @@
---- /tmp/index.base.html	2026-08-12 08:39:13.730929308 +0000
-+++ index.html	2026-08-12 08:39:13.578417625 +0000
-@@ -508,8 +508,22 @@
- </div>
+--- /mnt/data/termin_update_pristine/index.html	2026-08-12 08:39:13.000000000 +0000
++++ /mnt/data/termin_update_work/index.html	2026-08-12 09:13:22.401253419 +0000
+@@ -181,10 +181,33 @@
+     </div>
+   </div>
  
- <footer>
--  <span>Prototyp · keine produktive Speicherung personenbezogener Daten</span>
--  <button class="ghost danger" id="clearDemo">Lokale Demo-Daten löschen</button>
-+  <div>
-+    <strong>Lokale Studio-Daten</strong><br>
-+    <span>Im Browser gespeichert · Vor Sicherung offene Änderungen speichern · Sicherung enthält keine Bilddateien</span>
-+  </div>
-+  <div class="footer-actions">
-+    <button class="ghost" id="downloadStudioBackup">Studio-Sicherung herunterladen</button>
-+    <button class="ghost" id="restoreStudioBackup">Sicherung wiederherstellen</button>
-+    <input class="hidden" id="restoreStudioBackupFile" type="file" accept=".json,application/json">
-+    <details class="danger-zone">
-+      <summary>Gefahrenbereich</summary>
-+      <div class="danger-zone-body">
-+        <p>Nur verwenden, wenn die lokalen Daten dieses Browsers wirklich vollständig entfernt werden sollen.</p>
-+        <button class="ghost danger" id="clearDemo">Alle lokalen Studio-Daten löschen</button>
++  <article class="card schedule-card">
++    <div class="cardhead schedule-head">
++      <div>
++        <div class="kicker">AUFNAHME & SENDUNG</div>
++        <h3>Terminübersicht</h3>
 +      </div>
-+    </details>
-+  </div>
- </footer>
- 
- <script src="app.js"></script>
---- /tmp/app.base.js	2026-08-12 08:39:13.730929308 +0000
-+++ app.js	2026-08-12 08:38:33.361799103 +0000
-@@ -1,6 +1,8 @@
- const $=s=>document.querySelector(s);
- const $$=s=>[...document.querySelectorAll(s)];
- const KEY="zustandStudioPrototypeV1";
-+const BACKUP_FORMAT="zustand-studio-backup-v1";
-+const BACKUP_VERSION=1;
- 
- class LocalDemoStorage {
-   load(){ try{return JSON.parse(localStorage.getItem(KEY))||this.empty()}catch{return this.empty()} }
-@@ -11,46 +13,51 @@
- 
- // Später austauschbar: class NextcloudStorage { load(); save(); ... }
- const storage = new LocalDemoStorage();
--let data=storage.load();
- 
--// Abwärtskompatibel zu bereits im Browser gespeicherten Studio-Daten.
--if(!Array.isArray(data.candidates))data.candidates=[];
--if(!Array.isArray(data.groups))data.groups=[];
--if(!data.acquisition)data.acquisition={};
--if(!data.interviews)data.interviews={};
--if(!data.zDrafts)data.zDrafts={};
--if(!Array.isArray(data.zArticles))data.zArticles=[];
--if(typeof data.zPublicBaselineImported!=="boolean")data.zPublicBaselineImported=false;
--if(typeof data.zPublicBaselineName!=="string")data.zPublicBaselineName="";
--
--// Bestehende kandidatenbezogene Z-Panel-Entwürfe einmalig in das neue,
--// eigenständige Redaktionsmodell übernehmen. Die alten Daten bleiben erhalten.
--Object.entries(data.zDrafts).forEach(([candidateId,z])=>{
--  if(!z || !(z.title||z.summary||z.source))return;
--  if(data.zArticles.some(a=>a?.legacyCandidateId===candidateId))return;
--  const today=new Date().toISOString().slice(0,10);
--  data.zArticles.push({
--    id:`legacy-${candidateId}`,
--    legacyCandidateId:candidateId,
--    candidateId,
--    title:String(z.title||""),
--    summary:String(z.summary||""),
--    category:"Zustand",
--    planetaryBoundary:"QS",
--    keywords:[],
--    sourceTitle:"",
--    sourceUrl:String(z.source||""),
--    publicationDate:"",
--    imageFile:"",
--    imageIdea:"",
--    interviewUrl:"",
--    workflowStatus:"entwurf",
--    visibility:"aktiv",
--    created:today,
--    lastModified:today,
--    publishedAt:""
-+function normalizeStudioData(raw){
-+  const normalized=(raw&&typeof raw==="object"&&!Array.isArray(raw))?raw:storage.empty();
-+  if(!Array.isArray(normalized.candidates))normalized.candidates=[];
-+  if(!Array.isArray(normalized.groups))normalized.groups=[];
-+  if(!normalized.acquisition||typeof normalized.acquisition!=="object")normalized.acquisition={};
-+  if(!normalized.interviews||typeof normalized.interviews!=="object")normalized.interviews={};
-+  if(!normalized.zDrafts||typeof normalized.zDrafts!=="object")normalized.zDrafts={};
-+  if(!Array.isArray(normalized.zArticles))normalized.zArticles=[];
-+  if(typeof normalized.zPublicBaselineImported!=="boolean")normalized.zPublicBaselineImported=false;
-+  if(typeof normalized.zPublicBaselineName!=="string")normalized.zPublicBaselineName="";
-+  return normalized;
-+}
++      <span class="schedule-note">kommende Termine chronologisch</span>
++    </div>
++    <div id="interviewSchedule" class="schedule-list"></div>
++  </article>
 +
-+function migrateLegacyZDrafts(target){
-+  Object.entries(target.zDrafts||{}).forEach(([candidateId,z])=>{
-+    if(!z || !(z.title||z.summary||z.source))return;
-+    if(target.zArticles.some(a=>a?.legacyCandidateId===candidateId))return;
-+    const today=new Date().toISOString().slice(0,10);
-+    target.zArticles.push({
-+      id:`legacy-${candidateId}`,
-+      legacyCandidateId:candidateId,
-+      candidateId,
-+      title:String(z.title||""),
-+      summary:String(z.summary||""),
-+      category:"Zustand",
-+      planetaryBoundary:"QS",
-+      keywords:[],
-+      sourceTitle:"",
-+      sourceUrl:String(z.source||""),
-+      publicationDate:"",
-+      imageFile:"",
-+      imageIdea:"",
-+      interviewUrl:"",
-+      workflowStatus:"entwurf",
-+      visibility:"aktiv",
-+      created:today,
-+      lastModified:today,
-+      publishedAt:""
-+    });
-   });
--});
-+  return target;
-+}
+   <article class="card">
+     <label>Kandidat</label>
+     <select id="iCandidate"></select>
+ 
++    <div class="grid two interview-date-grid">
++      <div>
++        <label>Aufnahme</label>
++        <input id="iRecordingAt" type="datetime-local">
++      </div>
++      <div>
++        <label>Sendung</label>
++        <input id="iBroadcastAt" type="datetime-local">
++      </div>
++    </div>
++    <p class="hint">Die Termine erscheinen oben automatisch nach Datum und Uhrzeit sortiert – mit Wochentag, z. B. Di 18.08.2026 · 15:00.</p>
 +
-+let data=migrateLegacyZDrafts(normalizeStudioData(storage.load()));
- function textList(value){
-   if(Array.isArray(value)){
-     return value.map(item=>{
-@@ -1676,6 +1683,61 @@
-   a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
-   setTimeout(()=>URL.revokeObjectURL(url),1000);
+     <label>Anmoderation / kurze Vorstellung des Gastes</label>
+     <textarea id="iIntro" class="introtext" placeholder="Wer ist mein Gast, wo arbeitet die Person und warum sprechen wir heute miteinander?"></textarea>
+ 
+--- /mnt/data/termin_update_pristine/app.js	2026-08-12 08:38:33.000000000 +0000
++++ /mnt/data/termin_update_work/app.js	2026-08-12 09:13:22.401859058 +0000
+@@ -986,18 +986,18 @@
+   };
  }
-+
-+function backupTimestampForFilename(date=new Date()){
-+  const pad=n=>String(n).padStart(2,"0");
-+  return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}_${pad(date.getHours())}-${pad(date.getMinutes())}`;
-+}
-+
-+function studioBackupPayload(){
-+  return {
-+    format:BACKUP_FORMAT,
-+    version:BACKUP_VERSION,
-+    exportedAt:new Date().toISOString(),
-+    storageKey:KEY,
-+    note:"Vollständige lokale ZUSTAND-Studio-Sicherung. Bilddateien sind nicht enthalten; gespeichert werden nur ihre Pfade und Metadaten.",
-+    data
-+  };
-+}
-+
-+function downloadStudioBackup(suffix=""){
-+  // Sicherung bildet den aktuell im Studio-Datenmodell gespeicherten Stand ab.
-+  const extra=suffix?`_${suffix}`:"";
-+  downloadJson(`zustand-studio-backup_${backupTimestampForFilename()}${extra}.json`,studioBackupPayload());
-+}
-+
-+function backupSummary(restored){
-+  const candidates=Array.isArray(restored.candidates)?restored.candidates.length:0;
-+  const interviews=restored.interviews&&typeof restored.interviews==="object"?Object.keys(restored.interviews).length:0;
-+  const zArticles=Array.isArray(restored.zArticles)?restored.zArticles.length:0;
-+  return `${candidates} Kandidat:innen, ${interviews} Interview-Datensätze, ${zArticles} Z-Panel-Beiträge`;
-+}
-+
-+async function restoreStudioBackup(file){
-+  try{
-+    const parsed=JSON.parse(await file.text());
-+    if(!parsed||parsed.format!==BACKUP_FORMAT||!parsed.data||typeof parsed.data!=="object"){
-+      throw new Error("Das ist keine gültige ZUSTAND-Studio-Sicherung.");
-+    }
-+    if(Number(parsed.version||0)>BACKUP_VERSION){
-+      throw new Error(`Diese Sicherung verwendet Version ${parsed.version}. Das Studio unterstützt derzeit Version ${BACKUP_VERSION}.`);
-+    }
-+    const restored=migrateLegacyZDrafts(normalizeStudioData(parsed.data));
-+    const when=parsed.exportedAt?new Date(parsed.exportedAt).toLocaleString("de-DE"):"unbekannt";
-+    const ok=confirm(
-+      `Studio-Sicherung wiederherstellen?\n\nSicherung vom: ${when}\nEnthalten: ${backupSummary(restored)}\n\nDer aktuelle lokale Datenstand dieses Browsers wird dadurch ersetzt. Falls du ihn behalten möchtest, brich ab und lade zuerst eine Studio-Sicherung herunter.`
-+    );
-+    if(!ok)return;
-+    data=restored;
-+    storage.save(data);
-+    currentZArticleId="";
-+    renderAll();
-+    nav("research");
-+    alert("Studio-Sicherung wurde erfolgreich wiederhergestellt.");
-+  }catch(error){
-+    alert(`Sicherung konnte nicht wiederhergestellt werden: ${error.message||error}`);
-+  }
-+}
- function inferZCategory(raw={}){
-   if(raw.category)return String(raw.category);
-   const keys=zKeywordList(raw.keywords).map(x=>x.toLocaleLowerCase());
-@@ -1788,13 +1850,26 @@
-   $(sel).addEventListener("change",updateZPreview);
- });
+ function completeInterviewShape(c,value){
+-  const draft=makeInterviewDraft(c);
++  const draft={...makeInterviewDraft(c),recordingAt:"",broadcastAt:""};
+   if(typeof value==="string")return {...draft,notes:value};
+   if(!value || typeof value!=="object")return draft;
+   const result={...draft};
+-  for(const key of ["intro","coreFindings","evidence","connections","notes"]){
++  for(const key of ["intro","coreFindings","evidence","connections","notes","recordingAt","broadcastAt"]){
+     if(Object.prototype.hasOwnProperty.call(value,key))result[key]=String(value[key]||"");
+   }
+   return result;
+ }
  
-+$("#downloadStudioBackup").onclick=()=>downloadStudioBackup();
-+$("#restoreStudioBackup").onclick=()=>$("#restoreStudioBackupFile").click();
-+$("#restoreStudioBackupFile").onchange=async event=>{
-+  const file=event.target.files?.[0];
-+  if(file)await restoreStudioBackup(file);
-+  event.target.value="";
-+};
-+
- $("#clearDemo").onclick=()=>{
--  if(confirm("Alle lokal im Browser gespeicherten Demo-Daten löschen?")){
--    storage.clear();
--    data=storage.load();
--    renderAll();
--    nav("research");
--  }
-+  const answer=prompt(
-+    "ACHTUNG: Damit werden Kandidaten, Interviews und Z-Panel-Redaktion dieses Browsers gelöscht.\n\nVor dem Löschen wird automatisch eine Studio-Sicherung heruntergeladen.\n\nTippe zum endgültigen Löschen exakt: LÖSCHEN"
-+  );
-+  if(answer!=="LÖSCHEN")return;
-+  downloadStudioBackup("vor-loeschen");
-+  storage.clear();
-+  data=migrateLegacyZDrafts(normalizeStudioData(storage.load()));
-+  currentZArticleId="";
-+  renderAll();
-+  nav("research");
-+  alert("Die lokalen Studio-Daten dieses Browsers wurden gelöscht. Die Sicherungsdatei wurde zuvor zum Download angeboten.");
+ function getInterview(c){
+-  if(!c)return {intro:"",coreFindings:"",evidence:"",connections:"",notes:""};
++  if(!c)return {intro:"",coreFindings:"",evidence:"",connections:"",notes:"",recordingAt:"",broadcastAt:""};
+   const saved=data.interviews[c.id];
+   if(saved!==undefined)return completeInterviewShape(c,saved);
+   return makeInterviewDraft(c);
+@@ -1005,15 +1005,19 @@
+ 
+ function showInterviewForSelectedCandidate(forceDraft=false){
+   const c=selected("#iCandidate");
+-  const fields=["#iIntro","#iCoreFindings","#iEvidence","#iConnections","#iNotes"];
++  const fields=["#iIntro","#iCoreFindings","#iEvidence","#iConnections","#iNotes","#iRecordingAt","#iBroadcastAt"];
+   if(!c){fields.forEach(id=>$(id).value="");return;}
+ 
+-  const interview=forceDraft?makeInterviewDraft(c):getInterview(c);
++  // Beim Laden eines neuen Textvorschlags bleiben bereits eingetragene Termine erhalten.
++  const saved=getInterview(c);
++  const interview=forceDraft?{...makeInterviewDraft(c),recordingAt:saved.recordingAt||"",broadcastAt:saved.broadcastAt||""}:saved;
+   $("#iIntro").value=interview.intro||"";
+   $("#iCoreFindings").value=interview.coreFindings||"";
+   $("#iEvidence").value=interview.evidence||"";
+   $("#iConnections").value=interview.connections||"";
+   $("#iNotes").value=interview.notes||"";
++  $("#iRecordingAt").value=interview.recordingAt||"";
++  $("#iBroadcastAt").value=interview.broadcastAt||"";
+   stopTraining();
+ }
+ 
+@@ -1035,7 +1039,9 @@
+     coreFindings:$("#iCoreFindings").value,
+     evidence:$("#iEvidence").value,
+     connections:$("#iConnections").value,
+-    notes:$("#iNotes").value
++    notes:$("#iNotes").value,
++    recordingAt:$("#iRecordingAt").value,
++    broadcastAt:$("#iBroadcastAt").value
+   };
+ }
+ 
+@@ -1046,6 +1052,75 @@
+   persist();
  };
  
++function parseLocalDateTime(value){
++  const text=String(value||"").trim();
++  if(!text)return null;
++  const match=text.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
++  if(!match)return null;
++  const [,y,m,d,h,min]=match.map((part,index)=>index?Number(part):part);
++  const date=new Date(y,m-1,d,h,min,0,0);
++  return Number.isNaN(date.getTime())?null:date;
++}
++
++function formatStudioAppointment(value){
++  const date=parseLocalDateTime(value);
++  if(!date)return "";
++  const weekdays=["So","Mo","Di","Mi","Do","Fr","Sa"];
++  const dd=String(date.getDate()).padStart(2,"0");
++  const mm=String(date.getMonth()+1).padStart(2,"0");
++  const yyyy=date.getFullYear();
++  const hh=String(date.getHours()).padStart(2,"0");
++  const min=String(date.getMinutes()).padStart(2,"0");
++  return `${weekdays[date.getDay()]} ${dd}.${mm}.${yyyy} · ${hh}:${min}`;
++}
++
++function interviewAppointments(){
++  const items=[];
++  data.candidates.forEach(c=>{
++    const interview=getInterview(c);
++    [["recordingAt","Aufnahme"],["broadcastAt","Sendung"]].forEach(([field,type])=>{
++      const value=interview[field]||"";
++      const date=parseLocalDateTime(value);
++      if(date)items.push({candidateId:c.id,name:c.name||"Unbekannt",institution:c.institution||"",type,value,date});
++    });
++  });
++  return items;
++}
++
++function renderInterviewSchedule(){
++  const target=$("#interviewSchedule");
++  if(!target)return;
++  const now=new Date();
++  const items=interviewAppointments();
++  const upcoming=items.filter(item=>item.date>=now).sort((a,b)=>a.date-b.date);
++  const past=items.filter(item=>item.date<now).sort((a,b)=>b.date-a.date);
++
++  const row=item=>`<button class="schedule-row" type="button" onclick="openInterviewCandidate('${item.candidateId}')">
++    <span class="schedule-date">${esc(formatStudioAppointment(item.value))}</span>
++    <span class="schedule-type ${item.type==='Aufnahme'?'recording':'broadcast'}">${item.type}</span>
++    <span class="schedule-person"><strong>${esc(item.name)}</strong>${item.institution?`<small>${esc(item.institution)}</small>`:""}</span>
++  </button>`;
++
++  let html="";
++  if(upcoming.length){
++    html+=`<div class="schedule-group"><div class="schedule-group-title">Kommende Termine</div>${upcoming.map(row).join("")}</div>`;
++  }else{
++    html+=`<p class="schedule-empty">Noch keine kommenden Aufnahme- oder Sendetermine eingetragen.</p>`;
++  }
++  if(past.length){
++    html+=`<details class="schedule-past"><summary>Vergangene Termine (${past.length})</summary><div class="schedule-group">${past.map(row).join("")}</div></details>`;
++  }
++  target.innerHTML=html;
++}
++
++window.openInterviewCandidate=id=>{
++  const select=$("#iCandidate");
++  if(!select)return;
++  select.value=id;
++  showInterviewForSelectedCandidate(false);
++  select.scrollIntoView({behavior:"smooth",block:"center"});
++};
++
+ // --- Interview-Bildschirm ---------------------------------------------------
+ // Reine Anzeige der aktuell bearbeiteten Interviewvorbereitung.
+ // Kontakt- und Akquise-Daten werden dabei nicht verändert.
+@@ -2079,7 +2154,8 @@
+   const c=selected("#iCandidate");
+   if(!c)return alert("Bitte zuerst einen Kandidaten auswählen.");
+   // Änderungen sichern, aber Audio noch NICHT starten.
+-  data.interviews[c.id]={intro:$("#iIntro").value,notes:$("#iNotes").value};
++  // Alle Interviewfelder einschließlich Aufnahme-/Sendetermin bleiben erhalten.
++  data.interviews[c.id]=currentInterviewEditorValues();
+   storage.save(data);
+   if(!buildTraining())return alert("Bitte mindestens einen Abschnitt der Interviewvorbereitung eintragen.");
+   $("#trainingPanel").classList.remove("hidden");
+@@ -2122,6 +2198,7 @@
+   candidateOptions();
+   makeMail();
+   if($("#iCandidate").value)showInterviewForSelectedCandidate(false);
++  renderInterviewSchedule();
+   showZGroup();
+   renderZPanel();
+   if(!currentZArticleId && data.zArticles.length){
+--- /mnt/data/termin_update_pristine/styles.css	2026-08-12 08:38:08.000000000 +0000
++++ /mnt/data/termin_update_work/styles.css	2026-08-12 09:13:22.401757738 +0000
+@@ -178,3 +178,31 @@
+   .z-preview-card.mode-th .z-preview-image{min-height:260px}
+   .z-preview-copy{padding:24px 20px}
+ }
++
++/* Interviewtermine: kompakte chronologische Übersicht */
++.schedule-card{margin-bottom:18px}
++.schedule-head{margin-bottom:12px}
++.schedule-note{font-size:12px;color:var(--muted);white-space:nowrap}
++.schedule-list{display:grid;gap:8px}
++.schedule-group{display:grid;gap:7px}
++.schedule-group-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:2px 0 3px}
++.schedule-row{width:100%;display:grid;grid-template-columns:minmax(190px,auto) 90px 1fr;gap:12px;align-items:center;text-align:left;border:1px solid var(--line);border-radius:9px;background:#fff;padding:10px 12px;cursor:pointer;color:inherit}
++.schedule-row:hover{background:#f7f7f5}
++.schedule-date{font-weight:800;font-variant-numeric:tabular-nums}
++.schedule-type{justify-self:start;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;border:1px solid #aaa;border-radius:999px;padding:4px 7px}
++.schedule-person{min-width:0;display:flex;flex-direction:column;gap:2px}
++.schedule-person strong,.schedule-person small{overflow-wrap:anywhere}
++.schedule-person small{font-size:12px;color:var(--muted)}
++.schedule-empty{margin:0;color:var(--muted);font-size:13px}
++.schedule-past{margin-top:5px;border-top:1px solid var(--line);padding-top:9px}
++.schedule-past summary{cursor:pointer;color:var(--muted);font-size:12px;font-weight:700;margin-bottom:8px}
++.interview-date-grid{margin-top:4px}
++@media(max-width:760px){
++  .schedule-head{align-items:flex-start;flex-direction:column;gap:4px}
++  .schedule-note{white-space:normal}
++  .schedule-row{grid-template-columns:1fr auto;gap:6px 10px}
++  .schedule-date{grid-column:1/2}
++  .schedule-type{grid-column:2/3;grid-row:1}
++  .schedule-person{grid-column:1/-1}
++}
++
+--- /mnt/data/termin_update_pristine/BASIS_VERSION.txt	2026-08-12 08:38:55.000000000 +0000
++++ /mnt/data/termin_update_work/BASIS_VERSION.txt	2026-08-12 09:13:56.103988264 +0000
+@@ -2,7 +2,7 @@
+ ================================
  
---- /tmp/styles.base.css	2026-08-12 08:39:13.734929307 +0000
-+++ styles.css	2026-08-12 08:38:08.755314809 +0000
-@@ -18,8 +18,8 @@
- .actions{display:flex;gap:10px;margin-top:16px}.candidate-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
- .hint{font-size:12px;color:#666;line-height:1.45}.notice{margin-top:20px;background:#f2f2ef;padding:15px;border-left:4px solid #333}
- .hidden{display:none}.candidate{display:grid;grid-template-columns:1fr auto;gap:15px}.candidate h3{margin:0 0 6px}.meta{font-size:13px;color:#666}.candidate p{margin:8px 0;line-height:1.45}.tag{display:inline-block;font-size:11px;border:1px solid #aaa;border-radius:99px;padding:3px 7px;margin-right:5px}
--footer{border-top:1px solid var(--line);background:#fff;padding:18px 5vw;display:flex;justify-content:space-between;align-items:center;color:#666;font-size:12px}
--@media(max-width:760px){header{align-items:start;flex-direction:column}.grid.two{grid-template-columns:1fr}.hero h2,.sectionhead h2{font-size:28px}nav{padding:0 10px}main{padding:25px 15px 55px}.candidate{grid-template-columns:1fr}.sectionhead{align-items:flex-start}.candidate-actions{justify-content:flex-start}}
-+footer{border-top:1px solid var(--line);background:#fff;padding:18px 5vw;display:flex;justify-content:space-between;align-items:flex-start;gap:18px;color:#666;font-size:12px;flex-wrap:wrap}.footer-actions{display:flex;gap:8px;align-items:flex-start;justify-content:flex-end;flex-wrap:wrap}.danger-zone{border:1px solid #ddd;border-radius:7px;background:#fafafa;max-width:310px}.danger-zone summary{cursor:pointer;padding:10px 12px;font-weight:700;color:#666}.danger-zone-body{padding:0 12px 12px}.danger-zone-body p{margin:0 0 10px;line-height:1.4}.danger-zone .danger{border-color:#b66;color:#822}
-+@media(max-width:760px){header{align-items:start;flex-direction:column}.grid.two{grid-template-columns:1fr}.hero h2,.sectionhead h2{font-size:28px}nav{padding:0 10px}main{padding:25px 15px 55px}.candidate{grid-template-columns:1fr}.sectionhead{align-items:flex-start}.candidate-actions{justify-content:flex-start}footer{flex-direction:column}.footer-actions{justify-content:flex-start;width:100%}.footer-actions>button,.danger-zone{width:100%}}
+ Basis-Paket:
+-zustand-studio-update-zpanel-kandidatenprofil.zip
++zustand-studio-update-sicherung-wiederherstellung.zip
  
- .introtext{min-height:150px}
- .interview-actions{flex-wrap:wrap}
+ Quelle:
+ Letzte bekannte Arbeitsversion aus der ChatGPT-Dateibibliothek vor diesem Update.
+@@ -12,21 +12,19 @@
+ Branch: main
+ 
+ Update:
+-Studio-Sicherung und Wiederherstellung
++Chronologische Interview-Terminübersicht
+ 
+ Änderungen:
+-- vollständige lokale Studio-Sicherung als JSON-Datei
+-- Wiederherstellung einer geprüften ZUSTAND-Studio-Sicherung
+-- Sicherungsformat: zustand-studio-backup-v1
+-- Sicherung enthält Kandidaten, Gruppen, Akquise, Interviews, Forschungsprofile,
+-  Z-Panel-Redaktion und importierten öffentlichen Z-Panel-Basisstand
+-- Bilddateien selbst sind nicht Bestandteil der Sicherung; Bildpfade und
+-  Bild-Metadaten im Studio-Datensatz werden mitgesichert
+-- Wiederherstellung zeigt vor dem Überschreiben eine Bestandszusammenfassung
+-- bisheriger Löschknopf in einen Gefahrenbereich verschoben
+-- endgültiges Löschen nur nach Eingabe von LÖSCHEN
+-- vor dem Löschen wird automatisch eine Notfall-Sicherung zum Download angeboten
+-- mobile Darstellung der Sicherungsfunktionen angepasst
++- Interview erhält zwei Datums-/Zeitfelder: Aufnahme und Sendung
++- gemeinsame Terminübersicht aller Kandidat:innen im Interview-Bereich
++- kommende Aufnahme- und Sendetermine chronologisch nach Datum/Uhrzeit sortiert
++- Wochentagskürzel Mo, Di, Mi, Do, Fr, Sa, So werden direkt angezeigt
++- vergangene Termine bleiben in einem aufklappbaren Abschnitt erhalten
++- Klick auf einen Termin öffnet den zugehörigen Kandidaten im Interview-Editor
++- bestehende Interviewdaten und alte Backups bleiben kompatibel; neue Felder sind additive Ergänzungen
++- Backup-Format bleibt zustand-studio-backup-v1 / Version 1
++- beim Laden eines neuen Interview-Textvorschlags bleiben bereits gesetzte Termine erhalten
++- Speicherlogik des Trainers korrigiert: alle Interviewfelder bleiben beim Trainingsstart erhalten
+ 
+ Geänderte Webdateien:
+ - index.html
+@@ -34,7 +32,7 @@
+ - styles.css
+ 
+ Empfohlene Commit-Bezeichnung:
+-Studio-Sicherung und sichere Wiederherstellung ergänzt
++Interviewtermine chronologisch mit Wochentagen anzeigen
+ 
+ Hinweis:
+ Ein konkreter GitHub-Commit-Hash wurde in dieser Sitzung nicht live verifiziert.
+--- /mnt/data/termin_update_pristine/TESTHINWEISE.txt	2026-08-12 08:38:55.000000000 +0000
++++ /mnt/data/termin_update_work/TESTHINWEISE.txt	2026-08-12 09:13:56.104730976 +0000
+@@ -1,38 +1,42 @@
+-ZUSTAND Studio – Testhinweise für Studio-Sicherung
+-===================================================
++ZUSTAND Studio – Testhinweise Terminübersicht
++==============================================
+ 
+-1. Studio normal öffnen und prüfen, ob die vorhandenen Kandidaten und Z-Panel-Daten weiterhin sichtbar sind.
++1. Studio öffnen und zum Bereich „Interview“ wechseln.
+ 
+-2. Unten auf „Studio-Sicherung herunterladen“ tippen/klicken.
+-   Erwartet: Eine Datei ähnlich
+-   zustand-studio-backup_2026-08-12_10-36.json
+-   wird heruntergeladen.
++2. Kandidat auswählen.
++   Unter der Kandidatenauswahl sollten jetzt die Felder „Aufnahme“ und „Sendung“ erscheinen.
+ 
+-3. Die JSON-Datei nicht bearbeiten. Danach im Studio testweise eine kleine,
+-   eindeutig erkennbare Änderung vornehmen und speichern.
++3. Beispiel eintragen:
++   Aufnahme: 18.08.2026 15:00
++   Sendung: 21.08.2026 16:00
++   Danach „Lokal speichern“ wählen.
+ 
+-4. „Sicherung wiederherstellen“ wählen und die zuvor heruntergeladene Datei auswählen.
+-   Erwartet: Vor dem Überschreiben erscheint eine Zusammenfassung mit Anzahl
+-   Kandidat:innen, Interview-Datensätzen und Z-Panel-Beiträgen.
++4. Erwartete Terminübersicht oben:
++   Di 18.08.2026 · 15:00   Aufnahme   [Kandidat]
++   Fr 21.08.2026 · 16:00   Sendung    [Kandidat]
+ 
+-5. Wiederherstellung bestätigen.
+-   Erwartet: Der frühere Stand ist wieder da.
++5. Termine bei mehreren Kandidat:innen eintragen.
++   Erwartet: Alle kommenden Aufnahme- und Sendetermine stehen in einer gemeinsamen,
++   chronologisch aufsteigenden Liste – unabhängig davon, zu welchem Kandidaten sie gehören.
+ 
+-6. Test mit einer falschen JSON-Datei:
+-   Erwartet: Die Datei wird abgelehnt; der vorhandene Studio-Datenstand bleibt unverändert.
++6. Auf einen Termin in der Übersicht klicken/tippen.
++   Erwartet: Der betreffende Kandidat wird im Interview-Editor ausgewählt.
+ 
+-7. Gefahrenbereich öffnen und Löschfunktion testen, aber nur wenn eine Sicherung vorhanden ist.
+-   - andere Eingabe als LÖSCHEN: nichts wird gelöscht
+-   - exakte Eingabe LÖSCHEN: vor dem Löschen wird eine Notfall-Sicherung angeboten
++7. Einen Termin in die Vergangenheit setzen.
++   Erwartet: Er erscheint nicht zwischen den kommenden Terminen, sondern unter
++   „Vergangene Termine“.
+ 
+-8. Windows und Android:
+-   Dieselbe Sicherungsdatei kann auf beiden Geräten über „Sicherung wiederherstellen“ eingelesen werden.
+-   Dabei ersetzt sie jeweils den lokalen Datenstand des verwendeten Browsers.
++8. Bei einem Kandidaten mit gesetztem Termin „Vorschlag laden“ verwenden.
++   Erwartet: Interviewtexte werden neu erzeugt, Aufnahme- und Sendetermin bleiben erhalten.
+ 
+-Wichtig zu Bildern:
+-Die Studio-Sicherung enthält keine eigentlichen PNG/JPG-Dateien. Vorhandene Bildpfade
+-und Metadaten werden mitgesichert. Die Bilddateien bleiben separat im Z-Panel-/GitHub-Bestand.
++9. Trainer starten und danach den Kandidaten erneut öffnen.
++   Erwartet: Termine und alle Interviewvorbereitungsfelder bleiben erhalten.
++
++10. Alte Studio-Sicherung wiederherstellen.
++    Erwartet: Sie bleibt lesbar; bei alten Datensätzen sind Aufnahme und Sendung zunächst leer.
++    Backup-Format bleibt Version 1, weil nur neue optionale Felder ergänzt wurden.
+ 
+ Technische Prüfung:
+ - app.js mit node --check geprüft
++- HTML-IDs und zugehörige JS-Zugriffe statisch geprüft
+ - Änderungen als AENDERUNGEN.diff enthalten
