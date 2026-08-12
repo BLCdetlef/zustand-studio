@@ -549,6 +549,21 @@ function showZGroup(){
   const c=selected("#zCandidate");
   const field=$("#zGroupDisplay");
   if(field)field.value=c?groupName(c.groupId):"";
+  const button=$("#zImportCandidateProfile");
+  const info=$("#zCandidateImportInfo");
+  if(button)button.disabled=!c;
+  if(info){
+    if(!c){
+      info.textContent="Kandidat auswählen. Übernommen werden nur redaktionell nutzbare Forschungsangaben – keine E-Mail, Telefonnummer, Anschrift oder internen Notizen.";
+    }else{
+      ensureCandidateResearch(c);
+      const parts=[];
+      if(c.coreFindings.length)parts.push(`${c.coreFindings.length} Kernaussage${c.coreFindings.length===1?"":"n"}`);
+      if(c.measurements.length)parts.push(`${c.measurements.length} Messreihe${c.measurements.length===1?"":"n"}/Projekt${c.measurements.length===1?"":"e"}`);
+      if(c.publications.length)parts.push(`${c.publications.length} Veröffentlichung${c.publications.length===1?"":"en"}`);
+      info.textContent=parts.length?`Profil verfügbar: ${parts.join(" · ")}. Die Übernahme erzeugt daraus einen redaktionellen Ausgangsentwurf.`:"Für diesen Kandidaten sind noch keine erweiterten Forschungsdaten gespeichert. Stammdaten können trotzdem als Ausgangspunkt übernommen werden.";
+    }
+  }
 }
 function esc(s=""){
   return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
@@ -944,7 +959,7 @@ function makeInterviewDraft(c){
     ];
   } else {
     const topic=c.topic||"der zugrunde liegenden Messreihe";
-    intro=`Mein Gast ist ${name}${institution?` von ${institution}`:""}. ${name} arbeitet zu ${topic}. Im Gespräch möchte ich verstehen, was langfristige Messungen tatsächlich zeigen, wie zuverlässig wir Veränderungen erkennen können und womit sie zusammenhängen.`;
+    intro=`Mein Gast ist ${name}${institution?` von ${institution}`:""}. ${name} forscht zu folgenden Themen: ${topic}. Im Gespräch möchte ich verstehen, was langfristige Messungen tatsächlich zeigen, wie zuverlässig wir Veränderungen erkennen können und womit sie zusammenhängen.`;
     questions=[
       c.openingQuestion||c.question||`Wenn Sie uns zunächst mit in Ihre Arbeit nehmen: Woher wissen wir bei ${topic} überhaupt, dass sich etwas verändert – welche Messung oder Beobachtung ist dafür entscheidend?`,
       "Welche langfristige Veränderung ist in den Daten besonders deutlich zu erkennen?",
@@ -1308,6 +1323,106 @@ function newZArticle(){
   $("#zTitle").focus();
 }
 
+function zCandidateSource(c){
+  ensureCandidateResearch(c);
+  const measurement=c.measurements.find(m=>String(m.sourceUrl||"").trim());
+  if(measurement){
+    return {title:String(measurement.name||"Messreihe / Forschungsprojekt").trim(),url:String(measurement.sourceUrl||"").trim(),date:""};
+  }
+  const publication=c.publications.find(p=>String(p.url||"").trim());
+  if(publication){
+    return {
+      title:String(publication.title||"Wissenschaftliche Veröffentlichung").trim(),
+      url:String(publication.url||"").trim(),
+      date:/^\d{4}-\d{2}-\d{2}$/.test(String(publication.year||"").trim())?String(publication.year).trim():""
+    };
+  }
+  return {title:`${c.name}${c.institution?" – "+c.institution:""}`,url:String(c.source||"").trim(),date:""};
+}
+
+function zCandidateKeywords(c){
+  const out=[];
+  const add=value=>{
+    const text=String(value||"").trim();
+    if(text && !out.some(x=>x.toLocaleLowerCase()===text.toLocaleLowerCase()))out.push(text);
+  };
+  add(c.name);
+  add(c.institution);
+  String(c.topic||"").split(/[,;|]/).map(x=>x.trim()).filter(Boolean).slice(0,5).forEach(add);
+  return out.slice(0,8);
+}
+
+function zCandidateSummary(c){
+  ensureCandidateResearch(c);
+  const sentences=[];
+  const topic=String(c.topic||"").trim();
+  if(topic)sentences.push(`${c.name}${c.institution?" ("+c.institution+")":""} forscht zu folgenden Themen: ${topic}.`);
+  c.coreFindings.slice(0,3).forEach(x=>{
+    const text=String(x||"").trim();
+    if(text && sentences.join(" ").length<470)sentences.push(text);
+  });
+  const trend=String(c.measurements[0]?.trend||"").trim();
+  if(trend && sentences.join(" ").length<430)sentences.push(trend);
+  if(!sentences.length)sentences.push(`${c.name}${c.institution?" ("+c.institution+")":""} hat noch kein erweitertes Forschungsprofil im Studio. Die Forschungsangaben müssen vor einer Veröffentlichung noch redaktionell ergänzt werden.`);
+  let text=sentences.join(" ").replace(/\s+/g," ").trim();
+  if(text.length>550){
+    const cut=text.slice(0,547);
+    const last=Math.max(cut.lastIndexOf(". "),cut.lastIndexOf("; "),cut.lastIndexOf(", "));
+    text=(last>350?cut.slice(0,last+1):cut.replace(/\s+\S*$/,""))+" …";
+  }
+  return text;
+}
+
+function zCandidateTitle(c){
+  const topic=String(c.topic||"").trim();
+  if(!topic)return `${c.name}${c.institution?" – "+c.institution:""}`;
+  const shortTopic=(topic.split(/[;|]/)[0]||topic).trim();
+  const title=`${c.name}: ${shortTopic}`;
+  return title.length<=120?title:title.slice(0,117).replace(/\s+\S*$/," ").trim()+"…";
+}
+
+function importCandidateProfileToZArticle(){
+  const c=selected("#zCandidate");
+  if(!c)return alert("Bitte zuerst einen Kandidaten auswählen.");
+  ensureCandidateResearch(c);
+  if(!currentZArticleId){
+    const fresh=zNormalizeArticle({id:crypto.randomUUID(),created:zToday(),lastModified:zNow(),candidateId:c.id});
+    data.zArticles.unshift(fresh);
+    currentZArticleId=fresh.id;
+  }
+  $("#zCandidate").value=c.id;
+  const source=zCandidateSource(c);
+  const generated={
+    title:zCandidateTitle(c),
+    summary:zCandidateSummary(c),
+    category:"Menschen der Forschung",
+    keywords:zCandidateKeywords(c),
+    sourceTitle:source.title,
+    sourceUrl:source.url,
+    publicationDate:source.date,
+    imageIdea:`Porträt oder glaubwürdiger Arbeitskontext von ${c.name}${c.topic?`; Forschungsbezug: ${String(c.topic).trim()}`:""}. Keine Werbeästhetik, keine erfundene Forschungsszene.`
+  };
+  const hasExisting=["#zTitle","#zSummary","#zSourceTitle","#zSource"].some(sel=>String($(sel)?.value||"").trim());
+  if(hasExisting && !confirm("Im Z-Panel-Entwurf stehen bereits redaktionelle Inhalte. Titel, Kurztext, Kategorie, Schlagwörter und Quelle durch Angaben aus dem Kandidatenprofil ersetzen? Interview-Link, Bilddatei, Status und Sichtbarkeit bleiben erhalten."))return;
+
+  $("#zTitle").value=generated.title;
+  $("#zSummary").value=generated.summary;
+  $("#zCategory").value=generated.category;
+  $("#zKeywords").value=generated.keywords.join(", ");
+  $("#zSourceTitle").value=generated.sourceTitle;
+  $("#zSource").value=generated.sourceUrl;
+  if(generated.publicationDate)$("#zPublicationDate").value=generated.publicationDate;
+  if(!String($("#zImageIdea").value||"").trim())$("#zImageIdea").value=generated.imageIdea;
+  updateZPreview();
+  saveZArticle(false);
+  const missing=[];
+  if(!generated.summary)missing.push("Kurztext");
+  if(!generated.sourceUrl)missing.push("Quellenlink");
+  if(!$("#zPublicationDate").value)missing.push("genaues Quellendatum");
+  const suffix=missing.length?` Bitte noch redaktionell ergänzen/prüfen: ${missing.join(", ")}.`:" Bitte den Entwurf jetzt redaktionell prüfen und bei Bedarf kürzen oder zuspitzen.";
+  alert(`Kandidatenprofil übernommen.${suffix}`);
+}
+
 function zFormArticle(){
   const existing=zArticleById(currentZArticleId)||zNormalizeArticle({id:currentZArticleId||crypto.randomUUID()});
   return zNormalizeArticle({
@@ -1667,6 +1782,7 @@ $("#zPreviewTh").onclick=()=>setZPreviewMode("th");
 $("#zPreviewFull").onclick=()=>setZPreviewMode("full");
 $("#zExportNews").onclick=exportZNews;
 $("#zCandidate").onchange=()=>{showZGroup();updateZPreview();};
+$("#zImportCandidateProfile").onclick=importCandidateProfileToZArticle;
 ["#zTitle","#zSummary","#zCategory","#zBoundary","#zKeywords","#zSourceTitle","#zSource","#zPublicationDate","#zImageFile","#zImageIdea","#zInterviewUrl"].forEach(sel=>{
   $(sel).addEventListener("input",updateZPreview);
   $(sel).addEventListener("change",updateZPreview);

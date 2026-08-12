@@ -1,33 +1,38 @@
-ZUSTAND Studio – Testhinweise Z-Panel Redaktion
-================================================
+ZUSTAND Studio – Testhinweise Kandidatenprofil -> Z-Panel
+=========================================================
 
-WICHTIG VOR DEM ERSTEN news.json-EXPORT:
-1. Im Z-Panel-Bereich auf „Bestehende news.json importieren“ tippen.
-2. Die aktuell veröffentlichte news.json des bestehenden Z-Panels auswählen.
-3. Prüfen, ob die vorhandenen Beiträge in der Liste erscheinen.
-   Dadurch wird verhindert, dass ein späterer Export die bisherigen Beiträge ersetzt.
+Schnelltest am Handy oder PC:
+1. Z-Panel öffnen und „+ Neuer Beitrag“ wählen.
+2. Unter „Interview / Kandidat“ z. B. Michael Köhl oder Günther Schall auswählen.
+3. Unter der Auswahl muss angezeigt werden, welche Forschungsdaten im Profil vorhanden sind.
+4. „Aus Kandidatenprofil übernehmen“ wählen.
+5. Prüfen:
+   - Kandidat bleibt ausgewählt.
+   - Titel wird aus Name + Forschungsbezug gebildet.
+   - Beitragstyp ist „Menschen der Forschung“.
+   - Kurztext wird aus Forschungsprofil/Kernaussagen gebildet.
+   - Schlagwörter enthalten Name, Institution und Forschungsbegriffe.
+   - Quelle stammt bevorzugt aus der wichtigsten Messreihe/dem Projekt.
+   - E-Mail, Telefon und Anschrift erscheinen nirgends im Z-Panel-Entwurf.
+6. Falls kein vollständiges Quellendatum vorliegt, weist das Studio darauf hin, es noch zu ergänzen.
+7. Entwurf redaktionell bearbeiten und speichern.
 
-Neuen Beitrag testen:
-1. „+ Neuer Beitrag“ wählen.
-2. Titel, Kurztext, Beitragstyp, Grenze/Bereich, Quellentitel, Quellenlink und Datum eintragen.
-3. „Entwurf speichern“: Beitrag bleibt intern.
-4. „Als geprüft markieren“: Pflichtfelder/Quelle werden geprüft.
-5. „Freigeben“: nur möglich, wenn vorher geprüft und Kurztext 350–550 Zeichen lang ist.
-6. „Archivieren“: Beitrag bleibt gespeichert, soll aber nicht mehr in news.json erscheinen.
-7. „Wieder aktivieren“: Beitrag wird wieder für den Export berücksichtigt.
-8. „Als veröffentlicht markieren“ nur nach tatsächlichem Upload/Commit der news.json verwenden.
+Überschreibschutz:
+1. In einem Z-Panel-Entwurf Titel/Kurztext/Quelle manuell ändern.
+2. Erneut „Aus Kandidatenprofil übernehmen“ wählen.
+3. Das Studio muss vor dem Ersetzen nachfragen.
+4. Abbrechen: eigene Texte bleiben erhalten.
+5. Bestätigen: Forschungsdaten werden neu übernommen; Interview-Link, Bilddatei,
+   Workflowstatus und Sichtbarkeit bleiben erhalten.
 
-Vorschau:
-- „TH-Vorschau“ und „Vollversion“ umschalten.
-- Optionalen Interview-Link eintragen: Er erscheint nur in der Vollversions-Vorschau.
+Bestandsfunktionen kurz gegenprüfen:
+- Kandidatenimport und Forschungsprofil ergänzen
+- Akquise und E-Mail
+- Interviewbildschirm und Trainer
+- Z-Panel Workflow geprüft/freigegeben/veröffentlicht
+- aktiv/archiviert
+- bestehende news.json importieren und Gesamt-news.json erzeugen
 
-Export:
-1. Erst nach Import der bestehenden öffentlichen news.json „news.json erzeugen“ wählen.
-2. Export enthält nur aktive Beiträge mit Status „freigegeben“ oder „veröffentlicht“.
-3. Archivierte, geprüfte und Entwurfs-Beiträge dürfen nicht enthalten sein.
-4. Die erzeugte news.json vor dem GitHub-Upload zunächst lokal auf Plausibilität prüfen.
-5. Upload/Commit bleibt bewusst manuell.
-
-Bestandsdaten:
-- Alte Z-Panel-Entwürfe aus dem bisherigen Studio sollten automatisch als Entwürfe erscheinen.
-- Kandidaten, Akquise, Interviewvorbereitung, Trainer und E-Mail-Funktionen kurz gegenprüfen.
+GitHub-Upload:
+- Geändert sind app.js und index.html.
+- styles.css ist unverändert, liegt aber zur Vollständigkeit im ZIP.

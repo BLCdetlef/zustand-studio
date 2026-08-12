@@ -2,17 +2,19 @@ ZUSTAND Studio – Basis- und Versionsnachweis
 ============================================
 
 Basis dieses Updates:
-zustand-studio-update-prompt-kurz-json-download.zip
+zustand-studio-update-zpanel-redaktion.zip
 
 SHA-256 der Basis-ZIP:
-58223f67b0bbdc0bef7a843c436f96352501418740d19aea8e922201bed461af
+0487e3aded9b2b207268cc03b9a5c484f04ffd967105d4c68686c6e8315d620a
 
 Basisstand laut Chat-/Library-Verlauf:
-- Forschungsprofile für Bestandskandidaten ergänzbar
-- personenbezogener Forschungsprofil-Prompt gekürzt
-- JSON-Datei als Download im Rechercheprompt angefordert
-- Interviewvorbereitung auf Kernaussagen/Messreihen umgestellt
-- zweite E-Mail nach Zusage vorhanden
+- Z-Panel Redaktion mit Workflow Entwurf -> geprüft -> freigegeben -> veröffentlicht
+- unabhängige Sichtbarkeit aktiv <-> archiviert
+- TH-Vorschau und Vollversions-Vorschau im Studio
+- Import der bestehenden öffentlichen news.json vor Gesamt-Export
+- manueller news.json-Export ohne automatischen GitHub-Zugriff
+- Forschungsprofile für Interviewkandidaten einschließlich Kernaussagen, Messreihen,
+  Veröffentlichungen, Zahlen, Zusammenhängen und Unsicherheiten vorhanden
 
 GitHub-Branch:
 main (Arbeitsziel)
@@ -22,36 +24,39 @@ In dieser Sitzung nicht live aus GitHub verifiziert; daher bewusst nicht erfunde
 Die technische Basis ist eindeutig über Dateiname und SHA-256 der Basis-ZIP dokumentiert.
 
 Neue Änderung:
-Z-Panel Redaktion – erste sichere Veröffentlichungsstufe
+Kandidatenprofil direkt in einen Z-Panel-Entwurf übernehmen
 
 Umgesetzt:
-- Z-Panel-Beiträge sind nicht mehr zwingend an Interviewkandidaten gebunden.
-- Bestehende kandidatenbezogene Z-Panel-Entwürfe werden beim ersten Start in das neue Redaktionsmodell übernommen; die Altdaten bleiben erhalten.
-- Workflow: Entwurf -> geprüft -> freigegeben -> veröffentlicht.
-- Unabhängige Sichtbarkeit: aktiv <-> archiviert.
-- Redaktionelle Kernfelder: Titel, Kurztext, Beitragstyp, planetare Grenze/Bereich,
-  Schlagwörter, Quellentitel, Quellenlink, Quellendatum, Bildpfad, interner Bildhinweis,
-  optionaler Interviewbezug und Interview-Link.
-- TH-Vorschau und Vollversions-Vorschau im Studio.
-- Bestehende öffentliche news.json kann einmalig importiert werden.
-- Importierte bestehende öffentliche Beiträge werden als veröffentlicht übernommen;
-  vorhandene öffentliche Zusatzfelder/Bildmetadaten werden beim späteren Export bewahrt.
-- Gesamt-Export wird blockiert, solange die bestehende öffentliche news.json nicht importiert wurde.
-- Exportiert werden nur aktive Beiträge mit Status freigegeben oder veröffentlicht.
-- Archivierte Beiträge bleiben intern erhalten und werden nicht ausgespielt.
-- Interne Studiofelder, Kandidatenkontakte und Interviewvorbereitung werden nicht in news.json geschrieben.
-- Kein automatischer GitHub-Upload: Veröffentlichung bleibt ein bewusster manueller Commit-Schritt.
+- Im Z-Panel-Editor neuer Button „Aus Kandidatenprofil übernehmen“.
+- Nach Auswahl eines Interviewkandidaten zeigt das Studio an, wie viele Kernaussagen,
+  Messreihen/Projekte und Veröffentlichungen im Profil vorliegen.
+- Die Übernahme erzeugt einen redaktionellen Ausgangsentwurf aus Forschungsdaten:
+  Titel, Kurztext, Beitragstyp „Menschen der Forschung“, Schlagwörter und Quelle.
+- Der Kurztext wird ausschließlich aus Forschungsbezug, Kernaussagen und ggf. dem
+  Trend der wichtigsten Messreihe gebildet. Das interne Feld „why“ wird nicht verwendet.
+- Quellenpriorität: belegte Messreihe/Projektquelle -> wissenschaftliche Veröffentlichung
+  -> offizielle Profilquelle.
+- Genaues Quellendatum wird nur automatisch übernommen, wenn es als vollständiges
+  ISO-Datum YYYY-MM-DD vorliegt; Jahresangaben werden nicht künstlich zu Datumswerten gemacht.
+- Bereits vorhandene redaktionelle Inhalte werden nur nach ausdrücklicher Bestätigung ersetzt.
+- Interview-Link, Bilddatei, Workflowstatus und Sichtbarkeit bleiben bei erneuter Übernahme erhalten.
+- Interner Bildhinweis wird nur ergänzt, wenn dort noch nichts steht.
+- E-Mail, Telefonnummer, Anschrift, Akquise-Daten, interne Notizen und Interviewvorbereitung
+  werden nicht in den Z-Panel-Entwurf übernommen.
+- Die bestehende harte Veröffentlichungsgrenze der news.json bleibt unverändert.
 
 Technische Prüfungen:
 - node --check app.js: bestanden
-- alle direkt verwendeten HTML-IDs vorhanden: bestanden
-- Test des öffentlichen Export-Mappings: bestehende öffentliche Zusatzfelder bleiben erhalten
-  und interne Felder candidateId/imageIdea/publicOriginal werden nicht exportiert: bestanden
+- neue HTML-IDs für Übernahmebutton/Hinweis vorhanden: bestanden
+- Transferfunktion enthält keinen Zugriff auf c.email, c.phone, c.address oder c.why: bestanden
+- Test mit den vorhandenen Forschungsprofilen Michael Köhl und Günther Schall:
+  automatisch erzeugte Kurztexte ca. 545 bzw. 539 Zeichen und damit im Z-Panel-Zielbereich.
+- styles.css unverändert gegenüber der Basis.
 
 Empfohlene Commit-Bezeichnung:
-Z-Panel Redaktion mit Freigabe und Archiv eingeführt
+Z-Panel übernimmt Forschungsprofile aus Kandidaten
 
 SHA-256 der neuen Webdateien:
-app.js:     b252793f9f8b599acbfc82dcfbdb41abbc1d1a39a207b2d77bb325233b936224
-index.html: 1b9184a8cbd181226db34754a900851ae7355ccc0dd0cab80f36e01ed5848814
+app.js:     111bfce808c53b4443f1484f078a7d2946387ab3131128abd1e283e8266d7b46
+index.html: 7711df469395c0bbb2f8c5b5d81aacfe378fb387e751cc04dc5910cc11d60e5a
 styles.css: bd09c7b3228df69eef95259aee54e6b63fa1be9d98c5aa2f098f6e88d311b271
