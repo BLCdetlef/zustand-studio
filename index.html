@@ -508,8 +508,22 @@
 </div>
 
 <footer>
-  <span>Prototyp · keine produktive Speicherung personenbezogener Daten</span>
-  <button class="ghost danger" id="clearDemo">Lokale Demo-Daten löschen</button>
+  <div>
+    <strong>Lokale Studio-Daten</strong><br>
+    <span>Im Browser gespeichert · Vor Sicherung offene Änderungen speichern · Sicherung enthält keine Bilddateien</span>
+  </div>
+  <div class="footer-actions">
+    <button class="ghost" id="downloadStudioBackup">Studio-Sicherung herunterladen</button>
+    <button class="ghost" id="restoreStudioBackup">Sicherung wiederherstellen</button>
+    <input class="hidden" id="restoreStudioBackupFile" type="file" accept=".json,application/json">
+    <details class="danger-zone">
+      <summary>Gefahrenbereich</summary>
+      <div class="danger-zone-body">
+        <p>Nur verwenden, wenn die lokalen Daten dieses Browsers wirklich vollständig entfernt werden sollen.</p>
+        <button class="ghost danger" id="clearDemo">Alle lokalen Studio-Daten löschen</button>
+      </div>
+    </details>
+  </div>
 </footer>
 
 <script src="app.js"></script>

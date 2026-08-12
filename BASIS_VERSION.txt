@@ -1,62 +1,40 @@
-ZUSTAND Studio – Basis- und Versionsnachweis
-============================================
+ZUSTAND Studio Web – Basisversion
+================================
 
-Basis dieses Updates:
-zustand-studio-update-zpanel-redaktion.zip
+Basis-Paket:
+zustand-studio-update-zpanel-kandidatenprofil.zip
 
-SHA-256 der Basis-ZIP:
-0487e3aded9b2b207268cc03b9a5c484f04ffd967105d4c68686c6e8315d620a
+Quelle:
+Letzte bekannte Arbeitsversion aus der ChatGPT-Dateibibliothek vor diesem Update.
 
-Basisstand laut Chat-/Library-Verlauf:
-- Z-Panel Redaktion mit Workflow Entwurf -> geprüft -> freigegeben -> veröffentlicht
-- unabhängige Sichtbarkeit aktiv <-> archiviert
-- TH-Vorschau und Vollversions-Vorschau im Studio
-- Import der bestehenden öffentlichen news.json vor Gesamt-Export
-- manueller news.json-Export ohne automatischen GitHub-Zugriff
-- Forschungsprofile für Interviewkandidaten einschließlich Kernaussagen, Messreihen,
-  Veröffentlichungen, Zahlen, Zusammenhängen und Unsicherheiten vorhanden
+Ziel:
+GitHub-Repository BLCdetlef/zustand-studio
+Branch: main
 
-GitHub-Branch:
-main (Arbeitsziel)
+Update:
+Studio-Sicherung und Wiederherstellung
 
-GitHub-Commit-ID / vom Nutzer vergebene Commit-Bezeichnung der Basis:
-In dieser Sitzung nicht live aus GitHub verifiziert; daher bewusst nicht erfunden.
-Die technische Basis ist eindeutig über Dateiname und SHA-256 der Basis-ZIP dokumentiert.
+Änderungen:
+- vollständige lokale Studio-Sicherung als JSON-Datei
+- Wiederherstellung einer geprüften ZUSTAND-Studio-Sicherung
+- Sicherungsformat: zustand-studio-backup-v1
+- Sicherung enthält Kandidaten, Gruppen, Akquise, Interviews, Forschungsprofile,
+  Z-Panel-Redaktion und importierten öffentlichen Z-Panel-Basisstand
+- Bilddateien selbst sind nicht Bestandteil der Sicherung; Bildpfade und
+  Bild-Metadaten im Studio-Datensatz werden mitgesichert
+- Wiederherstellung zeigt vor dem Überschreiben eine Bestandszusammenfassung
+- bisheriger Löschknopf in einen Gefahrenbereich verschoben
+- endgültiges Löschen nur nach Eingabe von LÖSCHEN
+- vor dem Löschen wird automatisch eine Notfall-Sicherung zum Download angeboten
+- mobile Darstellung der Sicherungsfunktionen angepasst
 
-Neue Änderung:
-Kandidatenprofil direkt in einen Z-Panel-Entwurf übernehmen
-
-Umgesetzt:
-- Im Z-Panel-Editor neuer Button „Aus Kandidatenprofil übernehmen“.
-- Nach Auswahl eines Interviewkandidaten zeigt das Studio an, wie viele Kernaussagen,
-  Messreihen/Projekte und Veröffentlichungen im Profil vorliegen.
-- Die Übernahme erzeugt einen redaktionellen Ausgangsentwurf aus Forschungsdaten:
-  Titel, Kurztext, Beitragstyp „Menschen der Forschung“, Schlagwörter und Quelle.
-- Der Kurztext wird ausschließlich aus Forschungsbezug, Kernaussagen und ggf. dem
-  Trend der wichtigsten Messreihe gebildet. Das interne Feld „why“ wird nicht verwendet.
-- Quellenpriorität: belegte Messreihe/Projektquelle -> wissenschaftliche Veröffentlichung
-  -> offizielle Profilquelle.
-- Genaues Quellendatum wird nur automatisch übernommen, wenn es als vollständiges
-  ISO-Datum YYYY-MM-DD vorliegt; Jahresangaben werden nicht künstlich zu Datumswerten gemacht.
-- Bereits vorhandene redaktionelle Inhalte werden nur nach ausdrücklicher Bestätigung ersetzt.
-- Interview-Link, Bilddatei, Workflowstatus und Sichtbarkeit bleiben bei erneuter Übernahme erhalten.
-- Interner Bildhinweis wird nur ergänzt, wenn dort noch nichts steht.
-- E-Mail, Telefonnummer, Anschrift, Akquise-Daten, interne Notizen und Interviewvorbereitung
-  werden nicht in den Z-Panel-Entwurf übernommen.
-- Die bestehende harte Veröffentlichungsgrenze der news.json bleibt unverändert.
-
-Technische Prüfungen:
-- node --check app.js: bestanden
-- neue HTML-IDs für Übernahmebutton/Hinweis vorhanden: bestanden
-- Transferfunktion enthält keinen Zugriff auf c.email, c.phone, c.address oder c.why: bestanden
-- Test mit den vorhandenen Forschungsprofilen Michael Köhl und Günther Schall:
-  automatisch erzeugte Kurztexte ca. 545 bzw. 539 Zeichen und damit im Z-Panel-Zielbereich.
-- styles.css unverändert gegenüber der Basis.
+Geänderte Webdateien:
+- index.html
+- app.js
+- styles.css
 
 Empfohlene Commit-Bezeichnung:
-Z-Panel übernimmt Forschungsprofile aus Kandidaten
+Studio-Sicherung und sichere Wiederherstellung ergänzt
 
-SHA-256 der neuen Webdateien:
-app.js:     111bfce808c53b4443f1484f078a7d2946387ab3131128abd1e283e8266d7b46
-index.html: 7711df469395c0bbb2f8c5b5d81aacfe378fb387e751cc04dc5910cc11d60e5a
-styles.css: bd09c7b3228df69eef95259aee54e6b63fa1be9d98c5aa2f098f6e88d311b271
+Hinweis:
+Ein konkreter GitHub-Commit-Hash wurde in dieser Sitzung nicht live verifiziert.

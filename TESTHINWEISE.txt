@@ -1,38 +1,38 @@
-ZUSTAND Studio – Testhinweise Kandidatenprofil -> Z-Panel
-=========================================================
+ZUSTAND Studio – Testhinweise für Studio-Sicherung
+===================================================
 
-Schnelltest am Handy oder PC:
-1. Z-Panel öffnen und „+ Neuer Beitrag“ wählen.
-2. Unter „Interview / Kandidat“ z. B. Michael Köhl oder Günther Schall auswählen.
-3. Unter der Auswahl muss angezeigt werden, welche Forschungsdaten im Profil vorhanden sind.
-4. „Aus Kandidatenprofil übernehmen“ wählen.
-5. Prüfen:
-   - Kandidat bleibt ausgewählt.
-   - Titel wird aus Name + Forschungsbezug gebildet.
-   - Beitragstyp ist „Menschen der Forschung“.
-   - Kurztext wird aus Forschungsprofil/Kernaussagen gebildet.
-   - Schlagwörter enthalten Name, Institution und Forschungsbegriffe.
-   - Quelle stammt bevorzugt aus der wichtigsten Messreihe/dem Projekt.
-   - E-Mail, Telefon und Anschrift erscheinen nirgends im Z-Panel-Entwurf.
-6. Falls kein vollständiges Quellendatum vorliegt, weist das Studio darauf hin, es noch zu ergänzen.
-7. Entwurf redaktionell bearbeiten und speichern.
+1. Studio normal öffnen und prüfen, ob die vorhandenen Kandidaten und Z-Panel-Daten weiterhin sichtbar sind.
 
-Überschreibschutz:
-1. In einem Z-Panel-Entwurf Titel/Kurztext/Quelle manuell ändern.
-2. Erneut „Aus Kandidatenprofil übernehmen“ wählen.
-3. Das Studio muss vor dem Ersetzen nachfragen.
-4. Abbrechen: eigene Texte bleiben erhalten.
-5. Bestätigen: Forschungsdaten werden neu übernommen; Interview-Link, Bilddatei,
-   Workflowstatus und Sichtbarkeit bleiben erhalten.
+2. Unten auf „Studio-Sicherung herunterladen“ tippen/klicken.
+   Erwartet: Eine Datei ähnlich
+   zustand-studio-backup_2026-08-12_10-36.json
+   wird heruntergeladen.
 
-Bestandsfunktionen kurz gegenprüfen:
-- Kandidatenimport und Forschungsprofil ergänzen
-- Akquise und E-Mail
-- Interviewbildschirm und Trainer
-- Z-Panel Workflow geprüft/freigegeben/veröffentlicht
-- aktiv/archiviert
-- bestehende news.json importieren und Gesamt-news.json erzeugen
+3. Die JSON-Datei nicht bearbeiten. Danach im Studio testweise eine kleine,
+   eindeutig erkennbare Änderung vornehmen und speichern.
 
-GitHub-Upload:
-- Geändert sind app.js und index.html.
-- styles.css ist unverändert, liegt aber zur Vollständigkeit im ZIP.
+4. „Sicherung wiederherstellen“ wählen und die zuvor heruntergeladene Datei auswählen.
+   Erwartet: Vor dem Überschreiben erscheint eine Zusammenfassung mit Anzahl
+   Kandidat:innen, Interview-Datensätzen und Z-Panel-Beiträgen.
+
+5. Wiederherstellung bestätigen.
+   Erwartet: Der frühere Stand ist wieder da.
+
+6. Test mit einer falschen JSON-Datei:
+   Erwartet: Die Datei wird abgelehnt; der vorhandene Studio-Datenstand bleibt unverändert.
+
+7. Gefahrenbereich öffnen und Löschfunktion testen, aber nur wenn eine Sicherung vorhanden ist.
+   - andere Eingabe als LÖSCHEN: nichts wird gelöscht
+   - exakte Eingabe LÖSCHEN: vor dem Löschen wird eine Notfall-Sicherung angeboten
+
+8. Windows und Android:
+   Dieselbe Sicherungsdatei kann auf beiden Geräten über „Sicherung wiederherstellen“ eingelesen werden.
+   Dabei ersetzt sie jeweils den lokalen Datenstand des verwendeten Browsers.
+
+Wichtig zu Bildern:
+Die Studio-Sicherung enthält keine eigentlichen PNG/JPG-Dateien. Vorhandene Bildpfade
+und Metadaten werden mitgesichert. Die Bilddateien bleiben separat im Z-Panel-/GitHub-Bestand.
+
+Technische Prüfung:
+- app.js mit node --check geprüft
+- Änderungen als AENDERUNGEN.diff enthalten

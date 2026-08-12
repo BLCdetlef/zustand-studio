@@ -1,6 +1,8 @@
 const $=s=>document.querySelector(s);
 const $$=s=>[...document.querySelectorAll(s)];
 const KEY="zustandStudioPrototypeV1";
+const BACKUP_FORMAT="zustand-studio-backup-v1";
+const BACKUP_VERSION=1;
 
 class LocalDemoStorage {
   load(){ try{return JSON.parse(localStorage.getItem(KEY))||this.empty()}catch{return this.empty()} }
@@ -11,46 +13,51 @@ class LocalDemoStorage {
 
 // Später austauschbar: class NextcloudStorage { load(); save(); ... }
 const storage = new LocalDemoStorage();
-let data=storage.load();
 
-// Abwärtskompatibel zu bereits im Browser gespeicherten Studio-Daten.
-if(!Array.isArray(data.candidates))data.candidates=[];
-if(!Array.isArray(data.groups))data.groups=[];
-if(!data.acquisition)data.acquisition={};
-if(!data.interviews)data.interviews={};
-if(!data.zDrafts)data.zDrafts={};
-if(!Array.isArray(data.zArticles))data.zArticles=[];
-if(typeof data.zPublicBaselineImported!=="boolean")data.zPublicBaselineImported=false;
-if(typeof data.zPublicBaselineName!=="string")data.zPublicBaselineName="";
+function normalizeStudioData(raw){
+  const normalized=(raw&&typeof raw==="object"&&!Array.isArray(raw))?raw:storage.empty();
+  if(!Array.isArray(normalized.candidates))normalized.candidates=[];
+  if(!Array.isArray(normalized.groups))normalized.groups=[];
+  if(!normalized.acquisition||typeof normalized.acquisition!=="object")normalized.acquisition={};
+  if(!normalized.interviews||typeof normalized.interviews!=="object")normalized.interviews={};
+  if(!normalized.zDrafts||typeof normalized.zDrafts!=="object")normalized.zDrafts={};
+  if(!Array.isArray(normalized.zArticles))normalized.zArticles=[];
+  if(typeof normalized.zPublicBaselineImported!=="boolean")normalized.zPublicBaselineImported=false;
+  if(typeof normalized.zPublicBaselineName!=="string")normalized.zPublicBaselineName="";
+  return normalized;
+}
 
-// Bestehende kandidatenbezogene Z-Panel-Entwürfe einmalig in das neue,
-// eigenständige Redaktionsmodell übernehmen. Die alten Daten bleiben erhalten.
-Object.entries(data.zDrafts).forEach(([candidateId,z])=>{
-  if(!z || !(z.title||z.summary||z.source))return;
-  if(data.zArticles.some(a=>a?.legacyCandidateId===candidateId))return;
-  const today=new Date().toISOString().slice(0,10);
-  data.zArticles.push({
-    id:`legacy-${candidateId}`,
-    legacyCandidateId:candidateId,
-    candidateId,
-    title:String(z.title||""),
-    summary:String(z.summary||""),
-    category:"Zustand",
-    planetaryBoundary:"QS",
-    keywords:[],
-    sourceTitle:"",
-    sourceUrl:String(z.source||""),
-    publicationDate:"",
-    imageFile:"",
-    imageIdea:"",
-    interviewUrl:"",
-    workflowStatus:"entwurf",
-    visibility:"aktiv",
-    created:today,
-    lastModified:today,
-    publishedAt:""
+function migrateLegacyZDrafts(target){
+  Object.entries(target.zDrafts||{}).forEach(([candidateId,z])=>{
+    if(!z || !(z.title||z.summary||z.source))return;
+    if(target.zArticles.some(a=>a?.legacyCandidateId===candidateId))return;
+    const today=new Date().toISOString().slice(0,10);
+    target.zArticles.push({
+      id:`legacy-${candidateId}`,
+      legacyCandidateId:candidateId,
+      candidateId,
+      title:String(z.title||""),
+      summary:String(z.summary||""),
+      category:"Zustand",
+      planetaryBoundary:"QS",
+      keywords:[],
+      sourceTitle:"",
+      sourceUrl:String(z.source||""),
+      publicationDate:"",
+      imageFile:"",
+      imageIdea:"",
+      interviewUrl:"",
+      workflowStatus:"entwurf",
+      visibility:"aktiv",
+      created:today,
+      lastModified:today,
+      publishedAt:""
+    });
   });
-});
+  return target;
+}
+
+let data=migrateLegacyZDrafts(normalizeStudioData(storage.load()));
 function textList(value){
   if(Array.isArray(value)){
     return value.map(item=>{
@@ -1676,6 +1683,61 @@ function downloadJson(filename,obj){
   a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
+
+function backupTimestampForFilename(date=new Date()){
+  const pad=n=>String(n).padStart(2,"0");
+  return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}_${pad(date.getHours())}-${pad(date.getMinutes())}`;
+}
+
+function studioBackupPayload(){
+  return {
+    format:BACKUP_FORMAT,
+    version:BACKUP_VERSION,
+    exportedAt:new Date().toISOString(),
+    storageKey:KEY,
+    note:"Vollständige lokale ZUSTAND-Studio-Sicherung. Bilddateien sind nicht enthalten; gespeichert werden nur ihre Pfade und Metadaten.",
+    data
+  };
+}
+
+function downloadStudioBackup(suffix=""){
+  // Sicherung bildet den aktuell im Studio-Datenmodell gespeicherten Stand ab.
+  const extra=suffix?`_${suffix}`:"";
+  downloadJson(`zustand-studio-backup_${backupTimestampForFilename()}${extra}.json`,studioBackupPayload());
+}
+
+function backupSummary(restored){
+  const candidates=Array.isArray(restored.candidates)?restored.candidates.length:0;
+  const interviews=restored.interviews&&typeof restored.interviews==="object"?Object.keys(restored.interviews).length:0;
+  const zArticles=Array.isArray(restored.zArticles)?restored.zArticles.length:0;
+  return `${candidates} Kandidat:innen, ${interviews} Interview-Datensätze, ${zArticles} Z-Panel-Beiträge`;
+}
+
+async function restoreStudioBackup(file){
+  try{
+    const parsed=JSON.parse(await file.text());
+    if(!parsed||parsed.format!==BACKUP_FORMAT||!parsed.data||typeof parsed.data!=="object"){
+      throw new Error("Das ist keine gültige ZUSTAND-Studio-Sicherung.");
+    }
+    if(Number(parsed.version||0)>BACKUP_VERSION){
+      throw new Error(`Diese Sicherung verwendet Version ${parsed.version}. Das Studio unterstützt derzeit Version ${BACKUP_VERSION}.`);
+    }
+    const restored=migrateLegacyZDrafts(normalizeStudioData(parsed.data));
+    const when=parsed.exportedAt?new Date(parsed.exportedAt).toLocaleString("de-DE"):"unbekannt";
+    const ok=confirm(
+      `Studio-Sicherung wiederherstellen?\n\nSicherung vom: ${when}\nEnthalten: ${backupSummary(restored)}\n\nDer aktuelle lokale Datenstand dieses Browsers wird dadurch ersetzt. Falls du ihn behalten möchtest, brich ab und lade zuerst eine Studio-Sicherung herunter.`
+    );
+    if(!ok)return;
+    data=restored;
+    storage.save(data);
+    currentZArticleId="";
+    renderAll();
+    nav("research");
+    alert("Studio-Sicherung wurde erfolgreich wiederhergestellt.");
+  }catch(error){
+    alert(`Sicherung konnte nicht wiederhergestellt werden: ${error.message||error}`);
+  }
+}
 function inferZCategory(raw={}){
   if(raw.category)return String(raw.category);
   const keys=zKeywordList(raw.keywords).map(x=>x.toLocaleLowerCase());
@@ -1788,13 +1850,26 @@ $("#zImportCandidateProfile").onclick=importCandidateProfileToZArticle;
   $(sel).addEventListener("change",updateZPreview);
 });
 
+$("#downloadStudioBackup").onclick=()=>downloadStudioBackup();
+$("#restoreStudioBackup").onclick=()=>$("#restoreStudioBackupFile").click();
+$("#restoreStudioBackupFile").onchange=async event=>{
+  const file=event.target.files?.[0];
+  if(file)await restoreStudioBackup(file);
+  event.target.value="";
+};
+
 $("#clearDemo").onclick=()=>{
-  if(confirm("Alle lokal im Browser gespeicherten Demo-Daten löschen?")){
-    storage.clear();
-    data=storage.load();
-    renderAll();
-    nav("research");
-  }
+  const answer=prompt(
+    "ACHTUNG: Damit werden Kandidaten, Interviews und Z-Panel-Redaktion dieses Browsers gelöscht.\n\nVor dem Löschen wird automatisch eine Studio-Sicherung heruntergeladen.\n\nTippe zum endgültigen Löschen exakt: LÖSCHEN"
+  );
+  if(answer!=="LÖSCHEN")return;
+  downloadStudioBackup("vor-loeschen");
+  storage.clear();
+  data=migrateLegacyZDrafts(normalizeStudioData(storage.load()));
+  currentZArticleId="";
+  renderAll();
+  nav("research");
+  alert("Die lokalen Studio-Daten dieses Browsers wurden gelöscht. Die Sicherungsdatei wurde zuvor zum Download angeboten.");
 };
 
 
