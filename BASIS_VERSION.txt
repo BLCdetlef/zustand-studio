@@ -2,35 +2,42 @@ ZUSTAND Studio – Basis- und Versionsnachweis
 ============================================
 
 Basis dieses Updates:
-zustand-studio-update-zweite-email-nach-zusage.zip
-
-Status der Basis:
-Vom Nutzer im unmittelbar vorherigen Schritt als funktionierend bestätigt.
+zustand-studio-update-recherche-und-kernaussagen.zip
 
 SHA-256 der Basis-ZIP:
-b35fceb3ba0db7ab7b4feed5af675180302bbb8909bce16612a6ead6d77c8c10
+5df86ef23fe6ba06a5ed93584265ab6ed7b71be2bf3d3dc2145fb2f4419e1cfb
 
 GitHub-Branch:
 main (Arbeitsziel)
 
 GitHub-Commit-ID / Commit-Bezeichnung der Basis:
 In dieser Sitzung nicht zuverlässig direkt aus GitHub ausgelesen; daher bewusst nicht erfunden.
-Die technische Basis ist stattdessen eindeutig über Dateiname und SHA-256 der funktionierenden ZIP dokumentiert.
+Die technische Basis ist eindeutig über Dateiname und SHA-256 der Basis-ZIP dokumentiert.
 
 Neue Änderung:
-- Recherche-Prompt fordert Kernaussagen, Messreihen/Monitoring, 1–3 zentrale Publikationen mit Quellenlinks,
-  Zahlen/Zusammenhänge/Unsicherheiten sowie Einstiegs- und Reservefragen an.
-- Neues Importformat: zustand-studio-candidates-v2 (abwärtskompatibel zu bisherigen Kandidaten).
-- Interviewvorbereitung in vier Blöcke gegliedert.
-- Interview-Bildschirm zeigt die vier Blöcke getrennt; http/https-Quellen sind anklickbar.
-- Trainer übt Anmoderation + Kernaussagen statt Fragen.
-- Die erste Frage in Block 4 ist ausdrücklich die Einstiegsfrage; danach nur Reservefragen.
-- Die funktionierende zweite E-Mail nach Zusage bleibt erhalten.
+- Bei Kandidaten ohne vollständiges Forschungsprofil erscheint in „Details“ der Knopf
+  „Forschungsprofil ergänzen“.
+- Der Knopf erzeugt einen personenbezogenen Recherche-Prompt für genau diese Person;
+  es werden ausdrücklich keine weiteren Kandidat:innen gesucht.
+- Der Prompt fordert dieselben vier Vorbereitungsblöcke wie die normale v2-Recherche an:
+  Kernaussagen; Messreihen/Monitoring/Datensätze & Veröffentlichungen; Zahlen/
+  Zusammenhänge/Unsicherheiten; Einstiegsfrage & Reservefragen.
+- Der personenbezogene Prompt enthält die interne targetCandidateId des ausgewählten
+  Kandidaten. Beim JSON-Import wird damit gezielt der vorhandene Datensatz ergänzt.
+- Fallback bleibt Name + Institution, falls targetCandidateId nicht vorhanden ist.
+- Bei vorhandenen Kandidaten werden Gruppe, Akquise-Status, eigene Interviewtexte und
+  Z-Panel-Entwürfe nicht überschrieben.
+- Fehlende Forschungs-Stammdaten (Thema, Zeitraum, Einordnung) dürfen ergänzt werden;
+  bereits vorhandene Angaben werden nicht überschrieben.
+- Sobald ein ausreichendes Forschungsprofil vorhanden ist, wird der Knopf nicht mehr angezeigt.
+- Neue Kandidat:innen aus der normalen v2-Themenrecherche benötigen diesen Zusatzschritt
+  in der Regel nicht.
+- Manuell angelegte Personen erhalten den Knopf automatisch, solange das Forschungsprofil fehlt.
 
 Empfohlene Commit-Bezeichnung für dieses Update:
-Interviewvorbereitung auf Kernaussagen und Messreihen umgestellt
+Forschungsprofile für Bestandskandidaten ergänzbar
 
 SHA-256 der neuen Dateien:
-app.js:     c972a2457d8f9fc714ff2c791cc404b32f51a61c0f4ae763fb8588e8da66fab2
-index.html: 75dfdde395bb79a44147e5f698af12e0e4979f6c0a53d65f93098bd8e0237197
+app.js:     e4816aeb4d3017a7d370ba1b432a883e75c36a36b57cb3d8b741b4002b0af5cc
+index.html: bdfc76a7c4da92acb0f7696d16257c9ee8731bbd7749185f3840f2853e330728
 styles.css: 11f0b00abb92bd55754481d57ecfb5927854ed3b661b03d37c06d05a52e36f42
