@@ -1,56 +1,58 @@
-ZUSTAND Studio – Testhinweise Bildprompt JPG/SVG
-=================================================
+ZUSTAND Studio – Testhinweise Schutz vor KI-Porträts
+=====================================================
 
 1. Studio öffnen und „Z-Panel Redaktion“ aufrufen.
 
-2. Neuen Beitrag anlegen oder vorhandenen Entwurf öffnen.
-   Titel, Kurztext, Beitragstyp, planetare Grenze und Schlagwörter eintragen.
+2. Einen Kandidatenbeitrag für Prof. Dr. Günther Schall anlegen bzw. das Kandidatenprofil übernehmen.
+   Erwartet bei neuer Bildidee:
+   - kein „Porträt von Günther Schall“
+   - stattdessen z. B. Reparaturwerkstatt, wiederverwendete Bauteile, sortierte Materialien oder Prüfkontext
+   - keine identifizierbare reale Person als Hauptmotiv
 
-3. Feld „Bildidee / redaktioneller Hinweis (intern)“ testen.
-   Beispiel:
-   alter Holzbalken im Prüfstand; Werkstattatmosphäre; keine Waldmetapher
+3. Bildstil = Automatisch, Ausgabeformat = Automatisch.
+   Bei Schall mit Gebrauchtholz/Wiederverwendung/Materialprüfung erwartet:
+   - Stil: Wissenschaft
+   - Format: JPG
+   Das Wort „Wald“ darf den technischen Forschungsschwerpunkt nicht mehr zu „Natur“ übersteuern.
 
-4. Bildstil = Automatisch, Ausgabeformat = Automatisch.
-   Bei einem normalen Zustands-/Lösungsbeitrag sollte die Empfehlung in der Regel JPG sein.
-
-5. Beitragstyp „Natur verstehen“ oder „Wie wissen wir das?“ auswählen.
-   Erwartet: Automatische Empfehlung „Prozess-/Erklärskizze · SVG“.
-
-6. „Bildprompt erzeugen“ wählen.
+4. Test eines alten problematischen Entwurfs:
+   In „Bildidee / redaktioneller Hinweis“ z. B. eintragen:
+   „Porträt oder glaubwürdiger Arbeitskontext von Prof. Dr. Günther Schall“
+   Dann „Bildprompt erzeugen“.
    Erwartet:
-   - Titel, Kurztext, Bildidee und Schlagwörter werden übernommen.
-   - JPG-Prompt fordert Hochformat 8:9 und max. 500 kB als Ziel.
-   - SVG-Prompt fordert echtes valides SVG ohne Rasterbild, Skript oder externe Ressourcen.
+   - diese Porträtidee wird NICHT in den fertigen Prompt übernommen
+   - stattdessen Forschungsgegenstand/Material/Arbeitsumgebung
+   - Prompt enthält die verbindliche Personenregel
 
-7. „Prompt kopieren“ wählen.
-   Erwartet: Button zeigt kurz „Kopiert ✓“.
-   Wenn vorher noch kein Prompt erzeugt wurde, wird er automatisch erzeugt und kopiert.
+5. Im fertigen Prompt prüfen:
+   Erwartet sinngemäß:
+   „Namentlich genannte reale Personen niemals mit KI nachbilden – weder als Porträt noch als scheinbar authentische Arbeitsszene oder erkennbare Ähnlichkeit.“
 
-8. Prompt im Textfeld manuell ändern und „Entwurf speichern“.
-   Beitrag neu öffnen.
-   Erwartet: Bildstil, Ausgabeformat und bearbeiteter Prompt bleiben erhalten.
+6. Beitrag „Menschen der Forschung“ mit einem anderen Kandidaten testen.
+   Erwartet im Hinweis unter Bildstil/Format:
+   KI-Porträts und erfundene Ähnlichkeiten sind gesperrt.
+
+7. Normalen Z-Panel-Beitrag ohne Kandidatenlink testen.
+   Eine Bildidee mit „Porträt ...“ wird ebenfalls beim Promptaufbau neutralisiert.
+   Normale nicht-personenbezogene Bildideen bleiben erhalten.
+
+8. SVG-Fall testen, z. B. „Natur verstehen“.
+   Erwartet:
+   - weiterhin SVG-Empfehlung
+   - Personenregel ist auch im SVG-Prompt enthalten
+   - technische SVG-Regeln bleiben unverändert
 
 9. Alte Studio-Sicherung wiederherstellen.
-   Erwartet: Sie bleibt lesbar; neue Bildfelder stehen bei alten Beiträgen auf Automatisch bzw. leer.
-   Backup-Format bleibt Version 1.
+   Erwartet: weiterhin lesbar; Backup-Format bleibt zustand-studio-backup-v1 / Version 1.
 
-10. news.json exportieren (nur nach dem bekannten Baseline-Import).
-    Erwartet: Das interne Feld imagePrompt erscheint nicht als neues öffentliches Feld.
-    Bestehende publicOriginal-/imageMetadata-Felder importierter Altbeiträge bleiben erhalten.
-
-11. Bilddatei-Feld testen:
-    assets/images/test.jpg
-    assets/images/test.svg
-    Beide Pfade sollen in der Studio-Vorschau grundsätzlich akzeptiert werden, sofern die Datei am aufgerufenen Ort erreichbar ist.
-
-Wichtig:
-Dieses Update erzeugt den Prompt und verwaltet Stil/Format. Es konvertiert eine vorhandene PNG-Datei noch nicht automatisch in JPG und komprimiert sie noch nicht auf <= 500 kB.
+10. Bestehende Funktionen kurz gegenprüfen:
+    Kandidaten, Interviewtermine, Trainer, Z-Panel-Entwurf speichern, Prompt kopieren, news.json-Export.
 
 Technische Prüfung:
 - app.js mit node --check geprüft
-- keine doppelten HTML-IDs
-- alle direkten JS-#ID-Zugriffe haben ein HTML-Ziel
-- Prompt-Automatik separat mit JPG- und SVG-Fall getestet
-- alter Z-Panel-Datensatz ohne neue Bildfelder wird mit Automatisch/leer normalisiert
-- imagePrompt ist nicht Bestandteil des neuen zPublicArticle-Exports
+- Testfall Günther Schall: Porträtidee wird bereinigt
+- Testfall Günther Schall: Automatik = Wissenschaft + JPG
+- Testfall ohne Kandidatenlink: Porträtidee wird ebenfalls bereinigt
+- alte problematische Formulierung „Porträt oder glaubwürdiger Arbeitskontext“ ist nicht mehr im Programmkern enthalten
+- keine Änderung am Backup-Schema erforderlich
 - Änderungen als AENDERUNGEN.diff enthalten

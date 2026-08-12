@@ -2,10 +2,10 @@ ZUSTAND Studio Web – Basisversion
 ================================
 
 Basis-Paket:
-zustand-studio-update-interviewtermine.zip
+zustand-studio-update-bildprompt-jpg-svg.zip
 
 Basis-ZIP SHA-256:
-457d7d7b8f8694688b9dabdc95897b32012d7071874c8b59ccbdc23636c97e6a
+3a94a2d78cebc91b51bb1161433747eefe7a9e91b53ed4d820283b0fe146d5fe
 
 Quelle:
 Letzte bekannte Arbeitsversion aus der ChatGPT-Dateibibliothek vor diesem Update.
@@ -15,36 +15,36 @@ GitHub-Repository BLCdetlef/zustand-studio
 Branch: main
 
 Update:
-Z-Panel Bildprompt mit JPG/SVG-Auswahl
+Keine KI-Porträts realer Personen im Z-Panel-Bildworkflow
 
 Änderungen:
-- alter Bildprompt-Workflow des Offline-Studios in die Web-Z-Panel-Redaktion übertragen
-- Bildidee / redaktioneller Hinweis bleibt als kurzes internes, editierbares Feld erhalten
-- neue Bildstile: Automatisch, Natur, Wissenschaft, Symbolisch, Prozess-/Erklärskizze
-- neue Ausgabeformate: Automatisch, JPG, SVG
-- Automatik bevorzugt SVG bei „Natur verstehen“ und „Wie wissen wir das?“ sowie bei Prozess-/Erklärskizzen
-- sonst bevorzugt die Automatik JPG für redaktionelle Fotografie
-- JPG-Prompt: 8:9, ein starkes Hauptmotiv, 10 % Sicherheitsabstand, keine Schrift/Logos/Diagramme, Ziel max. 500 kB
-- SVG-Prompt: echtes valides SVG, keine eingebetteten Rasterbilder, kein JavaScript, keine externen Ressourcen, kompakte Webdarstellung
-- erzeugter Prompt bleibt intern editierbar und wird mit dem Z-Panel-Beitrag im Browser/Backup gespeichert
-- interner imagePrompt wird nicht in neue öffentliche news.json-Felder übernommen
-- bestehende veröffentlichte Zusatzfelder aus importierter news.json werden weiterhin unverändert erhalten
-- alte Studio-Backups bleiben kompatibel; imageStyle, imageFormat und imagePrompt sind additive optionale Felder
-- Backup-Format bleibt zustand-studio-backup-v1 / Version 1
+- feste Schutzregel im Bildprompt: namentlich genannte reale Personen niemals mit KI nachbilden
+- weder Porträt, erkennbare Ähnlichkeit noch scheinbar authentische Arbeitsszene einer realen Person zulassen
+- stattdessen Forschungsgegenstand, Material, Messung, Arbeitsmittel oder Umgebung als Hauptmotiv verwenden
+- echtes Personenfoto nur als separat beschaffte, nachvollziehbare reale Bildquelle vorsehen
+- ältere gespeicherte Bildideen mit Porträt-/Bildnis-/Gesichtsbezug werden beim Promptaufbau neutralisiert
+- neue Kandidaten-Z-Panel-Entwürfe erzeugen keine Porträt-Bildidee mehr
+- Kandidatenbeiträge zeigen in der Bildempfehlung ausdrücklich den Porträt-Schutz an
+- automatische Stilwahl erweitert: Materialprüfung, Gebrauchtholz, Wiederverwendung, Rückbau, Bauholz und Festigkeitsklasse haben Vorrang als wissenschaftlich/technischer Kontext
+- Beispiel Günther Schall: Automatik wählt nun Wissenschaft + JPG statt wegen des Wortes Wald fälschlich Natur
+- Bildformat-/SVG-/JPG-Logik und Backup-Format bleiben unverändert
+- alte Studio-Backups bleiben kompatibel; keine neue Datenstruktur nötig
 
 Geänderte Webdateien:
 - index.html
 - app.js
+
+Unverändert, aber zur Vollständigkeit im ZIP enthalten:
 - styles.css
 
 SHA-256 der Webdateien:
-index.html  208650b1a293d3acbca05a460457a3d1e1f0bbf0a75fb11ac72f1cc0d50a159c
-app.js      53813cd1368749e97e1879c389f6a98d047142098b8ce44f48d8fff589ec2012
+index.html  dd0b9f4e2bda585d336ba821df84c9fcbed9e4cc91b121110850fa46a2d1b317
+app.js      c1c9c7886f72169662b406bdb2ac8c02695aa8578a50673242bd9eb850ccc7be
 styles.css  473d52d4af1fc8bb329aaa6b9bcc5c28e25d6e5684e44a2437047a754df564b2
 
 Empfohlene Commit-Bezeichnung:
-Z-Panel Bildprompt mit JPG und SVG ergänzt
+Z-Panel Bildprompt schützt reale Personen vor KI-Porträts
 
 Hinweis:
 Ein konkreter GitHub-Commit-Hash wurde in dieser Sitzung nicht live verifiziert.
-Die automatische Konvertierung einer vorhandenen Rasterdatei nach JPG <= 500 kB ist noch NICHT Bestandteil dieses Updates.
+Die Regel betrifft die KI-Bilderzeugung. Ein echtes, rechtmäßig nutzbares Personenfoto kann weiterhin über das Feld „Bilddatei im Z-Panel“ eingebunden werden.

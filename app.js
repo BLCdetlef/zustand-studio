@@ -1379,7 +1379,7 @@ const Z_IMAGE_STYLE_HINTS={
   "Prozess-/Erklärskizze":"Zeige einen fachlich nachvollziehbaren Zusammenhang oder Prozess mit wenigen klaren Formen. Reduziert, ruhig und ohne dekorative Details."
 };
 const Z_IMAGE_AUTO_TERMS={
-  Wissenschaft:["aerosol","atmosphare","halogen","chemie","stickoxid","modellstudie","messung","monitoring","labor","mikroplastik","pfas","emission","nahrstoff","biogeochem","ozon","datensatz"],
+  Wissenschaft:["aerosol","atmosphare","halogen","chemie","stickoxid","modellstudie","messung","monitoring","labor","mikroplastik","pfas","emission","nahrstoff","biogeochem","ozon","datensatz","materialprufung","gebrauchtholz","wiederverwendung","ruckbau","bauholz","festigkeitsklasse"],
   Symbolisch:["demokratie","bildung","gemeinwohl","gerechtigkeit","frieden","zusammenarbeit","gluck","suffizienz","postwachstum","parlament","lobbyismus","gesellschaft"],
   Natur:["biodiversitat","vogel","wald","ozean","meer","wasser","arten","okosystem","klima","boden","pflanze","tier","landnutzung"]
 };
@@ -1400,6 +1400,8 @@ function zNormalizeImageSearch(value){
   return String(value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase().replace(/\s+/g," ").trim();
 }
 function zImagePromptContext(){
+  const candidateId=$("#zCandidate")?.value||"";
+  const candidate=data.candidates.find(c=>c.id===candidateId);
   return {
     title:$("#zTitle")?.value.trim()||"",
     summary:$("#zSummary")?.value.trim()||"",
@@ -1408,7 +1410,9 @@ function zImagePromptContext(){
     keywords:zKeywordList($("#zKeywords")?.value||""),
     imageIdea:$("#zImageIdea")?.value.trim()||"",
     imageStyle:$("#zImageStyle")?.value||"Automatisch",
-    imageFormat:$("#zImageFormat")?.value||"Automatisch"
+    imageFormat:$("#zImageFormat")?.value||"Automatisch",
+    candidateId,
+    candidateName:String(candidate?.name||"").trim()
   };
 }
 function zAutomaticImageStyle(ctx){
@@ -1435,18 +1439,39 @@ function zAutomaticImageIdea(ctx){
   if(["kreislaufwirtschaft","reparatur","recycling","wiederverwendung","ressourceneffizienz","gebrauchtholz","rückbau","ruckbau"].some(term=>text.includes(term)))return "eine Reparaturwerkstatt, wiederverwendete Bauteile oder klar sortierte Materialien; kein Müllberg als Hauptmotiv";
   return Z_BOUNDARY_IMAGE_HINTS[ctx.planetaryBoundary]||Z_BOUNDARY_IMAGE_HINTS.QS;
 }
+function zPersonProtectedImageIdea(ctx){
+  const linkedRealPerson=Boolean(ctx.candidateId)||ctx.category==="Menschen der Forschung";
+  const raw=String(ctx.imageIdea||"").trim();
+  const normalized=zNormalizeImageSearch(raw);
+  const portraitLike=["portrat","portrait","bildnis","gesicht","abbild der person","arbeitskontext von"].some(term=>normalized.includes(term));
+
+  if(portraitLike){
+    const neutral=zAutomaticImageIdea({...ctx,imageIdea:""});
+    return `${neutral}; Forschungsgegenstand, Material, Messung oder Arbeitsumgebung als Hauptmotiv; keine namentlich genannte oder identifizierbare reale Person darstellen`;
+  }
+  if(!linkedRealPerson)return zAutomaticImageIdea(ctx);
+  if(raw)return `${raw}; keine namentlich genannte oder identifizierbare reale Person darstellen`;
+
+  const neutral=zAutomaticImageIdea({...ctx,imageIdea:""});
+  return `${neutral}; Forschungsgegenstand, Material, Messung oder Arbeitsumgebung als Hauptmotiv; keine namentlich genannte oder identifizierbare reale Person darstellen`;
+}
+function zRealPersonPromptRule(ctx){
+  const specific=ctx.candidateName?` (${ctx.candidateName})`:"";
+  return `Verbindliche Personenregel: Namentlich genannte reale Personen${specific} niemals mit KI nachbilden – weder als Porträt noch als scheinbar authentische Arbeitsszene oder erkennbare Ähnlichkeit. Zeige stattdessen Forschungsgegenstand, Material, Messung, Arbeitsmittel oder Umgebung ohne identifizierbare Person. Ein echtes Personenfoto darf nur separat aus einer realen, nachvollziehbaren Bildquelle eingebunden werden.`;
+}
 function zBuildImagePromptText(ctx=zImagePromptContext()){
   const style=zAutomaticImageStyle(ctx);
   const format=zAutomaticImageFormat(ctx,style);
-  const idea=zAutomaticImageIdea(ctx);
+  const idea=zPersonProtectedImageIdea(ctx);
+  const personRule=zRealPersonPromptRule(ctx);
   const keywords=ctx.keywords.length?`\nSchlagwörter: ${ctx.keywords.join(", ")}.`:"";
   const subject=`Artikelthema: ${ctx.title||"noch ohne Titel"}.\nKernaussage: ${ctx.summary||"noch keine Kurzfassung"}.\nBildidee / mögliche Bildassoziation: ${idea}.\nGewählter Bildstil: ${style}. ${Z_IMAGE_STYLE_HINTS[style]||Z_IMAGE_STYLE_HINTS.Natur}${keywords}`;
 
   if(format==="SVG"){
-    return `Erstelle eine echte, saubere SVG-Vektorgrafik als Titelbild für einen öffentlichen Wissenschafts-Infoscreen. Keine Rastergrafik und kein nur vektorartig aussehendes PNG/JPG.\n\n${subject}\n\nKomposition für den Infoscreen:\n- Hochformat im Seitenverhältnis 8:9; passende viewBox verwenden.\n- Genau ein dominantes, klar erkennbares Hauptmotiv bzw. einen klaren Prozess.\n- Auch aus drei bis fünf Metern Entfernung verständlich.\n- Ruhige Fläche, klare Hierarchie, wenige Formen und Pfade.\n- Wichtige Motive mindestens zehn Prozent vom Bildrand entfernt.\n- Keine Schrift, Buchstaben, Zahlen, Logos, Wasserzeichen oder dekorative Beschriftungen.\n- Pfeile nur, wenn sie für einen Prozess wirklich nötig sind; ohne Textbeschriftung.\n- Keine Collage, keine geteilte Ansicht und keine überladene Infografik.\n\nVerbindliche ZUSTAND-Bildsprache: sachlich, ruhig, hochwertig und wissenschaftsredaktionell. Der Zusammenhang muss sich unmittelbar aus dem Artikelthema ergeben und nicht aus einer beliebigen Naturmetapher.\n\nTechnische SVG-Vorgaben:\n- valides, eigenständiges SVG ohne JavaScript, Event-Handler oder externe Ressourcen,\n- keine eingebetteten Base64-, PNG- oder JPEG-Bilder,\n- einfache Pfade und Formen, möglichst kompakter Code,\n- keine externen Schriften; idealerweise überhaupt kein Text im SVG,\n- für schnelle Webdarstellung optimieren und deutlich unter 500 kB halten.\n\nAusgabe: genau eine vollständige SVG-Datei bzw. vollständigen validen SVG-Code im Hochformat 8:9.`;
+    return `Erstelle eine echte, saubere SVG-Vektorgrafik als Titelbild für einen öffentlichen Wissenschafts-Infoscreen. Keine Rastergrafik und kein nur vektorartig aussehendes PNG/JPG.\n\n${subject}\n\n${personRule}\n\nKomposition für den Infoscreen:\n- Hochformat im Seitenverhältnis 8:9; passende viewBox verwenden.\n- Genau ein dominantes, klar erkennbares Hauptmotiv bzw. einen klaren Prozess.\n- Auch aus drei bis fünf Metern Entfernung verständlich.\n- Ruhige Fläche, klare Hierarchie, wenige Formen und Pfade.\n- Wichtige Motive mindestens zehn Prozent vom Bildrand entfernt.\n- Keine Schrift, Buchstaben, Zahlen, Logos, Wasserzeichen oder dekorative Beschriftungen.\n- Pfeile nur, wenn sie für einen Prozess wirklich nötig sind; ohne Textbeschriftung.\n- Keine Collage, keine geteilte Ansicht und keine überladene Infografik.\n\nVerbindliche ZUSTAND-Bildsprache: sachlich, ruhig, hochwertig und wissenschaftsredaktionell. Der Zusammenhang muss sich unmittelbar aus dem Artikelthema ergeben und nicht aus einer beliebigen Naturmetapher.\n\nTechnische SVG-Vorgaben:\n- valides, eigenständiges SVG ohne JavaScript, Event-Handler oder externe Ressourcen,\n- keine eingebetteten Base64-, PNG- oder JPEG-Bilder,\n- einfache Pfade und Formen, möglichst kompakter Code,\n- keine externen Schriften; idealerweise überhaupt kein Text im SVG,\n- für schnelle Webdarstellung optimieren und deutlich unter 500 kB halten.\n\nAusgabe: genau eine vollständige SVG-Datei bzw. vollständigen validen SVG-Code im Hochformat 8:9.`;
   }
 
-  return `Erzeuge ein einzelnes Titelbild für einen öffentlichen Wissenschafts-Infoscreen.\n\n${subject}\n\nZeige keine erfundene konkrete Nachrichtenszene. Entwickle stattdessen eine natürliche, glaubwürdige und fotorealistische redaktionelle Assoziation, die den Inhalt auf den ersten Blick verständlich macht. Menschen nur dann zeigen, wenn sie inhaltlich sinnvoll sind; dann respektvoll, alltäglich und nicht posierend.\n\nKomposition für den Infoscreen:\n- Hochformat im Seitenverhältnis 8:9.\n- Das Bild füllt die linke Hälfte eines vertikal geteilten 16:9-Bildschirms.\n- Genau ein dominantes, klar erkennbares Hauptmotiv.\n- Auch aus drei bis fünf Metern Entfernung verständlich.\n- Ruhiger Hintergrund und deutliche Hell-Dunkel-Trennung.\n- Wichtige Motive mindestens zehn Prozent vom Bildrand entfernt.\n- Keine Schrift, Buchstaben, Zahlen, Diagramme, Logos, Wasserzeichen, Rahmen oder Collagen.\n- Keine überladene Komposition und keine gestellte Werbeszene.\n\nVerbindliche ZUSTAND-Bildsprache: fotorealistische, glaubwürdige redaktionelle Fotografie für ein hochwertiges deutschsprachiges Wissenschaftsmagazin. Ruhige Bildsprache, natürliches Licht, klare Komposition, realistische Materialien und Hauttöne, dezente Tiefenschärfe. Das Hauptmotiv soll sich unmittelbar aus dem Artikelthema ergeben und nicht aus einer allgemeinen Naturmetapher.\n\nAusgabeziel: genau ein fertiges Bild im Hochformat 8:9, ohne Text im Bild. Bevorzugtes Webformat JPEG/JPG; auf sichtbar hohe Qualität bei einer Zieldateigröße von höchstens 500 kB optimieren. Falls das Bilderzeugungssystem Dateiformat oder Dateigröße nicht direkt steuern kann, das Bild in hoher Qualität erzeugen; die JPG-Konvertierung und Komprimierung erfolgt anschließend separat.`;
+  return `Erzeuge ein einzelnes Titelbild für einen öffentlichen Wissenschafts-Infoscreen.\n\n${subject}\n\n${personRule}\n\nZeige keine erfundene konkrete Nachrichtenszene. Entwickle stattdessen eine natürliche, glaubwürdige und fotorealistische redaktionelle Assoziation, die den Inhalt auf den ersten Blick verständlich macht. Menschen nur dann zeigen, wenn sie inhaltlich sinnvoll sind; dann respektvoll, alltäglich und nicht posierend.\n\nKomposition für den Infoscreen:\n- Hochformat im Seitenverhältnis 8:9.\n- Das Bild füllt die linke Hälfte eines vertikal geteilten 16:9-Bildschirms.\n- Genau ein dominantes, klar erkennbares Hauptmotiv.\n- Auch aus drei bis fünf Metern Entfernung verständlich.\n- Ruhiger Hintergrund und deutliche Hell-Dunkel-Trennung.\n- Wichtige Motive mindestens zehn Prozent vom Bildrand entfernt.\n- Keine Schrift, Buchstaben, Zahlen, Diagramme, Logos, Wasserzeichen, Rahmen oder Collagen.\n- Keine überladene Komposition und keine gestellte Werbeszene.\n\nVerbindliche ZUSTAND-Bildsprache: fotorealistische, glaubwürdige redaktionelle Fotografie für ein hochwertiges deutschsprachiges Wissenschaftsmagazin. Ruhige Bildsprache, natürliches Licht, klare Komposition, realistische Materialien und Hauttöne, dezente Tiefenschärfe. Das Hauptmotiv soll sich unmittelbar aus dem Artikelthema ergeben und nicht aus einer allgemeinen Naturmetapher.\n\nAusgabeziel: genau ein fertiges Bild im Hochformat 8:9, ohne Text im Bild. Bevorzugtes Webformat JPEG/JPG; auf sichtbar hohe Qualität bei einer Zieldateigröße von höchstens 500 kB optimieren. Falls das Bilderzeugungssystem Dateiformat oder Dateigröße nicht direkt steuern kann, das Bild in hoher Qualität erzeugen; die JPG-Konvertierung und Komprimierung erfolgt anschließend separat.`;
 }
 function updateZImageAdvice(){
   const el=$("#zImageAdvice");
@@ -1458,7 +1483,8 @@ function updateZImageAdvice(){
   if(ctx.imageStyle==="Automatisch")automatic.push(`Stil: ${style}`);
   if(ctx.imageFormat==="Automatisch")automatic.push(`Format: ${format}`);
   const detail=format==="JPG"?"JPG ist für fotorealistische Motive vorgesehen; Zielgröße max. 500 kB.":"SVG ist für reduzierte Erklär-, Prozess- und Symbolgrafiken vorgesehen; ohne eingebettete Rasterbilder oder Skripte.";
-  el.textContent=`Aktuelle Empfehlung: ${style} · ${format}. ${detail}${automatic.length?` Automatisch gewählt: ${automatic.join(", ")}.`:""}`;
+  const personNote=(ctx.candidateId||ctx.category==="Menschen der Forschung")?" Reale Person verknüpft: KI-Porträts und erfundene Ähnlichkeiten sind gesperrt; gezeigt wird der Forschungsgegenstand bzw. Arbeitskontext ohne identifizierbare Person.":"";
+  el.textContent=`Aktuelle Empfehlung: ${style} · ${format}. ${detail}${automatic.length?` Automatisch gewählt: ${automatic.join(", ")}.`:""}${personNote}`;
 }
 function buildZImagePrompt(){
   const prompt=zBuildImagePromptText();
@@ -1598,7 +1624,16 @@ function importCandidateProfileToZArticle(){
     sourceTitle:source.title,
     sourceUrl:source.url,
     publicationDate:source.date,
-    imageIdea:`Porträt oder glaubwürdiger Arbeitskontext von ${c.name}${c.topic?`; Forschungsbezug: ${String(c.topic).trim()}`:""}. Keine Werbeästhetik, keine erfundene Forschungsszene.`
+    imageIdea:zPersonProtectedImageIdea({
+      title:zCandidateTitle(c),
+      summary:zCandidateSummary(c),
+      category:"Menschen der Forschung",
+      planetaryBoundary:$("#zBoundary")?.value||"QS",
+      keywords:zCandidateKeywords(c),
+      imageIdea:"",
+      candidateId:c.id,
+      candidateName:c.name
+    })
   };
   const hasExisting=["#zTitle","#zSummary","#zSourceTitle","#zSource"].some(sel=>String($(sel)?.value||"").trim());
   if(hasExisting && !confirm("Im Z-Panel-Entwurf stehen bereits redaktionelle Inhalte. Titel, Kurztext, Kategorie, Schlagwörter und Quelle durch Angaben aus dem Kandidatenprofil ersetzen? Interview-Link, Bilddatei, Status und Sichtbarkeit bleiben erhalten."))return;
