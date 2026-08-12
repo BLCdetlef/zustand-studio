@@ -281,42 +281,165 @@
 <section id="zpanel" class="view">
   <div class="sectionhead">
     <div>
-      <div class="kicker">VOM GESPRÄCH ZUR ÖFFENTLICHKEIT</div>
-      <h2>Z‑Panel-Entwurf</h2>
+      <div class="kicker">VOM ENTWURF ZUR ÖFFENTLICHKEIT</div>
+      <h2>Z‑Panel Redaktion</h2>
+    </div>
+    <div class="candidate-actions">
+      <button class="ghost" id="zImportNews">Bestehende news.json importieren</button>
+      <input id="zImportNewsFile" class="hidden" type="file" accept="application/json,.json">
+      <button class="ghost" id="zExportNews">news.json erzeugen</button>
+      <button class="primary" id="zNewArticle">+ Neuer Beitrag</button>
     </div>
   </div>
 
-  <div class="grid two">
-    <article class="card">
-      <label>Gruppe filtern</label>
-      <select id="zGroupFilter"></select>
+  <div class="zpanel-layout">
+    <article class="card zpanel-list-card">
+      <div class="zpanel-list-head">
+        <h3>Beiträge <span class="count" id="zArticleCount">0</span></h3>
+      </div>
+      <div class="grid two zpanel-filter-grid">
+        <div>
+          <label>Status</label>
+          <select id="zStatusFilter">
+            <option value="__all__">Alle</option>
+            <option value="entwurf">Entwurf</option>
+            <option value="geprueft">Geprüft</option>
+            <option value="freigegeben">Freigegeben</option>
+            <option value="veroeffentlicht">Veröffentlicht</option>
+          </select>
+        </div>
+        <div>
+          <label>Sichtbarkeit</label>
+          <select id="zVisibilityFilter">
+            <option value="__all__">Alle</option>
+            <option value="aktiv">Aktiv</option>
+            <option value="archiviert">Archiviert</option>
+          </select>
+        </div>
+      </div>
+      <div id="zArticleList" class="z-article-list"></div>
+    </article>
 
-      <label>Interview / Kandidat</label>
+    <article class="card zpanel-editor-card">
+      <div class="z-editor-head">
+        <div>
+          <div class="kicker">REDAKTIONELLER DATENSATZ</div>
+          <h3 id="zEditorHeading">Neuer Beitrag</h3>
+        </div>
+        <div class="z-state-badges">
+          <span class="tag" id="zStatusBadge">Entwurf</span>
+          <span class="tag" id="zVisibilityBadge">Aktiv</span>
+        </div>
+      </div>
+
+      <label>Interview / Kandidat (optional)</label>
       <select id="zCandidate"></select>
-
-      <label>Zugeordnete Gruppe</label>
-      <input id="zGroupDisplay" readonly placeholder="Keine Gruppe">
+      <input id="zGroupDisplay" class="hidden" readonly>
 
       <label>Titel</label>
       <input id="zTitle">
 
-      <label>Kurztext (Ziel: 350–550 Zeichen)</label>
+      <div class="grid two">
+        <div>
+          <label>Beitragstyp</label>
+          <select id="zCategory">
+            <option>Zustand</option>
+            <option>Lösung</option>
+            <option>Wie wissen wir das?</option>
+            <option>Natur verstehen</option>
+            <option>Menschen der Forschung</option>
+            <option>Querschnitt</option>
+          </select>
+        </div>
+        <div>
+          <label>Planetare Grenze / Bereich</label>
+          <select id="zBoundary">
+            <option value="KL">KL · Klimawandel</option>
+            <option value="BD">BD · Biosphärenintegrität</option>
+            <option value="LN">LN · Landnutzung</option>
+            <option value="OA">OA · Ozeanversauerung</option>
+            <option value="NS">NS · Neuartige Substanzen</option>
+            <option value="QS">QS · Querschnitt</option>
+          </select>
+        </div>
+      </div>
+
+      <label>Kurztext <span class="hint" id="zSummaryCount">0 Zeichen · Ziel 350–550</span></label>
       <textarea id="zSummary" class="tall"></textarea>
 
-      <label>Quelle / Link</label>
-      <input id="zSource">
+      <label>Schlagwörter (durch Komma trennen)</label>
+      <input id="zKeywords" placeholder="z. B. Wald, Monitoring, Kreislaufwirtschaft">
 
-      <div class="actions">
-        <button class="primary" id="saveZ">Entwurf speichern</button>
+      <div class="grid two">
+        <div>
+          <label>Quellentitel</label>
+          <input id="zSourceTitle">
+        </div>
+        <div>
+          <label>Veröffentlichungsdatum der Quelle</label>
+          <input id="zPublicationDate" type="date">
+        </div>
       </div>
-    </article>
 
-    <article class="card">
-      <h3>Redaktioneller Grundsatz</h3>
-      <p>Ein Interview kann Anlass für einen Z‑Panel-Beitrag sein. Sachliche Aussagen werden anhand der zugrunde liegenden Quellen geprüft. Wörtliche Zitate, Audio, Bilder oder personenbezogene Aussagen werden nicht automatisch veröffentlicht.</p>
-      <div class="notice">Das bestehende Z‑Panel bleibt unverändert. Dieser Bereich erzeugt zunächst nur interne Entwürfe.</div>
+      <label>Quelle / Link</label>
+      <input id="zSource" placeholder="https://…">
+
+      <div class="grid two">
+        <div>
+          <label>Bilddatei im Z‑Panel (optional)</label>
+          <input id="zImageFile" placeholder="assets/images/…png">
+        </div>
+        <div>
+          <label>Interview-Link (optional)</label>
+          <input id="zInterviewUrl" placeholder="https://…">
+        </div>
+      </div>
+
+      <label>Bildidee / redaktioneller Hinweis (intern)</label>
+      <textarea id="zImageIdea" placeholder="Wird nicht in news.json veröffentlicht."></textarea>
+
+      <div class="actions z-save-actions">
+        <button class="primary" id="saveZ">Entwurf speichern</button>
+        <button class="ghost" id="zMarkChecked">Als geprüft markieren</button>
+        <button class="ghost" id="zRelease">Freigeben</button>
+        <button class="ghost" id="zMarkPublished">Als veröffentlicht markieren</button>
+      </div>
+      <div class="actions">
+        <button class="ghost" id="zToggleActive">Archivieren</button>
+        <button class="ghost danger" id="zDeleteArticle">Beitrag löschen</button>
+      </div>
+      <p class="hint" id="zWorkflowHint">Entwurf: intern, noch nicht für die öffentliche Datei vorgesehen.</p>
     </article>
   </div>
+
+  <article class="card z-preview-wrap">
+    <div class="cardhead">
+      <div>
+        <div class="kicker">VORSCHAU</div>
+        <h3>So könnte der Beitrag erscheinen</h3>
+      </div>
+      <div class="candidate-actions">
+        <button class="ghost active-preview" id="zPreviewTh">TH‑Vorschau</button>
+        <button class="ghost" id="zPreviewFull">Vollversion</button>
+      </div>
+    </div>
+    <div id="zPreviewCard" class="z-preview-card mode-th">
+      <div class="z-preview-image" id="zPreviewImage"><span>Bild</span></div>
+      <div class="z-preview-copy">
+        <div class="z-preview-meta" id="zPreviewMeta">ZUSTAND · QS</div>
+        <h3 id="zPreviewTitle">Titel des Beitrags</h3>
+        <p id="zPreviewSummary">Hier erscheint der Kurztext.</p>
+        <a id="zPreviewSource" href="#" target="_blank" rel="noopener">Quelle öffnen</a>
+        <a id="zPreviewInterview" class="hidden" href="#" target="_blank" rel="noopener">Zum Interview</a>
+      </div>
+    </div>
+  </article>
+
+  <article class="card z-export-note">
+    <h3>Veröffentlichungsgrenze</h3>
+    <p>Die erzeugte <code>news.json</code> enthält ausschließlich <b>aktive</b> Beiträge mit Status <b>freigegeben</b> oder <b>veröffentlicht</b>. Interne Hinweise, Kontaktdaten, Kandidatenprofile und Interviewvorbereitung werden nicht exportiert.</p>
+    <div class="notice" id="zExportInfo">Vor dem ersten Export bitte die aktuell veröffentlichte news.json importieren. So bleiben bereits vorhandene Z‑Panel-Beiträge vollständig erhalten.</div>
+  </article>
 </section>
 </main>
 

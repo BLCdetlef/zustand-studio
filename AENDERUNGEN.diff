@@ -1,48 +1,777 @@
---- app.js (Basis)
-+++ app.js (neu)
-@@ -608,7 +608,7 @@
+--- /mnt/data/zpanel_redaktion_pristine/index.html	2026-08-12 00:11:28.000000000 +0000
++++ /mnt/data/zpanel_redaktion_work/index.html	2026-08-12 04:23:34.652680855 +0000
+@@ -281,42 +281,165 @@
+ <section id="zpanel" class="view">
+   <div class="sectionhead">
+     <div>
+-      <div class="kicker">VOM GESPRÄCH ZUR ÖFFENTLICHKEIT</div>
+-      <h2>Z‑Panel-Entwurf</h2>
++      <div class="kicker">VOM ENTWURF ZUR ÖFFENTLICHKEIT</div>
++      <h2>Z‑Panel Redaktion</h2>
++    </div>
++    <div class="candidate-actions">
++      <button class="ghost" id="zImportNews">Bestehende news.json importieren</button>
++      <input id="zImportNewsFile" class="hidden" type="file" accept="application/json,.json">
++      <button class="ghost" id="zExportNews">news.json erzeugen</button>
++      <button class="primary" id="zNewArticle">+ Neuer Beitrag</button>
+     </div>
+   </div>
  
-   setPromptPanel(
-     `Forschungsprofil: ${c.name}`,
--    "Dieser Prompt sucht keine weiteren Kandidaten. Er ergänzt ausschließlich das Forschungsprofil der ausgewählten Person. Den JSON-Block danach bei „Kandidaten“ importieren; der vorhandene Datensatz wird über seine interne ID aktualisiert."
-+    "Dieser Prompt sucht keine weiteren Kandidaten. Er ergänzt ausschließlich das Forschungsprofil der ausgewählten Person. Die Recherche soll zusätzlich eine fertige JSON-Datei zum Herunterladen bereitstellen; diese danach bei „Kandidaten“ importieren."
-   );
+-  <div class="grid two">
+-    <article class="card">
+-      <label>Gruppe filtern</label>
+-      <select id="zGroupFilter"></select>
++  <div class="zpanel-layout">
++    <article class="card zpanel-list-card">
++      <div class="zpanel-list-head">
++        <h3>Beiträge <span class="count" id="zArticleCount">0</span></h3>
++      </div>
++      <div class="grid two zpanel-filter-grid">
++        <div>
++          <label>Status</label>
++          <select id="zStatusFilter">
++            <option value="__all__">Alle</option>
++            <option value="entwurf">Entwurf</option>
++            <option value="geprueft">Geprüft</option>
++            <option value="freigegeben">Freigegeben</option>
++            <option value="veroeffentlicht">Veröffentlicht</option>
++          </select>
++        </div>
++        <div>
++          <label>Sichtbarkeit</label>
++          <select id="zVisibilityFilter">
++            <option value="__all__">Alle</option>
++            <option value="aktiv">Aktiv</option>
++            <option value="archiviert">Archiviert</option>
++          </select>
++        </div>
++      </div>
++      <div id="zArticleList" class="z-article-list"></div>
++    </article>
  
-   $("#promptOutput").value=`Recherchiere ausschließlich zur bereits ausgewählten Interviewperson. Suche NICHT nach anderen Expert:innen oder Kandidat:innen.
-@@ -629,10 +629,10 @@
+-      <label>Interview / Kandidat</label>
+-      <select id="zCandidate"></select>
++    <article class="card zpanel-editor-card">
++      <div class="z-editor-head">
++        <div>
++          <div class="kicker">REDAKTIONELLER DATENSATZ</div>
++          <h3 id="zEditorHeading">Neuer Beitrag</h3>
++        </div>
++        <div class="z-state-badges">
++          <span class="tag" id="zStatusBadge">Entwurf</span>
++          <span class="tag" id="zVisibilityBadge">Aktiv</span>
++        </div>
++      </div>
  
- Suche zusätzlich gezielt nach 1–3 zentralen wissenschaftlichen Veröffentlichungen oder offiziellen Auswertungen, an denen diese Person beteiligt ist und die unmittelbar zu den genannten Messreihen oder Datensätzen gehören. Bevorzuge Originalpublikationen, DOI-/Verlagsseiten, institutionelle Repositorien und offizielle Projektseiten. Gib möglichst direkte Quellenlinks an. Medienberichte nur ergänzend verwenden.
+-      <label>Zugeordnete Gruppe</label>
+-      <input id="zGroupDisplay" readonly placeholder="Keine Gruppe">
++      <label>Interview / Kandidat (optional)</label>
++      <select id="zCandidate"></select>
++      <input id="zGroupDisplay" class="hidden" readonly>
  
--Bereite vier Blöcke vor:
--1. Kernaussagen der Forschung: 4–6 kurze, belastbare Aussagen, die ich in eigenen Worten wiedergeben können sollte. Beobachtete Befunde klar von Interpretation trennen.
--2. Messreihen, Monitoringprogramme, Datensätze & Veröffentlichungen: Name, Zeitraum, räumlicher Bezug, Messgröße, Methode, Rolle der Person, wichtigste Veränderung und Quellenlink; dazu 1–3 zentrale Veröffentlichungen mit Titel, Jahr, Link und kurzer Relevanz.
--3. Zahlen, Zusammenhänge & Unsicherheiten: wichtigste quantitative Trends mit Einheit, Ursachen/Folgen/Wechselwirkungen und Grenzen der Aussagekraft.
-+Bereite die sichtbare Zusammenfassung bewusst kompakt vor; keine langen Fließtexte. Zielumfang ungefähr halb so lang wie eine ausführliche Forschungsdarstellung. Verwende diese vier Blöcke:
-+1. Kernaussagen der Forschung: 4–5 kurze, belastbare Aussagen, die ich in eigenen Worten wiedergeben können sollte. Beobachtete Befunde klar von Interpretation trennen.
-+2. Messreihen, Monitoringprogramme, Datensätze & Veröffentlichungen: nur die 2–3 wichtigsten Programme/Datensätze mit Zeitraum, Messgröße, Methode, Rolle der Person, wichtigstem Trend und Quellenlink; dazu 1–3 zentrale Veröffentlichungen mit Titel, Jahr, Link und einem kurzen Satz zur Relevanz.
-+3. Zahlen, Zusammenhänge & Unsicherheiten: 3–5 besonders wichtige quantitative Angaben mit Einheit und Zeitraum; anschließend die wichtigsten Ursachen/Folgen/Wechselwirkungen und 2–4 Grenzen der Aussagekraft.
- 4. Gesprächseinstieg & Reservefragen: zuerst eine offene, natürliche Einstiegsfrage, die den Gast von der eigenen Messung oder Forschung aus erklären lässt, woher wir die Veränderung kennen. Danach höchstens drei kurze Reservefragen. Kein Fragenkatalog.
+       <label>Titel</label>
+       <input id="zTitle">
  
- Regionale Einordnung für die Auswahl relevanter Arbeiten: ${region}.
-@@ -640,7 +640,11 @@
- 
- Wichtig: Recherchiere die konkrete Forschungsarbeit der genannten Person. Schreibe ihr keine Ergebnisse anderer Forschender zu. Falls eine Beteiligung oder Zuordnung nicht sicher belegbar ist, kennzeichne das oder lasse die Angabe weg.
- 
--Gib am Ende zusätzlich GENAU EINEN JSON-Kandidaten zum direkten Import ins ZUSTAND-Studio aus. Die Felder "targetCandidateId", "name" und "institution" müssen exakt wie unten vorgegeben übernommen werden, damit der bestehende Datensatz sicher aktualisiert und kein neuer Kandidat angelegt wird:
-+Erstelle ZUSÄTZLICH zur kurzen sichtbaren Zusammenfassung eine gültige JSON-Datei zum direkten Import ins ZUSTAND-Studio und stelle sie als herunterladbare Datei bereit. Gib den vollständigen JSON-Inhalt nicht noch einmal im Fließtext oder als Codeblock aus. Die JSON-Datei darf die recherchierten Angaben vollständig enthalten, auch wenn die sichtbare Zusammenfassung bewusst kurz gehalten ist.
+-      <label>Kurztext (Ziel: 350–550 Zeichen)</label>
++      <div class="grid two">
++        <div>
++          <label>Beitragstyp</label>
++          <select id="zCategory">
++            <option>Zustand</option>
++            <option>Lösung</option>
++            <option>Wie wissen wir das?</option>
++            <option>Natur verstehen</option>
++            <option>Menschen der Forschung</option>
++            <option>Querschnitt</option>
++          </select>
++        </div>
++        <div>
++          <label>Planetare Grenze / Bereich</label>
++          <select id="zBoundary">
++            <option value="KL">KL · Klimawandel</option>
++            <option value="BD">BD · Biosphärenintegrität</option>
++            <option value="LN">LN · Landnutzung</option>
++            <option value="OA">OA · Ozeanversauerung</option>
++            <option value="NS">NS · Neuartige Substanzen</option>
++            <option value="QS">QS · Querschnitt</option>
++          </select>
++        </div>
++      </div>
 +
-+Dateiname nach Möglichkeit: forschungsprofil_${String(c.name||"person").toLowerCase().replace(/[^a-z0-9äöüß]+/gi,"_").replace(/^_+|_+$/g,"")}.json
++      <label>Kurztext <span class="hint" id="zSummaryCount">0 Zeichen · Ziel 350–550</span></label>
+       <textarea id="zSummary" class="tall"></textarea>
+ 
++      <label>Schlagwörter (durch Komma trennen)</label>
++      <input id="zKeywords" placeholder="z. B. Wald, Monitoring, Kreislaufwirtschaft">
 +
-+Die Felder "targetCandidateId", "name" und "institution" müssen in der Datei exakt wie unten vorgegeben übernommen werden, damit der bestehende Datensatz sicher aktualisiert und kein neuer Kandidat angelegt wird. Verwende exakt dieses Datenformat:
- {
-   "format": "zustand-studio-candidates-v2",
-   "candidates": [
-@@ -671,7 +675,7 @@
-   ]
++      <div class="grid two">
++        <div>
++          <label>Quellentitel</label>
++          <input id="zSourceTitle">
++        </div>
++        <div>
++          <label>Veröffentlichungsdatum der Quelle</label>
++          <input id="zPublicationDate" type="date">
++        </div>
++      </div>
++
+       <label>Quelle / Link</label>
+-      <input id="zSource">
++      <input id="zSource" placeholder="https://…">
+ 
+-      <div class="actions">
+-        <button class="primary" id="saveZ">Entwurf speichern</button>
++      <div class="grid two">
++        <div>
++          <label>Bilddatei im Z‑Panel (optional)</label>
++          <input id="zImageFile" placeholder="assets/images/…png">
++        </div>
++        <div>
++          <label>Interview-Link (optional)</label>
++          <input id="zInterviewUrl" placeholder="https://…">
++        </div>
+       </div>
+-    </article>
+ 
+-    <article class="card">
+-      <h3>Redaktioneller Grundsatz</h3>
+-      <p>Ein Interview kann Anlass für einen Z‑Panel-Beitrag sein. Sachliche Aussagen werden anhand der zugrunde liegenden Quellen geprüft. Wörtliche Zitate, Audio, Bilder oder personenbezogene Aussagen werden nicht automatisch veröffentlicht.</p>
+-      <div class="notice">Das bestehende Z‑Panel bleibt unverändert. Dieser Bereich erzeugt zunächst nur interne Entwürfe.</div>
++      <label>Bildidee / redaktioneller Hinweis (intern)</label>
++      <textarea id="zImageIdea" placeholder="Wird nicht in news.json veröffentlicht."></textarea>
++
++      <div class="actions z-save-actions">
++        <button class="primary" id="saveZ">Entwurf speichern</button>
++        <button class="ghost" id="zMarkChecked">Als geprüft markieren</button>
++        <button class="ghost" id="zRelease">Freigeben</button>
++        <button class="ghost" id="zMarkPublished">Als veröffentlicht markieren</button>
++      </div>
++      <div class="actions">
++        <button class="ghost" id="zToggleActive">Archivieren</button>
++        <button class="ghost danger" id="zDeleteArticle">Beitrag löschen</button>
++      </div>
++      <p class="hint" id="zWorkflowHint">Entwurf: intern, noch nicht für die öffentliche Datei vorgesehen.</p>
+     </article>
+   </div>
++
++  <article class="card z-preview-wrap">
++    <div class="cardhead">
++      <div>
++        <div class="kicker">VORSCHAU</div>
++        <h3>So könnte der Beitrag erscheinen</h3>
++      </div>
++      <div class="candidate-actions">
++        <button class="ghost active-preview" id="zPreviewTh">TH‑Vorschau</button>
++        <button class="ghost" id="zPreviewFull">Vollversion</button>
++      </div>
++    </div>
++    <div id="zPreviewCard" class="z-preview-card mode-th">
++      <div class="z-preview-image" id="zPreviewImage"><span>Bild</span></div>
++      <div class="z-preview-copy">
++        <div class="z-preview-meta" id="zPreviewMeta">ZUSTAND · QS</div>
++        <h3 id="zPreviewTitle">Titel des Beitrags</h3>
++        <p id="zPreviewSummary">Hier erscheint der Kurztext.</p>
++        <a id="zPreviewSource" href="#" target="_blank" rel="noopener">Quelle öffnen</a>
++        <a id="zPreviewInterview" class="hidden" href="#" target="_blank" rel="noopener">Zum Interview</a>
++      </div>
++    </div>
++  </article>
++
++  <article class="card z-export-note">
++    <h3>Veröffentlichungsgrenze</h3>
++    <p>Die erzeugte <code>news.json</code> enthält ausschließlich <b>aktive</b> Beiträge mit Status <b>freigegeben</b> oder <b>veröffentlicht</b>. Interne Hinweise, Kontaktdaten, Kandidatenprofile und Interviewvorbereitung werden nicht exportiert.</p>
++    <div class="notice" id="zExportInfo">Vor dem ersten Export bitte die aktuell veröffentlichte news.json importieren. So bleiben bereits vorhandene Z‑Panel-Beiträge vollständig erhalten.</div>
++  </article>
+ </section>
+ </main>
+ 
+--- /mnt/data/zpanel_redaktion_pristine/app.js	2026-08-12 00:27:58.000000000 +0000
++++ /mnt/data/zpanel_redaktion_work/app.js	2026-08-12 04:24:12.617869529 +0000
+@@ -6,7 +6,7 @@
+   load(){ try{return JSON.parse(localStorage.getItem(KEY))||this.empty()}catch{return this.empty()} }
+   save(data){ localStorage.setItem(KEY,JSON.stringify(data)) }
+   clear(){ localStorage.removeItem(KEY) }
+-  empty(){return {candidates:[], groups:[], acquisition:{}, interviews:{}, zDrafts:{}}}
++  empty(){return {candidates:[], groups:[], acquisition:{}, interviews:{}, zDrafts:{}, zArticles:[], zPublicBaselineImported:false, zPublicBaselineName:""}}
  }
  
--Nur seriös belegte Angaben übernehmen. Keine Kontaktdaten erraten.`;
-+Nur seriös belegte Angaben übernehmen. Keine Kontaktdaten erraten. Die JSON-Datei vor der Bereitstellung auf gültige JSON-Syntax prüfen.`;
+ // Später austauschbar: class NextcloudStorage { load(); save(); ... }
+@@ -19,6 +19,38 @@
+ if(!data.acquisition)data.acquisition={};
+ if(!data.interviews)data.interviews={};
+ if(!data.zDrafts)data.zDrafts={};
++if(!Array.isArray(data.zArticles))data.zArticles=[];
++if(typeof data.zPublicBaselineImported!=="boolean")data.zPublicBaselineImported=false;
++if(typeof data.zPublicBaselineName!=="string")data.zPublicBaselineName="";
++
++// Bestehende kandidatenbezogene Z-Panel-Entwürfe einmalig in das neue,
++// eigenständige Redaktionsmodell übernehmen. Die alten Daten bleiben erhalten.
++Object.entries(data.zDrafts).forEach(([candidateId,z])=>{
++  if(!z || !(z.title||z.summary||z.source))return;
++  if(data.zArticles.some(a=>a?.legacyCandidateId===candidateId))return;
++  const today=new Date().toISOString().slice(0,10);
++  data.zArticles.push({
++    id:`legacy-${candidateId}`,
++    legacyCandidateId:candidateId,
++    candidateId,
++    title:String(z.title||""),
++    summary:String(z.summary||""),
++    category:"Zustand",
++    planetaryBoundary:"QS",
++    keywords:[],
++    sourceTitle:"",
++    sourceUrl:String(z.source||""),
++    publicationDate:"",
++    imageFile:"",
++    imageIdea:"",
++    interviewUrl:"",
++    workflowStatus:"entwurf",
++    visibility:"aktiv",
++    created:today,
++    lastModified:today,
++    publishedAt:""
++  });
++});
+ function textList(value){
+   if(Array.isArray(value)){
+     return value.map(item=>{
+@@ -424,13 +456,6 @@
+     filter.value=[...filter.options].some(o=>o.value===old)?old:"__all__";
+   }
  
-   nav("research");
-   $("#promptOutput")?.scrollIntoView({behavior:"smooth",block:"center"});
+-  const zFilter=$("#zGroupFilter");
+-  if(zFilter){
+-    const old=zFilter.value||"__all__";
+-    zFilter.innerHTML=groupOptions("",true);
+-    zFilter.value=[...zFilter.options].some(o=>o.value===old)?old:"__all__";
+-  }
+-
+   const list=$("#groupList");
+   if(list){
+     list.innerHTML=data.groups.length
+@@ -494,13 +519,6 @@
+   if(e.key==="Enter"){e.preventDefault();$("#addGroup").click();}
+ });
+ $("#candidateGroupFilter").onchange=renderCandidates;
+-$("#zGroupFilter").onchange=()=>{
+-  renderZCandidateOptions();
+-  $("#zTitle").value="";
+-  $("#zSummary").value="";
+-  $("#zSource").value="";
+-  $("#zGroupDisplay").value="";
+-};
+ 
+ function candidateOptions(){
+   const opts='<option value="">Bitte auswählen</option>'+data.candidates.map(c=>`<option value="${c.id}">${esc(c.name)}${c.institution?" · "+esc(c.institution):""}</option>`).join("");
+@@ -520,9 +538,8 @@
+   const el=$("#zCandidate");
+   if(!el)return;
+   const old=el.value;
+-  const filter=$("#zGroupFilter")?.value||"__all__";
+-  const list=filteredCandidatesByGroup(filter);
+-  el.innerHTML='<option value="">Bitte auswählen</option>'+list.map(c=>`<option value="${c.id}">${esc(c.name)}${c.institution?" · "+esc(c.institution):""}</option>`).join("");
++  const list=data.candidates;
++  el.innerHTML='<option value="">Kein Interviewbezug</option>'+list.map(c=>`<option value="${c.id}">${esc(c.name)}${c.institution?" · "+esc(c.institution):""}</option>`).join("");
+   if(old && list.some(c=>c.id===old))el.value=old;
+   else el.value="";
+   showZGroup();
+@@ -1239,26 +1256,421 @@
+   }
+ });
+ 
+-$("#zCandidate").onchange=()=>{
+-  const c=selected("#zCandidate");
+-  const z=c?(data.zDrafts[c.id]||{}):{};
+-  $("#zTitle").value=z.title||"";
+-  $("#zSummary").value=z.summary||"";
+-  $("#zSource").value=z.source||(c?c.source:"");
++// --- Z-Panel Redaktion ------------------------------------------------------
++let currentZArticleId="";
++let zPreviewMode="th";
++
++function zToday(){return new Date().toISOString().slice(0,10)}
++function zNow(){return new Date().toISOString()}
++function zArticleById(id){return data.zArticles.find(a=>a.id===id)}
++function zStatusLabel(status){
++  return ({entwurf:"Entwurf",geprueft:"Geprüft",freigegeben:"Freigegeben",veroeffentlicht:"Veröffentlicht"})[status]||"Entwurf";
++}
++function zVisibilityLabel(value){return value==="archiviert"?"Archiviert":"Aktiv"}
++function zKeywordList(value){
++  if(Array.isArray(value))return value.map(x=>String(x).trim()).filter(Boolean);
++  return String(value||"").split(",").map(x=>x.trim()).filter(Boolean);
++}
++function zNormalizeArticle(a={}){
++  return {
++    id:String(a.id||crypto.randomUUID()),
++    legacyCandidateId:String(a.legacyCandidateId||""),
++    publicId:String(a.publicId||""),
++    publicOriginal:(a.publicOriginal && typeof a.publicOriginal==="object" && !Array.isArray(a.publicOriginal))?a.publicOriginal:null,
++    candidateId:String(a.candidateId||""),
++    title:String(a.title||""),
++    summary:String(a.summary||""),
++    category:String(a.category||"Zustand"),
++    planetaryBoundary:String(a.planetaryBoundary||"QS"),
++    keywords:zKeywordList(a.keywords),
++    sourceTitle:String(a.sourceTitle||""),
++    sourceUrl:String(a.sourceUrl||a.source||""),
++    publicationDate:String(a.publicationDate||""),
++    imageFile:String(a.imageFile||""),
++    imageIdea:String(a.imageIdea||""),
++    interviewUrl:String(a.interviewUrl||""),
++    workflowStatus:["entwurf","geprueft","freigegeben","veroeffentlicht"].includes(a.workflowStatus)?a.workflowStatus:"entwurf",
++    visibility:a.visibility==="archiviert"?"archiviert":"aktiv",
++    created:String(a.created||zToday()),
++    lastModified:String(a.lastModified||zNow()),
++    publishedAt:String(a.publishedAt||"")
++  };
++}
++data.zArticles=data.zArticles.map(zNormalizeArticle);
++
++function newZArticle(){
++  const a=zNormalizeArticle({id:crypto.randomUUID(),created:zToday(),lastModified:zNow()});
++  data.zArticles.unshift(a);
++  currentZArticleId=a.id;
++  storage.save(data);
++  renderZPanel();
++  populateZEditor(a);
++  $("#zTitle").focus();
++}
++
++function zFormArticle(){
++  const existing=zArticleById(currentZArticleId)||zNormalizeArticle({id:currentZArticleId||crypto.randomUUID()});
++  return zNormalizeArticle({
++    ...existing,
++    candidateId:$("#zCandidate").value||"",
++    title:$("#zTitle").value.trim(),
++    summary:$("#zSummary").value.trim(),
++    category:$("#zCategory").value,
++    planetaryBoundary:$("#zBoundary").value,
++    keywords:zKeywordList($("#zKeywords").value),
++    sourceTitle:$("#zSourceTitle").value.trim(),
++    sourceUrl:$("#zSource").value.trim(),
++    publicationDate:$("#zPublicationDate").value,
++    imageFile:$("#zImageFile").value.trim(),
++    imageIdea:$("#zImageIdea").value.trim(),
++    interviewUrl:$("#zInterviewUrl").value.trim(),
++    lastModified:zNow()
++  });
++}
++
++function saveZArticle(showMessage=false){
++  if(!currentZArticleId)newZArticle();
++  const a=zFormArticle();
++  const i=data.zArticles.findIndex(x=>x.id===a.id);
++  if(i>=0)data.zArticles[i]=a; else data.zArticles.unshift(a);
++  currentZArticleId=a.id;
++  storage.save(data);
++  renderZPanel();
++  if(showMessage)alert("Z-Panel-Entwurf gespeichert.");
++  return a;
++}
++
++function zValidation(a,{forRelease=false}={}){
++  const missing=[];
++  if(!a.title)missing.push("Titel");
++  if(!a.summary)missing.push("Kurztext");
++  if(!a.sourceUrl)missing.push("Quellenlink");
++  if(!a.sourceTitle)missing.push("Quellentitel");
++  if(!a.publicationDate)missing.push("Quellendatum");
++  if(!a.planetaryBoundary)missing.push("planetare Grenze / Bereich");
++  if(!a.category)missing.push("Beitragstyp");
++  if(missing.length)return `Bitte zuerst ergänzen: ${missing.join(", ")}.`;
++  if(!/^https?:\/\//i.test(a.sourceUrl))return "Der Quellenlink sollte mit http:// oder https:// beginnen.";
++  if(a.interviewUrl && !/^https?:\/\//i.test(a.interviewUrl))return "Der Interview-Link sollte mit http:// oder https:// beginnen.";
++  if(forRelease && (a.summary.length<350 || a.summary.length>550))return `Der Kurztext hat ${a.summary.length} Zeichen. Für die Freigabe sollten es 350–550 Zeichen sein.`;
++  return "";
++}
++
++function zSetWorkflow(next){
++  let a=saveZArticle(false);
++  const order={entwurf:0,geprueft:1,freigegeben:2,veroeffentlicht:3};
++  if(next==="geprueft"){
++    const err=zValidation(a);
++    if(err)return alert(err);
++  }
++  if(next==="freigegeben"){
++    if(order[a.workflowStatus]<1)return alert("Der Beitrag muss zuerst als geprüft markiert werden.");
++    const err=zValidation(a,{forRelease:true});
++    if(err)return alert(err);
++  }
++  if(next==="veroeffentlicht"){
++    if(order[a.workflowStatus]<2)return alert("Der Beitrag muss zuerst freigegeben werden.");
++    if(!confirm("Nur markieren, wenn die freigegebene news.json tatsächlich veröffentlicht wurde. Als veröffentlicht markieren?"))return;
++  }
++  a.workflowStatus=next;
++  if(next==="veroeffentlicht" && !a.publishedAt)a.publishedAt=zNow();
++  a.lastModified=zNow();
++  const i=data.zArticles.findIndex(x=>x.id===a.id);
++  data.zArticles[i]=a;
++  storage.save(data);
++  renderZPanel();
++  populateZEditor(a);
++}
++
++function zToggleVisibility(){
++  const a=saveZArticle(false);
++  a.visibility=a.visibility==="archiviert"?"aktiv":"archiviert";
++  a.lastModified=zNow();
++  const i=data.zArticles.findIndex(x=>x.id===a.id);
++  data.zArticles[i]=a;
++  storage.save(data);
++  renderZPanel();
++  populateZEditor(a);
++}
++
++function clearZEditor(){
++  currentZArticleId="";
++  $("#zCandidate").value="";
++  $("#zTitle").value="";
++  $("#zSummary").value="";
++  $("#zCategory").value="Zustand";
++  $("#zBoundary").value="QS";
++  $("#zKeywords").value="";
++  $("#zSourceTitle").value="";
++  $("#zSource").value="";
++  $("#zPublicationDate").value="";
++  $("#zImageFile").value="";
++  $("#zImageIdea").value="";
++  $("#zInterviewUrl").value="";
++  updateZEditorState(null);
++  updateZPreview();
++}
++
++function populateZEditor(article){
++  const a=article?zNormalizeArticle(article):null;
++  if(!a)return clearZEditor();
++  currentZArticleId=a.id;
++  $("#zCandidate").value=data.candidates.some(c=>c.id===a.candidateId)?a.candidateId:"";
++  $("#zTitle").value=a.title;
++  $("#zSummary").value=a.summary;
++  $("#zCategory").value=[...$("#zCategory").options].some(o=>o.value===a.category)?a.category:"Zustand";
++  $("#zBoundary").value=[...$("#zBoundary").options].some(o=>o.value===a.planetaryBoundary)?a.planetaryBoundary:"QS";
++  $("#zKeywords").value=a.keywords.join(", ");
++  $("#zSourceTitle").value=a.sourceTitle;
++  $("#zSource").value=a.sourceUrl;
++  $("#zPublicationDate").value=a.publicationDate;
++  $("#zImageFile").value=a.imageFile;
++  $("#zImageIdea").value=a.imageIdea;
++  $("#zInterviewUrl").value=a.interviewUrl;
+   showZGroup();
+-};
++  updateZEditorState(a);
++  updateZPreview();
++}
+ 
+-$("#saveZ").onclick=()=>{
+-  const c=selected("#zCandidate");
+-  if(!c)return alert("Bitte Kandidaten auswählen.");
+-  data.zDrafts[c.id]={
+-    title:$("#zTitle").value,
+-    summary:$("#zSummary").value,
+-    source:$("#zSource").value,
+-    groupId:c.groupId||""
++function updateZEditorState(a){
++  const status=a?.workflowStatus||"entwurf";
++  const visibility=a?.visibility||"aktiv";
++  $("#zStatusBadge").textContent=zStatusLabel(status);
++  $("#zVisibilityBadge").textContent=zVisibilityLabel(visibility);
++  $("#zEditorHeading").textContent=a?.title||"Neuer Beitrag";
++  $("#zToggleActive").textContent=visibility==="archiviert"?"Wieder aktivieren":"Archivieren";
++  const hints={
++    entwurf:"Entwurf: intern, noch nicht für die öffentliche Datei vorgesehen.",
++    geprueft:"Geprüft: Quelle und Kernaussagen wurden redaktionell kontrolliert; noch nicht freigegeben.",
++    freigegeben:"Freigegeben: wird bei aktivem Status in die nächste news.json aufgenommen.",
++    veroeffentlicht:"Veröffentlicht: redaktionell freigegeben und von dir als tatsächlich veröffentlicht markiert."
+   };
+-  persist();
+-};
++  $("#zWorkflowHint").textContent=hints[status];
++}
++
++function renderZArticleList(){
++  const status=$("#zStatusFilter")?.value||"__all__";
++  const visibility=$("#zVisibilityFilter")?.value||"__all__";
++  const list=data.zArticles.slice().sort((a,b)=>String(b.lastModified).localeCompare(String(a.lastModified)))
++    .filter(a=>(status==="__all__"||a.workflowStatus===status)&&(visibility==="__all__"||a.visibility===visibility));
++  $("#zArticleCount").textContent=data.zArticles.length;
++  $("#zArticleList").innerHTML=list.length?list.map(a=>{
++    const c=data.candidates.find(x=>x.id===a.candidateId);
++    return `<button class="z-article-row ${a.id===currentZArticleId?"selected":""}" onclick="selectZArticle('${a.id}')">
++      <span class="z-article-title">${esc(a.title||"Ohne Titel")}</span>
++      <span class="z-article-meta">${esc(zStatusLabel(a.workflowStatus))} · ${esc(zVisibilityLabel(a.visibility))}${c?" · "+esc(c.name):""}</span>
++    </button>`;
++  }).join(""):'<p class="hint">Keine Beiträge in dieser Auswahl.</p>';
++}
++window.selectZArticle=id=>{
++  const a=zArticleById(id);
++  if(!a)return;
++  populateZEditor(a);
++  renderZArticleList();
++};
++
++function renderZPanel(){
++  renderZArticleList();
++  const current=zArticleById(currentZArticleId);
++  if(current)updateZEditorState(current);
++  updateZPreview();
++}
++
++function updateZPreview(){
++  const title=$("#zTitle")?.value.trim()||"Titel des Beitrags";
++  const summary=$("#zSummary")?.value.trim()||"Hier erscheint der Kurztext.";
++  const category=$("#zCategory")?.value||"Zustand";
++  const boundary=$("#zBoundary")?.value||"QS";
++  const source=$("#zSource")?.value.trim()||"";
++  const interview=$("#zInterviewUrl")?.value.trim()||"";
++  const image=$("#zImageFile")?.value.trim()||"";
++  $("#zPreviewTitle").textContent=title;
++  $("#zPreviewSummary").textContent=summary;
++  $("#zPreviewMeta").textContent=`${category} · ${boundary}`;
++  $("#zSummaryCount").textContent=`${$("#zSummary").value.length} Zeichen · Ziel 350–550`;
++  const sourceLink=$("#zPreviewSource");
++  sourceLink.href=source||"#";
++  sourceLink.classList.toggle("disabled-link",!source);
++  const interviewLink=$("#zPreviewInterview");
++  interviewLink.href=interview||"#";
++  interviewLink.classList.toggle("hidden",!interview||zPreviewMode==="th");
++  const imageBox=$("#zPreviewImage");
++  imageBox.style.backgroundImage=image?`url('${image.replace(/'/g,"%27")}')`:"";
++  imageBox.classList.toggle("has-image",!!image);
++  imageBox.querySelector("span").textContent=image?"":"Bild";
++}
++
++function setZPreviewMode(mode){
++  zPreviewMode=mode;
++  const card=$("#zPreviewCard");
++  card.classList.toggle("mode-th",mode==="th");
++  card.classList.toggle("mode-full",mode==="full");
++  $("#zPreviewTh").classList.toggle("active-preview",mode==="th");
++  $("#zPreviewFull").classList.toggle("active-preview",mode==="full");
++  updateZPreview();
++}
++
++function zPublicId(a){
++  if(a.publicId)return a.publicId;
++  const clean=String(a.id||"").replace(/[^a-zA-Z0-9]/g,"").slice(0,7).toUpperCase()||Math.random().toString(36).slice(2,9).toUpperCase();
++  return `${a.planetaryBoundary||"QS"}_S${clean}`;
++}
++function zContentType(a){
++  if(a.category==="Natur verstehen"||a.category==="Wie wissen wir das?")return "explainer";
++  if(a.category==="Menschen der Forschung")return "editorial";
++  return "news";
++}
++function zPublicArticle(a){
++  const id=zPublicId(a);
++  const base=(a.publicOriginal && typeof a.publicOriginal==="object")?JSON.parse(JSON.stringify(a.publicOriginal)):{};
++  const out={
++    ...base,
++    id,
++    status:"freigegeben",
++    title:a.title,
++    summary:a.summary,
++    planetaryBoundary:a.planetaryBoundary||"QS",
++    keywords:zKeywordList(a.keywords),
++    imageId:base.imageId||`${id}_01`,
++    sourceUrl:a.sourceUrl,
++    sourceTitle:a.sourceTitle||base.sourceTitle||"",
++    publicationDate:a.publicationDate,
++    author:base.author||"",
++    interviewPotential:a.interviewUrl?"hoch":(base.interviewPotential||""),
++    created:base.created||a.created||zToday(),
++    lastModified:String(a.lastModified||zToday()).slice(0,10),
++    language:base.language||"de",
++    article:Array.isArray(base.article)?base.article:[],
++    facts:Array.isArray(base.facts)?base.facts:[],
++    links:Array.isArray(base.links)?base.links:[],
++    license:base.license||"",
++    contentType:base.contentType||zContentType(a),
++    category:a.category||base.category||"",
++    visualMode:base.visualMode||(a.category==="Natur verstehen"||a.category==="Wie wissen wir das?"?"process-sketch":"editorial-photo"),
++    imageStyle:base.imageStyle||(a.category==="Natur verstehen"||a.category==="Wie wissen wir das?"?"monochrome-editorial-sketch":"nature")
++  };
++  if(a.interviewUrl && !out.links.some(link=>link?.url===a.interviewUrl))out.links.push({label:"Zum Interview",url:a.interviewUrl});
++  if(a.imageFile)out.imageFile=a.imageFile;
++  return out;
++}
++
++function downloadJson(filename,obj){
++  const blob=new Blob([JSON.stringify(obj,null,2)+"\n"],{type:"application/json;charset=utf-8"});
++  const url=URL.createObjectURL(blob);
++  const a=document.createElement("a");
++  a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
++  setTimeout(()=>URL.revokeObjectURL(url),1000);
++}
++function inferZCategory(raw={}){
++  if(raw.category)return String(raw.category);
++  const keys=zKeywordList(raw.keywords).map(x=>x.toLocaleLowerCase());
++  if(raw.contentType==="explainer"||keys.includes("natur verstehen"))return "Natur verstehen";
++  if(keys.includes("lösung"))return "Lösung";
++  if(keys.includes("querschnitt"))return "Querschnitt";
++  return "Zustand";
++}
++
++async function importExistingZNews(file){
++  try{
++    const parsed=JSON.parse(await file.text());
++    const articles=Array.isArray(parsed)?parsed:parsed?.articles;
++    if(!Array.isArray(articles))throw new Error("Die Datei enthält keine Artikelliste.");
++    let added=0,updated=0;
++    for(const raw of articles){
++      if(!raw || typeof raw!=="object" || !String(raw.title||"").trim())continue;
++      const publicId=String(raw.id||"").trim();
++      let existing=data.zArticles.find(a=>publicId && a.publicId===publicId);
++      if(!existing){
++        const sourceUrl=String(raw.sourceUrl||"").trim().toLocaleLowerCase();
++        existing=data.zArticles.find(a=>sourceUrl && String(a.sourceUrl||"").trim().toLocaleLowerCase()===sourceUrl && String(a.title||"").trim()===String(raw.title||"").trim());
++      }
++      const imported=zNormalizeArticle({
++        ...(existing||{}),
++        id:existing?.id||crypto.randomUUID(),
++        publicId:publicId||existing?.publicId||"",
++        publicOriginal:raw,
++        title:String(raw.title||""),
++        summary:String(raw.summary||""),
++        category:inferZCategory(raw),
++        planetaryBoundary:String(raw.planetaryBoundary||"QS"),
++        keywords:zKeywordList(raw.keywords),
++        sourceTitle:String(raw.sourceTitle||existing?.sourceTitle||""),
++        sourceUrl:String(raw.sourceUrl||""),
++        publicationDate:String(raw.publicationDate||""),
++        imageFile:String(raw.imageFile||""),
++        workflowStatus:"veroeffentlicht",
++        visibility:existing?.visibility||"aktiv",
++        created:String(raw.created||existing?.created||zToday()),
++        lastModified:String(raw.lastModified||existing?.lastModified||zNow()),
++        publishedAt:existing?.publishedAt||zNow()
++      });
++      if(existing){
++        const i=data.zArticles.findIndex(a=>a.id===existing.id);
++        data.zArticles[i]=imported; updated++;
++      }else{
++        data.zArticles.push(imported); added++;
++      }
++    }
++    data.zPublicBaselineImported=true;
++    data.zPublicBaselineName=file.name||"news.json";
++    storage.save(data);
++    renderZPanel();
++    if(!currentZArticleId && data.zArticles.length)populateZEditor(data.zArticles[0]);
++    $("#zExportInfo").textContent=`Bestehende öffentliche Datei importiert: ${articles.length} Einträge gelesen, ${added} neu übernommen, ${updated} aktualisiert. Beim Export bleiben die ursprünglichen öffentlichen Zusatzfelder erhalten.`;
++  }catch(err){
++    alert("news.json konnte nicht importiert werden: "+err.message);
++  }
++}
++
++function exportZNews(){
++  saveZArticle(false);
++  if(!data.zPublicBaselineImported){
++    return alert("Bitte vor dem ersten Gesamt-Export die aktuell veröffentlichte news.json importieren. Sonst könnten vorhandene Z-Panel-Beiträge beim Hochladen verloren gehen.");
++  }
++  const eligible=data.zArticles.filter(a=>a.visibility==="aktiv" && ["freigegeben","veroeffentlicht"].includes(a.workflowStatus));
++  const invalid=eligible.filter(a=>a.workflowStatus==="freigegeben")
++    .map(a=>({a,err:zValidation(a,{forRelease:true})})).filter(x=>x.err);
++  if(invalid.length)return alert(`Export abgebrochen. Bitte zuerst prüfen: ${invalid[0].a.title||"Ohne Titel"}: ${invalid[0].err}`);
++  const payload={version:1,generatedAt:zNow(),articleCount:eligible.length,articles:eligible.map(zPublicArticle)};
++  downloadJson("news.json",payload);
++  const archived=data.zArticles.filter(a=>a.visibility==="archiviert" && ["freigegeben","veroeffentlicht"].includes(a.workflowStatus)).length;
++  $("#zExportInfo").textContent=`news.json erzeugt: ${eligible.length} aktive, freigegebene/veröffentlichte Beiträge. ${archived} archivierte öffentliche Beiträge bleiben im Studio und wurden nicht ausgespielt.`;
++}
++
++$("#zImportNews").onclick=()=>$("#zImportNewsFile").click();
++$("#zImportNewsFile").onchange=async e=>{
++  const file=e.target.files?.[0];
++  if(file)await importExistingZNews(file);
++  e.target.value="";
++};
++
++$("#zNewArticle").onclick=newZArticle;
++$("#saveZ").onclick=()=>saveZArticle(true);
++$("#zMarkChecked").onclick=()=>zSetWorkflow("geprueft");
++$("#zRelease").onclick=()=>zSetWorkflow("freigegeben");
++$("#zMarkPublished").onclick=()=>zSetWorkflow("veroeffentlicht");
++$("#zToggleActive").onclick=zToggleVisibility;
++$("#zDeleteArticle").onclick=()=>{
++  const a=zArticleById(currentZArticleId);
++  if(!a)return;
++  if(!confirm(`Beitrag „${a.title||"Ohne Titel"}“ wirklich aus dem Studio löschen?`))return;
++  data.zArticles=data.zArticles.filter(x=>x.id!==a.id);
++  currentZArticleId="";
++  storage.save(data);
++  renderZPanel();
++  const next=data.zArticles[0];
++  next?populateZEditor(next):clearZEditor();
++};
++$("#zStatusFilter").onchange=renderZArticleList;
++$("#zVisibilityFilter").onchange=renderZArticleList;
++$("#zPreviewTh").onclick=()=>setZPreviewMode("th");
++$("#zPreviewFull").onclick=()=>setZPreviewMode("full");
++$("#zExportNews").onclick=exportZNews;
++$("#zCandidate").onchange=()=>{showZGroup();updateZPreview();};
++["#zTitle","#zSummary","#zCategory","#zBoundary","#zKeywords","#zSourceTitle","#zSource","#zPublicationDate","#zImageFile","#zImageIdea","#zInterviewUrl"].forEach(sel=>{
++  $(sel).addEventListener("input",updateZPreview);
++  $(sel).addEventListener("change",updateZPreview);
++});
+ 
+ $("#clearDemo").onclick=()=>{
+   if(confirm("Alle lokal im Browser gespeicherten Demo-Daten löschen?")){
+@@ -1520,5 +1932,12 @@
+   makeMail();
+   if($("#iCandidate").value)showInterviewForSelectedCandidate(false);
+   showZGroup();
++  renderZPanel();
++  if(!currentZArticleId && data.zArticles.length){
++    currentZArticleId=data.zArticles[0].id;
++    populateZEditor(data.zArticles[0]);
++  }else if(!data.zArticles.length){
++    clearZEditor();
++  }
+ }
+ renderAll();
+--- /mnt/data/zpanel_redaktion_pristine/styles.css	2026-08-11 23:47:46.000000000 +0000
++++ /mnt/data/zpanel_redaktion_work/styles.css	2026-08-12 04:21:46.499452153 +0000
+@@ -136,3 +136,45 @@
+ .interview-read-text a{color:inherit;text-decoration:underline;text-underline-offset:3px;overflow-wrap:anywhere}
+ .interview-question-role{display:block;margin:0 0 5px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+ .interview-opening-question{padding-top:4px}
++
++/* Z-Panel Redaktion: interne Redaktion und klar getrennte öffentliche Ausgabe. */
++.zpanel-layout{display:grid;grid-template-columns:minmax(260px,.78fr) minmax(0,1.7fr);gap:20px;align-items:start}
++.zpanel-list-card{position:sticky;top:14px;max-height:78vh;overflow:auto}
++.zpanel-list-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
++.zpanel-list-head h3{margin:0}
++.count{display:inline-flex;min-width:24px;height:24px;align-items:center;justify-content:center;border-radius:99px;background:#eee;font-size:12px}
++.zpanel-filter-grid{gap:10px}
++.zpanel-filter-grid label{margin-top:10px}
++.z-article-list{display:grid;gap:8px;margin-top:14px}
++.z-article-row{width:100%;text-align:left;border:1px solid var(--line);background:#fff;border-radius:8px;padding:10px 11px;cursor:pointer}
++.z-article-row:hover,.z-article-row.selected{border-color:#111;background:#f5f5f2}
++.z-article-title{display:block;font-weight:700;line-height:1.3}
++.z-article-meta{display:block;margin-top:4px;font-size:11px;color:var(--muted);line-height:1.35}
++.z-editor-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px}
++.z-editor-head h3{margin:4px 0 0}
++.z-state-badges{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
++.z-save-actions{flex-wrap:wrap}
++.z-save-actions button{flex:1 1 160px}
++.z-preview-wrap{margin-top:20px}
++.z-preview-wrap .cardhead{margin-bottom:14px}
++.active-preview{border-color:#111!important;background:#111!important;color:#fff!important}
++.z-preview-card{border:1px solid #bbb;background:#fff;overflow:hidden;margin:auto}
++.z-preview-card.mode-th{display:grid;grid-template-columns:1fr 1fr;aspect-ratio:16/9;max-width:920px}
++.z-preview-card.mode-full{display:grid;grid-template-columns:minmax(230px,.75fr) minmax(0,1.25fr);max-width:920px;min-height:430px}
++.z-preview-image{background:#ececea;display:flex;align-items:center;justify-content:center;min-height:220px;background-size:cover;background-position:center;color:#888;font-weight:700}
++.z-preview-image.has-image span{display:none}
++.z-preview-copy{padding:clamp(20px,4vw,44px);display:flex;flex-direction:column;justify-content:center;min-width:0}
++.z-preview-meta{font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:800;color:#666;margin-bottom:12px}
++.z-preview-copy h3{font-size:clamp(20px,3vw,34px);line-height:1.08;margin:0 0 16px}
++.z-preview-copy p{font-size:clamp(14px,1.7vw,19px);line-height:1.45;margin:0 0 18px}
++.z-preview-copy a{color:inherit;text-decoration:underline;text-underline-offset:3px;margin-top:7px;overflow-wrap:anywhere}
++.disabled-link{pointer-events:none;opacity:.35}
++.z-export-note{margin-top:20px}
++.z-export-note code{font-size:.95em}
++@media(max-width:860px){
++  .zpanel-layout{grid-template-columns:1fr}
++  .zpanel-list-card{position:static;max-height:none}
++  .z-preview-card.mode-th,.z-preview-card.mode-full{grid-template-columns:1fr;aspect-ratio:auto;min-height:0}
++  .z-preview-card.mode-th .z-preview-image{min-height:260px}
++  .z-preview-copy{padding:24px 20px}
++}

@@ -6,7 +6,7 @@ class LocalDemoStorage {
   load(){ try{return JSON.parse(localStorage.getItem(KEY))||this.empty()}catch{return this.empty()} }
   save(data){ localStorage.setItem(KEY,JSON.stringify(data)) }
   clear(){ localStorage.removeItem(KEY) }
-  empty(){return {candidates:[], groups:[], acquisition:{}, interviews:{}, zDrafts:{}}}
+  empty(){return {candidates:[], groups:[], acquisition:{}, interviews:{}, zDrafts:{}, zArticles:[], zPublicBaselineImported:false, zPublicBaselineName:""}}
 }
 
 // Später austauschbar: class NextcloudStorage { load(); save(); ... }
@@ -19,6 +19,38 @@ if(!Array.isArray(data.groups))data.groups=[];
 if(!data.acquisition)data.acquisition={};
 if(!data.interviews)data.interviews={};
 if(!data.zDrafts)data.zDrafts={};
+if(!Array.isArray(data.zArticles))data.zArticles=[];
+if(typeof data.zPublicBaselineImported!=="boolean")data.zPublicBaselineImported=false;
+if(typeof data.zPublicBaselineName!=="string")data.zPublicBaselineName="";
+
+// Bestehende kandidatenbezogene Z-Panel-Entwürfe einmalig in das neue,
+// eigenständige Redaktionsmodell übernehmen. Die alten Daten bleiben erhalten.
+Object.entries(data.zDrafts).forEach(([candidateId,z])=>{
+  if(!z || !(z.title||z.summary||z.source))return;
+  if(data.zArticles.some(a=>a?.legacyCandidateId===candidateId))return;
+  const today=new Date().toISOString().slice(0,10);
+  data.zArticles.push({
+    id:`legacy-${candidateId}`,
+    legacyCandidateId:candidateId,
+    candidateId,
+    title:String(z.title||""),
+    summary:String(z.summary||""),
+    category:"Zustand",
+    planetaryBoundary:"QS",
+    keywords:[],
+    sourceTitle:"",
+    sourceUrl:String(z.source||""),
+    publicationDate:"",
+    imageFile:"",
+    imageIdea:"",
+    interviewUrl:"",
+    workflowStatus:"entwurf",
+    visibility:"aktiv",
+    created:today,
+    lastModified:today,
+    publishedAt:""
+  });
+});
 function textList(value){
   if(Array.isArray(value)){
     return value.map(item=>{
@@ -424,13 +456,6 @@ function renderGroupControls(){
     filter.value=[...filter.options].some(o=>o.value===old)?old:"__all__";
   }
 
-  const zFilter=$("#zGroupFilter");
-  if(zFilter){
-    const old=zFilter.value||"__all__";
-    zFilter.innerHTML=groupOptions("",true);
-    zFilter.value=[...zFilter.options].some(o=>o.value===old)?old:"__all__";
-  }
-
   const list=$("#groupList");
   if(list){
     list.innerHTML=data.groups.length
@@ -494,13 +519,6 @@ $("#newGroupName").addEventListener("keydown",e=>{
   if(e.key==="Enter"){e.preventDefault();$("#addGroup").click();}
 });
 $("#candidateGroupFilter").onchange=renderCandidates;
-$("#zGroupFilter").onchange=()=>{
-  renderZCandidateOptions();
-  $("#zTitle").value="";
-  $("#zSummary").value="";
-  $("#zSource").value="";
-  $("#zGroupDisplay").value="";
-};
 
 function candidateOptions(){
   const opts='<option value="">Bitte auswählen</option>'+data.candidates.map(c=>`<option value="${c.id}">${esc(c.name)}${c.institution?" · "+esc(c.institution):""}</option>`).join("");
@@ -520,9 +538,8 @@ function renderZCandidateOptions(){
   const el=$("#zCandidate");
   if(!el)return;
   const old=el.value;
-  const filter=$("#zGroupFilter")?.value||"__all__";
-  const list=filteredCandidatesByGroup(filter);
-  el.innerHTML='<option value="">Bitte auswählen</option>'+list.map(c=>`<option value="${c.id}">${esc(c.name)}${c.institution?" · "+esc(c.institution):""}</option>`).join("");
+  const list=data.candidates;
+  el.innerHTML='<option value="">Kein Interviewbezug</option>'+list.map(c=>`<option value="${c.id}">${esc(c.name)}${c.institution?" · "+esc(c.institution):""}</option>`).join("");
   if(old && list.some(c=>c.id===old))el.value=old;
   else el.value="";
   showZGroup();
@@ -1239,26 +1256,421 @@ document.addEventListener("keydown",e=>{
   }
 });
 
-$("#zCandidate").onchange=()=>{
-  const c=selected("#zCandidate");
-  const z=c?(data.zDrafts[c.id]||{}):{};
-  $("#zTitle").value=z.title||"";
-  $("#zSummary").value=z.summary||"";
-  $("#zSource").value=z.source||(c?c.source:"");
+// --- Z-Panel Redaktion ------------------------------------------------------
+let currentZArticleId="";
+let zPreviewMode="th";
+
+function zToday(){return new Date().toISOString().slice(0,10)}
+function zNow(){return new Date().toISOString()}
+function zArticleById(id){return data.zArticles.find(a=>a.id===id)}
+function zStatusLabel(status){
+  return ({entwurf:"Entwurf",geprueft:"Geprüft",freigegeben:"Freigegeben",veroeffentlicht:"Veröffentlicht"})[status]||"Entwurf";
+}
+function zVisibilityLabel(value){return value==="archiviert"?"Archiviert":"Aktiv"}
+function zKeywordList(value){
+  if(Array.isArray(value))return value.map(x=>String(x).trim()).filter(Boolean);
+  return String(value||"").split(",").map(x=>x.trim()).filter(Boolean);
+}
+function zNormalizeArticle(a={}){
+  return {
+    id:String(a.id||crypto.randomUUID()),
+    legacyCandidateId:String(a.legacyCandidateId||""),
+    publicId:String(a.publicId||""),
+    publicOriginal:(a.publicOriginal && typeof a.publicOriginal==="object" && !Array.isArray(a.publicOriginal))?a.publicOriginal:null,
+    candidateId:String(a.candidateId||""),
+    title:String(a.title||""),
+    summary:String(a.summary||""),
+    category:String(a.category||"Zustand"),
+    planetaryBoundary:String(a.planetaryBoundary||"QS"),
+    keywords:zKeywordList(a.keywords),
+    sourceTitle:String(a.sourceTitle||""),
+    sourceUrl:String(a.sourceUrl||a.source||""),
+    publicationDate:String(a.publicationDate||""),
+    imageFile:String(a.imageFile||""),
+    imageIdea:String(a.imageIdea||""),
+    interviewUrl:String(a.interviewUrl||""),
+    workflowStatus:["entwurf","geprueft","freigegeben","veroeffentlicht"].includes(a.workflowStatus)?a.workflowStatus:"entwurf",
+    visibility:a.visibility==="archiviert"?"archiviert":"aktiv",
+    created:String(a.created||zToday()),
+    lastModified:String(a.lastModified||zNow()),
+    publishedAt:String(a.publishedAt||"")
+  };
+}
+data.zArticles=data.zArticles.map(zNormalizeArticle);
+
+function newZArticle(){
+  const a=zNormalizeArticle({id:crypto.randomUUID(),created:zToday(),lastModified:zNow()});
+  data.zArticles.unshift(a);
+  currentZArticleId=a.id;
+  storage.save(data);
+  renderZPanel();
+  populateZEditor(a);
+  $("#zTitle").focus();
+}
+
+function zFormArticle(){
+  const existing=zArticleById(currentZArticleId)||zNormalizeArticle({id:currentZArticleId||crypto.randomUUID()});
+  return zNormalizeArticle({
+    ...existing,
+    candidateId:$("#zCandidate").value||"",
+    title:$("#zTitle").value.trim(),
+    summary:$("#zSummary").value.trim(),
+    category:$("#zCategory").value,
+    planetaryBoundary:$("#zBoundary").value,
+    keywords:zKeywordList($("#zKeywords").value),
+    sourceTitle:$("#zSourceTitle").value.trim(),
+    sourceUrl:$("#zSource").value.trim(),
+    publicationDate:$("#zPublicationDate").value,
+    imageFile:$("#zImageFile").value.trim(),
+    imageIdea:$("#zImageIdea").value.trim(),
+    interviewUrl:$("#zInterviewUrl").value.trim(),
+    lastModified:zNow()
+  });
+}
+
+function saveZArticle(showMessage=false){
+  if(!currentZArticleId)newZArticle();
+  const a=zFormArticle();
+  const i=data.zArticles.findIndex(x=>x.id===a.id);
+  if(i>=0)data.zArticles[i]=a; else data.zArticles.unshift(a);
+  currentZArticleId=a.id;
+  storage.save(data);
+  renderZPanel();
+  if(showMessage)alert("Z-Panel-Entwurf gespeichert.");
+  return a;
+}
+
+function zValidation(a,{forRelease=false}={}){
+  const missing=[];
+  if(!a.title)missing.push("Titel");
+  if(!a.summary)missing.push("Kurztext");
+  if(!a.sourceUrl)missing.push("Quellenlink");
+  if(!a.sourceTitle)missing.push("Quellentitel");
+  if(!a.publicationDate)missing.push("Quellendatum");
+  if(!a.planetaryBoundary)missing.push("planetare Grenze / Bereich");
+  if(!a.category)missing.push("Beitragstyp");
+  if(missing.length)return `Bitte zuerst ergänzen: ${missing.join(", ")}.`;
+  if(!/^https?:\/\//i.test(a.sourceUrl))return "Der Quellenlink sollte mit http:// oder https:// beginnen.";
+  if(a.interviewUrl && !/^https?:\/\//i.test(a.interviewUrl))return "Der Interview-Link sollte mit http:// oder https:// beginnen.";
+  if(forRelease && (a.summary.length<350 || a.summary.length>550))return `Der Kurztext hat ${a.summary.length} Zeichen. Für die Freigabe sollten es 350–550 Zeichen sein.`;
+  return "";
+}
+
+function zSetWorkflow(next){
+  let a=saveZArticle(false);
+  const order={entwurf:0,geprueft:1,freigegeben:2,veroeffentlicht:3};
+  if(next==="geprueft"){
+    const err=zValidation(a);
+    if(err)return alert(err);
+  }
+  if(next==="freigegeben"){
+    if(order[a.workflowStatus]<1)return alert("Der Beitrag muss zuerst als geprüft markiert werden.");
+    const err=zValidation(a,{forRelease:true});
+    if(err)return alert(err);
+  }
+  if(next==="veroeffentlicht"){
+    if(order[a.workflowStatus]<2)return alert("Der Beitrag muss zuerst freigegeben werden.");
+    if(!confirm("Nur markieren, wenn die freigegebene news.json tatsächlich veröffentlicht wurde. Als veröffentlicht markieren?"))return;
+  }
+  a.workflowStatus=next;
+  if(next==="veroeffentlicht" && !a.publishedAt)a.publishedAt=zNow();
+  a.lastModified=zNow();
+  const i=data.zArticles.findIndex(x=>x.id===a.id);
+  data.zArticles[i]=a;
+  storage.save(data);
+  renderZPanel();
+  populateZEditor(a);
+}
+
+function zToggleVisibility(){
+  const a=saveZArticle(false);
+  a.visibility=a.visibility==="archiviert"?"aktiv":"archiviert";
+  a.lastModified=zNow();
+  const i=data.zArticles.findIndex(x=>x.id===a.id);
+  data.zArticles[i]=a;
+  storage.save(data);
+  renderZPanel();
+  populateZEditor(a);
+}
+
+function clearZEditor(){
+  currentZArticleId="";
+  $("#zCandidate").value="";
+  $("#zTitle").value="";
+  $("#zSummary").value="";
+  $("#zCategory").value="Zustand";
+  $("#zBoundary").value="QS";
+  $("#zKeywords").value="";
+  $("#zSourceTitle").value="";
+  $("#zSource").value="";
+  $("#zPublicationDate").value="";
+  $("#zImageFile").value="";
+  $("#zImageIdea").value="";
+  $("#zInterviewUrl").value="";
+  updateZEditorState(null);
+  updateZPreview();
+}
+
+function populateZEditor(article){
+  const a=article?zNormalizeArticle(article):null;
+  if(!a)return clearZEditor();
+  currentZArticleId=a.id;
+  $("#zCandidate").value=data.candidates.some(c=>c.id===a.candidateId)?a.candidateId:"";
+  $("#zTitle").value=a.title;
+  $("#zSummary").value=a.summary;
+  $("#zCategory").value=[...$("#zCategory").options].some(o=>o.value===a.category)?a.category:"Zustand";
+  $("#zBoundary").value=[...$("#zBoundary").options].some(o=>o.value===a.planetaryBoundary)?a.planetaryBoundary:"QS";
+  $("#zKeywords").value=a.keywords.join(", ");
+  $("#zSourceTitle").value=a.sourceTitle;
+  $("#zSource").value=a.sourceUrl;
+  $("#zPublicationDate").value=a.publicationDate;
+  $("#zImageFile").value=a.imageFile;
+  $("#zImageIdea").value=a.imageIdea;
+  $("#zInterviewUrl").value=a.interviewUrl;
   showZGroup();
+  updateZEditorState(a);
+  updateZPreview();
+}
+
+function updateZEditorState(a){
+  const status=a?.workflowStatus||"entwurf";
+  const visibility=a?.visibility||"aktiv";
+  $("#zStatusBadge").textContent=zStatusLabel(status);
+  $("#zVisibilityBadge").textContent=zVisibilityLabel(visibility);
+  $("#zEditorHeading").textContent=a?.title||"Neuer Beitrag";
+  $("#zToggleActive").textContent=visibility==="archiviert"?"Wieder aktivieren":"Archivieren";
+  const hints={
+    entwurf:"Entwurf: intern, noch nicht für die öffentliche Datei vorgesehen.",
+    geprueft:"Geprüft: Quelle und Kernaussagen wurden redaktionell kontrolliert; noch nicht freigegeben.",
+    freigegeben:"Freigegeben: wird bei aktivem Status in die nächste news.json aufgenommen.",
+    veroeffentlicht:"Veröffentlicht: redaktionell freigegeben und von dir als tatsächlich veröffentlicht markiert."
+  };
+  $("#zWorkflowHint").textContent=hints[status];
+}
+
+function renderZArticleList(){
+  const status=$("#zStatusFilter")?.value||"__all__";
+  const visibility=$("#zVisibilityFilter")?.value||"__all__";
+  const list=data.zArticles.slice().sort((a,b)=>String(b.lastModified).localeCompare(String(a.lastModified)))
+    .filter(a=>(status==="__all__"||a.workflowStatus===status)&&(visibility==="__all__"||a.visibility===visibility));
+  $("#zArticleCount").textContent=data.zArticles.length;
+  $("#zArticleList").innerHTML=list.length?list.map(a=>{
+    const c=data.candidates.find(x=>x.id===a.candidateId);
+    return `<button class="z-article-row ${a.id===currentZArticleId?"selected":""}" onclick="selectZArticle('${a.id}')">
+      <span class="z-article-title">${esc(a.title||"Ohne Titel")}</span>
+      <span class="z-article-meta">${esc(zStatusLabel(a.workflowStatus))} · ${esc(zVisibilityLabel(a.visibility))}${c?" · "+esc(c.name):""}</span>
+    </button>`;
+  }).join(""):'<p class="hint">Keine Beiträge in dieser Auswahl.</p>';
+}
+window.selectZArticle=id=>{
+  const a=zArticleById(id);
+  if(!a)return;
+  populateZEditor(a);
+  renderZArticleList();
 };
 
-$("#saveZ").onclick=()=>{
-  const c=selected("#zCandidate");
-  if(!c)return alert("Bitte Kandidaten auswählen.");
-  data.zDrafts[c.id]={
-    title:$("#zTitle").value,
-    summary:$("#zSummary").value,
-    source:$("#zSource").value,
-    groupId:c.groupId||""
+function renderZPanel(){
+  renderZArticleList();
+  const current=zArticleById(currentZArticleId);
+  if(current)updateZEditorState(current);
+  updateZPreview();
+}
+
+function updateZPreview(){
+  const title=$("#zTitle")?.value.trim()||"Titel des Beitrags";
+  const summary=$("#zSummary")?.value.trim()||"Hier erscheint der Kurztext.";
+  const category=$("#zCategory")?.value||"Zustand";
+  const boundary=$("#zBoundary")?.value||"QS";
+  const source=$("#zSource")?.value.trim()||"";
+  const interview=$("#zInterviewUrl")?.value.trim()||"";
+  const image=$("#zImageFile")?.value.trim()||"";
+  $("#zPreviewTitle").textContent=title;
+  $("#zPreviewSummary").textContent=summary;
+  $("#zPreviewMeta").textContent=`${category} · ${boundary}`;
+  $("#zSummaryCount").textContent=`${$("#zSummary").value.length} Zeichen · Ziel 350–550`;
+  const sourceLink=$("#zPreviewSource");
+  sourceLink.href=source||"#";
+  sourceLink.classList.toggle("disabled-link",!source);
+  const interviewLink=$("#zPreviewInterview");
+  interviewLink.href=interview||"#";
+  interviewLink.classList.toggle("hidden",!interview||zPreviewMode==="th");
+  const imageBox=$("#zPreviewImage");
+  imageBox.style.backgroundImage=image?`url('${image.replace(/'/g,"%27")}')`:"";
+  imageBox.classList.toggle("has-image",!!image);
+  imageBox.querySelector("span").textContent=image?"":"Bild";
+}
+
+function setZPreviewMode(mode){
+  zPreviewMode=mode;
+  const card=$("#zPreviewCard");
+  card.classList.toggle("mode-th",mode==="th");
+  card.classList.toggle("mode-full",mode==="full");
+  $("#zPreviewTh").classList.toggle("active-preview",mode==="th");
+  $("#zPreviewFull").classList.toggle("active-preview",mode==="full");
+  updateZPreview();
+}
+
+function zPublicId(a){
+  if(a.publicId)return a.publicId;
+  const clean=String(a.id||"").replace(/[^a-zA-Z0-9]/g,"").slice(0,7).toUpperCase()||Math.random().toString(36).slice(2,9).toUpperCase();
+  return `${a.planetaryBoundary||"QS"}_S${clean}`;
+}
+function zContentType(a){
+  if(a.category==="Natur verstehen"||a.category==="Wie wissen wir das?")return "explainer";
+  if(a.category==="Menschen der Forschung")return "editorial";
+  return "news";
+}
+function zPublicArticle(a){
+  const id=zPublicId(a);
+  const base=(a.publicOriginal && typeof a.publicOriginal==="object")?JSON.parse(JSON.stringify(a.publicOriginal)):{};
+  const out={
+    ...base,
+    id,
+    status:"freigegeben",
+    title:a.title,
+    summary:a.summary,
+    planetaryBoundary:a.planetaryBoundary||"QS",
+    keywords:zKeywordList(a.keywords),
+    imageId:base.imageId||`${id}_01`,
+    sourceUrl:a.sourceUrl,
+    sourceTitle:a.sourceTitle||base.sourceTitle||"",
+    publicationDate:a.publicationDate,
+    author:base.author||"",
+    interviewPotential:a.interviewUrl?"hoch":(base.interviewPotential||""),
+    created:base.created||a.created||zToday(),
+    lastModified:String(a.lastModified||zToday()).slice(0,10),
+    language:base.language||"de",
+    article:Array.isArray(base.article)?base.article:[],
+    facts:Array.isArray(base.facts)?base.facts:[],
+    links:Array.isArray(base.links)?base.links:[],
+    license:base.license||"",
+    contentType:base.contentType||zContentType(a),
+    category:a.category||base.category||"",
+    visualMode:base.visualMode||(a.category==="Natur verstehen"||a.category==="Wie wissen wir das?"?"process-sketch":"editorial-photo"),
+    imageStyle:base.imageStyle||(a.category==="Natur verstehen"||a.category==="Wie wissen wir das?"?"monochrome-editorial-sketch":"nature")
   };
-  persist();
+  if(a.interviewUrl && !out.links.some(link=>link?.url===a.interviewUrl))out.links.push({label:"Zum Interview",url:a.interviewUrl});
+  if(a.imageFile)out.imageFile=a.imageFile;
+  return out;
+}
+
+function downloadJson(filename,obj){
+  const blob=new Blob([JSON.stringify(obj,null,2)+"\n"],{type:"application/json;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function inferZCategory(raw={}){
+  if(raw.category)return String(raw.category);
+  const keys=zKeywordList(raw.keywords).map(x=>x.toLocaleLowerCase());
+  if(raw.contentType==="explainer"||keys.includes("natur verstehen"))return "Natur verstehen";
+  if(keys.includes("lösung"))return "Lösung";
+  if(keys.includes("querschnitt"))return "Querschnitt";
+  return "Zustand";
+}
+
+async function importExistingZNews(file){
+  try{
+    const parsed=JSON.parse(await file.text());
+    const articles=Array.isArray(parsed)?parsed:parsed?.articles;
+    if(!Array.isArray(articles))throw new Error("Die Datei enthält keine Artikelliste.");
+    let added=0,updated=0;
+    for(const raw of articles){
+      if(!raw || typeof raw!=="object" || !String(raw.title||"").trim())continue;
+      const publicId=String(raw.id||"").trim();
+      let existing=data.zArticles.find(a=>publicId && a.publicId===publicId);
+      if(!existing){
+        const sourceUrl=String(raw.sourceUrl||"").trim().toLocaleLowerCase();
+        existing=data.zArticles.find(a=>sourceUrl && String(a.sourceUrl||"").trim().toLocaleLowerCase()===sourceUrl && String(a.title||"").trim()===String(raw.title||"").trim());
+      }
+      const imported=zNormalizeArticle({
+        ...(existing||{}),
+        id:existing?.id||crypto.randomUUID(),
+        publicId:publicId||existing?.publicId||"",
+        publicOriginal:raw,
+        title:String(raw.title||""),
+        summary:String(raw.summary||""),
+        category:inferZCategory(raw),
+        planetaryBoundary:String(raw.planetaryBoundary||"QS"),
+        keywords:zKeywordList(raw.keywords),
+        sourceTitle:String(raw.sourceTitle||existing?.sourceTitle||""),
+        sourceUrl:String(raw.sourceUrl||""),
+        publicationDate:String(raw.publicationDate||""),
+        imageFile:String(raw.imageFile||""),
+        workflowStatus:"veroeffentlicht",
+        visibility:existing?.visibility||"aktiv",
+        created:String(raw.created||existing?.created||zToday()),
+        lastModified:String(raw.lastModified||existing?.lastModified||zNow()),
+        publishedAt:existing?.publishedAt||zNow()
+      });
+      if(existing){
+        const i=data.zArticles.findIndex(a=>a.id===existing.id);
+        data.zArticles[i]=imported; updated++;
+      }else{
+        data.zArticles.push(imported); added++;
+      }
+    }
+    data.zPublicBaselineImported=true;
+    data.zPublicBaselineName=file.name||"news.json";
+    storage.save(data);
+    renderZPanel();
+    if(!currentZArticleId && data.zArticles.length)populateZEditor(data.zArticles[0]);
+    $("#zExportInfo").textContent=`Bestehende öffentliche Datei importiert: ${articles.length} Einträge gelesen, ${added} neu übernommen, ${updated} aktualisiert. Beim Export bleiben die ursprünglichen öffentlichen Zusatzfelder erhalten.`;
+  }catch(err){
+    alert("news.json konnte nicht importiert werden: "+err.message);
+  }
+}
+
+function exportZNews(){
+  saveZArticle(false);
+  if(!data.zPublicBaselineImported){
+    return alert("Bitte vor dem ersten Gesamt-Export die aktuell veröffentlichte news.json importieren. Sonst könnten vorhandene Z-Panel-Beiträge beim Hochladen verloren gehen.");
+  }
+  const eligible=data.zArticles.filter(a=>a.visibility==="aktiv" && ["freigegeben","veroeffentlicht"].includes(a.workflowStatus));
+  const invalid=eligible.filter(a=>a.workflowStatus==="freigegeben")
+    .map(a=>({a,err:zValidation(a,{forRelease:true})})).filter(x=>x.err);
+  if(invalid.length)return alert(`Export abgebrochen. Bitte zuerst prüfen: ${invalid[0].a.title||"Ohne Titel"}: ${invalid[0].err}`);
+  const payload={version:1,generatedAt:zNow(),articleCount:eligible.length,articles:eligible.map(zPublicArticle)};
+  downloadJson("news.json",payload);
+  const archived=data.zArticles.filter(a=>a.visibility==="archiviert" && ["freigegeben","veroeffentlicht"].includes(a.workflowStatus)).length;
+  $("#zExportInfo").textContent=`news.json erzeugt: ${eligible.length} aktive, freigegebene/veröffentlichte Beiträge. ${archived} archivierte öffentliche Beiträge bleiben im Studio und wurden nicht ausgespielt.`;
+}
+
+$("#zImportNews").onclick=()=>$("#zImportNewsFile").click();
+$("#zImportNewsFile").onchange=async e=>{
+  const file=e.target.files?.[0];
+  if(file)await importExistingZNews(file);
+  e.target.value="";
 };
+
+$("#zNewArticle").onclick=newZArticle;
+$("#saveZ").onclick=()=>saveZArticle(true);
+$("#zMarkChecked").onclick=()=>zSetWorkflow("geprueft");
+$("#zRelease").onclick=()=>zSetWorkflow("freigegeben");
+$("#zMarkPublished").onclick=()=>zSetWorkflow("veroeffentlicht");
+$("#zToggleActive").onclick=zToggleVisibility;
+$("#zDeleteArticle").onclick=()=>{
+  const a=zArticleById(currentZArticleId);
+  if(!a)return;
+  if(!confirm(`Beitrag „${a.title||"Ohne Titel"}“ wirklich aus dem Studio löschen?`))return;
+  data.zArticles=data.zArticles.filter(x=>x.id!==a.id);
+  currentZArticleId="";
+  storage.save(data);
+  renderZPanel();
+  const next=data.zArticles[0];
+  next?populateZEditor(next):clearZEditor();
+};
+$("#zStatusFilter").onchange=renderZArticleList;
+$("#zVisibilityFilter").onchange=renderZArticleList;
+$("#zPreviewTh").onclick=()=>setZPreviewMode("th");
+$("#zPreviewFull").onclick=()=>setZPreviewMode("full");
+$("#zExportNews").onclick=exportZNews;
+$("#zCandidate").onchange=()=>{showZGroup();updateZPreview();};
+["#zTitle","#zSummary","#zCategory","#zBoundary","#zKeywords","#zSourceTitle","#zSource","#zPublicationDate","#zImageFile","#zImageIdea","#zInterviewUrl"].forEach(sel=>{
+  $(sel).addEventListener("input",updateZPreview);
+  $(sel).addEventListener("change",updateZPreview);
+});
 
 $("#clearDemo").onclick=()=>{
   if(confirm("Alle lokal im Browser gespeicherten Demo-Daten löschen?")){
@@ -1520,5 +1932,12 @@ function renderAll(){
   makeMail();
   if($("#iCandidate").value)showInterviewForSelectedCandidate(false);
   showZGroup();
+  renderZPanel();
+  if(!currentZArticleId && data.zArticles.length){
+    currentZArticleId=data.zArticles[0].id;
+    populateZEditor(data.zArticles[0]);
+  }else if(!data.zArticles.length){
+    clearZEditor();
+  }
 }
 renderAll();

@@ -1,9 +1,33 @@
-ZUSTAND Studio – Kurztest Prompt-Anpassung
-==========================================
+ZUSTAND Studio – Testhinweise Z-Panel Redaktion
+================================================
 
-1. Bei einem Kandidaten ohne vollständiges Forschungsprofil „Forschungsprofil ergänzen“ öffnen.
-2. Prüfen, dass der Prompt ausdrücklich eine kompakte sichtbare Zusammenfassung verlangt.
-3. Prüfen, dass der Prompt eine herunterladbare JSON-Datei verlangt und nicht einen JSON-Codeblock.
-4. Prüfen, dass targetCandidateId, name und institution weiterhin fest vorgegeben sind.
-5. Normale Themenrecherche, Kandidaten, Akquise, E-Mails, Interviewbildschirm und Trainer kurz öffnen;
-   diese Bereiche wurden nicht geändert.
+WICHTIG VOR DEM ERSTEN news.json-EXPORT:
+1. Im Z-Panel-Bereich auf „Bestehende news.json importieren“ tippen.
+2. Die aktuell veröffentlichte news.json des bestehenden Z-Panels auswählen.
+3. Prüfen, ob die vorhandenen Beiträge in der Liste erscheinen.
+   Dadurch wird verhindert, dass ein späterer Export die bisherigen Beiträge ersetzt.
+
+Neuen Beitrag testen:
+1. „+ Neuer Beitrag“ wählen.
+2. Titel, Kurztext, Beitragstyp, Grenze/Bereich, Quellentitel, Quellenlink und Datum eintragen.
+3. „Entwurf speichern“: Beitrag bleibt intern.
+4. „Als geprüft markieren“: Pflichtfelder/Quelle werden geprüft.
+5. „Freigeben“: nur möglich, wenn vorher geprüft und Kurztext 350–550 Zeichen lang ist.
+6. „Archivieren“: Beitrag bleibt gespeichert, soll aber nicht mehr in news.json erscheinen.
+7. „Wieder aktivieren“: Beitrag wird wieder für den Export berücksichtigt.
+8. „Als veröffentlicht markieren“ nur nach tatsächlichem Upload/Commit der news.json verwenden.
+
+Vorschau:
+- „TH-Vorschau“ und „Vollversion“ umschalten.
+- Optionalen Interview-Link eintragen: Er erscheint nur in der Vollversions-Vorschau.
+
+Export:
+1. Erst nach Import der bestehenden öffentlichen news.json „news.json erzeugen“ wählen.
+2. Export enthält nur aktive Beiträge mit Status „freigegeben“ oder „veröffentlicht“.
+3. Archivierte, geprüfte und Entwurfs-Beiträge dürfen nicht enthalten sein.
+4. Die erzeugte news.json vor dem GitHub-Upload zunächst lokal auf Plausibilität prüfen.
+5. Upload/Commit bleibt bewusst manuell.
+
+Bestandsdaten:
+- Alte Z-Panel-Entwürfe aus dem bisherigen Studio sollten automatisch als Entwürfe erscheinen.
+- Kandidaten, Akquise, Interviewvorbereitung, Trainer und E-Mail-Funktionen kurz gegenprüfen.

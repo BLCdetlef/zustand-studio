@@ -2,32 +2,56 @@ ZUSTAND Studio – Basis- und Versionsnachweis
 ============================================
 
 Basis dieses Updates:
-zustand-studio-update-forschungsprofil-ergaenzen.zip
+zustand-studio-update-prompt-kurz-json-download.zip
 
 SHA-256 der Basis-ZIP:
-93b61441898d0b237eb0a2f42f25348614df6063ddbf02f7231dcd52c8718198
+58223f67b0bbdc0bef7a843c436f96352501418740d19aea8e922201bed461af
+
+Basisstand laut Chat-/Library-Verlauf:
+- Forschungsprofile für Bestandskandidaten ergänzbar
+- personenbezogener Forschungsprofil-Prompt gekürzt
+- JSON-Datei als Download im Rechercheprompt angefordert
+- Interviewvorbereitung auf Kernaussagen/Messreihen umgestellt
+- zweite E-Mail nach Zusage vorhanden
 
 GitHub-Branch:
 main (Arbeitsziel)
 
-GitHub-Commit-ID / Commit-Bezeichnung der Basis:
-In dieser Sitzung nicht zuverlässig direkt aus GitHub ausgelesen; daher bewusst nicht erfunden.
+GitHub-Commit-ID / vom Nutzer vergebene Commit-Bezeichnung der Basis:
+In dieser Sitzung nicht live aus GitHub verifiziert; daher bewusst nicht erfunden.
 Die technische Basis ist eindeutig über Dateiname und SHA-256 der Basis-ZIP dokumentiert.
 
-Neue Änderung – ausschließlich Prompttext:
-- Personenbezogene Forschungsrecherche soll sichtbar ungefähr halb so lang ausfallen.
-- Vorgaben: 4–5 Kernaussagen, 2–3 wichtigste Messprogramme/Datensätze, 1–3 Publikationen,
-  3–5 Kennzahlen, kompakte Zusammenhänge/Unsicherheiten, 1 Einstiegsfrage + max. 3 Reservefragen.
-- Der Prompt verlangt zusätzlich eine echte, herunterladbare JSON-Datei im Format
-  zustand-studio-candidates-v2.
-- Vollständiger JSON-Inhalt soll nicht zusätzlich als langer Codeblock ausgegeben werden.
-- Die JSON-Datei soll vor Bereitstellung auf gültige Syntax geprüft werden.
-- Keine Funktionslogik, Datenstruktur, Interviewansicht, Trainer, E-Mail oder Oberfläche geändert.
+Neue Änderung:
+Z-Panel Redaktion – erste sichere Veröffentlichungsstufe
 
-Empfohlene Commit-Bezeichnung für dieses Update:
-Forschungsprofil-Prompt gekürzt und JSON-Download ergänzt
+Umgesetzt:
+- Z-Panel-Beiträge sind nicht mehr zwingend an Interviewkandidaten gebunden.
+- Bestehende kandidatenbezogene Z-Panel-Entwürfe werden beim ersten Start in das neue Redaktionsmodell übernommen; die Altdaten bleiben erhalten.
+- Workflow: Entwurf -> geprüft -> freigegeben -> veröffentlicht.
+- Unabhängige Sichtbarkeit: aktiv <-> archiviert.
+- Redaktionelle Kernfelder: Titel, Kurztext, Beitragstyp, planetare Grenze/Bereich,
+  Schlagwörter, Quellentitel, Quellenlink, Quellendatum, Bildpfad, interner Bildhinweis,
+  optionaler Interviewbezug und Interview-Link.
+- TH-Vorschau und Vollversions-Vorschau im Studio.
+- Bestehende öffentliche news.json kann einmalig importiert werden.
+- Importierte bestehende öffentliche Beiträge werden als veröffentlicht übernommen;
+  vorhandene öffentliche Zusatzfelder/Bildmetadaten werden beim späteren Export bewahrt.
+- Gesamt-Export wird blockiert, solange die bestehende öffentliche news.json nicht importiert wurde.
+- Exportiert werden nur aktive Beiträge mit Status freigegeben oder veröffentlicht.
+- Archivierte Beiträge bleiben intern erhalten und werden nicht ausgespielt.
+- Interne Studiofelder, Kandidatenkontakte und Interviewvorbereitung werden nicht in news.json geschrieben.
+- Kein automatischer GitHub-Upload: Veröffentlichung bleibt ein bewusster manueller Commit-Schritt.
 
-SHA-256 der neuen Dateien:
-app.js:     499d721c196af9172c21578a2b094b82905b58d2bc76ec155a0b6b47ab4d86a1
-index.html: bdfc76a7c4da92acb0f7696d16257c9ee8731bbd7749185f3840f2853e330728
-styles.css: 11f0b00abb92bd55754481d57ecfb5927854ed3b661b03d37c06d05a52e36f42
+Technische Prüfungen:
+- node --check app.js: bestanden
+- alle direkt verwendeten HTML-IDs vorhanden: bestanden
+- Test des öffentlichen Export-Mappings: bestehende öffentliche Zusatzfelder bleiben erhalten
+  und interne Felder candidateId/imageIdea/publicOriginal werden nicht exportiert: bestanden
+
+Empfohlene Commit-Bezeichnung:
+Z-Panel Redaktion mit Freigabe und Archiv eingeführt
+
+SHA-256 der neuen Webdateien:
+app.js:     b252793f9f8b599acbfc82dcfbdb41abbc1d1a39a207b2d77bb325233b936224
+index.html: 1b9184a8cbd181226db34754a900851ae7355ccc0dd0cab80f36e01ed5848814
+styles.css: bd09c7b3228df69eef95259aee54e6b63fa1be9d98c5aa2f098f6e88d311b271
