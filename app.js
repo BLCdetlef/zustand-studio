@@ -3,6 +3,7 @@ const $$=s=>[...document.querySelectorAll(s)];
 const KEY="zustandStudioPrototypeV1";
 const BACKUP_FORMAT="zustand-studio-backup-v1";
 const BACKUP_VERSION=1;
+const Z_PANEL_PUBLIC_URL="https://blcdetlef.github.io/zustand-panel/";
 
 class LocalDemoStorage {
   load(){ try{return JSON.parse(localStorage.getItem(KEY))||this.empty()}catch{return this.empty()} }
@@ -1805,6 +1806,17 @@ function updateZEditorState(a){
     veroeffentlicht:"Veröffentlicht: redaktionell freigegeben und von dir als tatsächlich veröffentlicht markiert."
   };
   $("#zWorkflowHint").textContent=hints[status];
+  const shareButton=$("#zCopyCorrectionLink");
+  const shareHint=$("#zShareHint");
+  if(shareButton){
+    const canShare=visibility==="aktiv" && ["freigegeben","veroeffentlicht"].includes(status);
+    shareButton.disabled=!canShare;
+    if(shareHint){
+      shareHint.textContent=canShare
+        ? "Der Link öffnet genau diesen Beitrag in einer sicheren Korrekturansicht. Änderungen werden dort nicht gespeichert."
+        : "Korrekturlink wird nach Freigabe des aktiven Beitrags verfügbar.";
+    }
+  }
 }
 
 function renderZArticleList(){
@@ -1873,6 +1885,50 @@ function zPublicId(a){
   if(a.publicId)return a.publicId;
   const clean=String(a.id||"").replace(/[^a-zA-Z0-9]/g,"").slice(0,7).toUpperCase()||Math.random().toString(36).slice(2,9).toUpperCase();
   return `${a.planetaryBoundary||"QS"}_S${clean}`;
+}
+function zPublicUrl(a,{correction=false}={}){
+  const id=zPublicId(a);
+  const url=new URL(Z_PANEL_PUBLIC_URL);
+  url.searchParams.set("article",id);
+  if(correction)url.searchParams.set("korrektur","1");
+  return url.toString();
+}
+async function zCopyText(text){
+  try{
+    await navigator.clipboard.writeText(text);
+    return true;
+  }catch{
+    const helper=document.createElement("textarea");
+    helper.value=text;
+    helper.setAttribute("readonly","");
+    helper.style.position="fixed";
+    helper.style.opacity="0";
+    document.body.appendChild(helper);
+    helper.select();
+    const ok=document.execCommand("copy");
+    helper.remove();
+    return ok;
+  }
+}
+async function copyZCorrectionLink(){
+  const a=saveZArticle(false);
+  if(!a)return;
+  if(a.visibility!=="aktiv")return alert("Der Beitrag ist archiviert. Bitte zuerst wieder aktivieren.");
+  if(!["freigegeben","veroeffentlicht"].includes(a.workflowStatus)){
+    return alert("Der Korrekturlink ist für freigegebene oder veröffentlichte Beiträge vorgesehen. Bitte den Beitrag zuerst prüfen und freigeben.");
+  }
+  const link=zPublicUrl(a,{correction:true});
+  const ok=await zCopyText(link);
+  const button=$("#zCopyCorrectionLink");
+  const status=$("#zShareHint");
+  if(ok){
+    const old=button.textContent;
+    button.textContent="Kopiert ✓";
+    status.textContent="Korrekturlink kopiert. Er funktioniert, sobald diese Fassung in der öffentlichen news.json auf dem ZUSTAND-Panel liegt.";
+    setTimeout(()=>button.textContent=old,1600);
+  }else{
+    status.textContent=`Kopieren war nicht möglich. Link: ${link}`;
+  }
 }
 function zContentType(a){
   if(a.category==="Natur verstehen"||a.category==="Wie wissen wir das?")return "explainer";
@@ -2093,6 +2149,7 @@ $("#zCandidate").onchange=()=>{showZGroup();updateZPreview();};
 $("#zImportCandidateProfile").onclick=importCandidateProfileToZArticle;
 $("#zBuildImagePrompt").onclick=buildZImagePrompt;
 $("#zCopyImagePrompt").onclick=()=>void copyZImagePrompt();
+$("#zCopyCorrectionLink").onclick=()=>void copyZCorrectionLink();
 ["#zTitle","#zSummary","#zCategory","#zBoundary","#zKeywords","#zSourceTitle","#zSource","#zPublicationDate","#zImageFile","#zImageIdea","#zImageStyle","#zImageFormat","#zImagePrompt","#zInterviewUrl"].forEach(sel=>{
   $(sel).addEventListener("input",()=>{updateZPreview();updateZImageAdvice();});
   $(sel).addEventListener("change",()=>{updateZPreview();updateZImageAdvice();});

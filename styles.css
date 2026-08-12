@@ -217,3 +217,8 @@ body.interview-screen-open{overflow:hidden}
   .z-image-workflow{padding:12px}
   .z-image-actions button{flex:1 1 180px}
 }
+
+/* Korrekturlink zum öffentlichen ZUSTAND-Panel */
+.z-share-actions{align-items:center;flex-wrap:wrap;margin-top:10px}
+.z-share-actions .hint{margin:0;flex:1 1 280px}
+.z-share-actions button:disabled{opacity:.45;cursor:not-allowed}
