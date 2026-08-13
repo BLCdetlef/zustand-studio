@@ -4,8 +4,10 @@ const KEY="zustandStudioPrototypeV1";
 const BACKUP_FORMAT="zustand-studio-backup-v1";
 const BACKUP_VERSION=1;
 const Z_PANEL_PUBLIC_URL="https://blcdetlef.github.io/zustand-panel/";
-const Z_SUMMARY_MIN=350;
-const Z_SUMMARY_MAX=450;
+const Z_SUMMARY_IDEAL_MIN=350;
+const Z_SUMMARY_IDEAL_MAX=500;
+const Z_SUMMARY_HARD_MAX=560;
+const Z_TEXT_AIR_RESERVE=0.06;
 
 class LocalDemoStorage {
   load(){ try{return JSON.parse(localStorage.getItem(KEY))||this.empty()}catch{return this.empty()} }
@@ -1586,14 +1588,14 @@ function zCandidateSummary(c){
   if(topic)sentences.push(`${c.name}${c.institution?" ("+c.institution+")":""} forscht zu folgenden Themen: ${topic}.`);
   c.coreFindings.slice(0,3).forEach(x=>{
     const text=String(x||"").trim();
-    if(text && sentences.join(" ").length<390)sentences.push(text);
+    if(text && sentences.join(" ").length<455)sentences.push(text);
   });
   const trend=String(c.measurements[0]?.trend||"").trim();
-  if(trend && sentences.join(" ").length<360)sentences.push(trend);
+  if(trend && sentences.join(" ").length<440)sentences.push(trend);
   if(!sentences.length)sentences.push(`${c.name}${c.institution?" ("+c.institution+")":""} hat noch kein erweitertes Forschungsprofil im Studio. Die Forschungsangaben müssen vor einer Veröffentlichung noch redaktionell ergänzt werden.`);
   let text=sentences.join(" ").replace(/\s+/g," ").trim();
-  if(text.length>Z_SUMMARY_MAX){
-    const cut=text.slice(0,Z_SUMMARY_MAX-3);
+  if(text.length>Z_SUMMARY_IDEAL_MAX){
+    const cut=text.slice(0,Z_SUMMARY_IDEAL_MAX-2);
     const last=Math.max(cut.lastIndexOf(". "),cut.lastIndexOf("; "),cut.lastIndexOf(", "));
     text=(last>300?cut.slice(0,last+1):cut.replace(/\s+\S*$/,""))+" …";
   }
@@ -1706,7 +1708,7 @@ function zValidation(a,{forRelease=false}={}){
   if(missing.length)return `Bitte zuerst ergänzen: ${missing.join(", ")}.`;
   if(!/^https?:\/\//i.test(a.sourceUrl))return "Der Quellenlink sollte mit http:// oder https:// beginnen.";
   if(a.interviewUrl && !/^https?:\/\//i.test(a.interviewUrl))return "Der Interview-Link sollte mit http:// oder https:// beginnen.";
-  if(forRelease && (a.summary.length<Z_SUMMARY_MIN || a.summary.length>Z_SUMMARY_MAX))return `Der Kurztext hat ${a.summary.length} Zeichen. Für die Freigabe sollten es ${Z_SUMMARY_MIN}–${Z_SUMMARY_MAX} Zeichen sein.`;
+  if(forRelease && a.summary.length>=Z_SUMMARY_HARD_MAX)return `Der Kurztext hat ${a.summary.length} Zeichen. Ab ${Z_SUMMARY_HARD_MAX} Zeichen ist er für die Freigabe zu lang. Ideal sind ${Z_SUMMARY_IDEAL_MIN}–${Z_SUMMARY_IDEAL_MAX} Zeichen.`;
   return "";
 }
 
@@ -1867,28 +1869,50 @@ function zFitPreviewText(){
 
   card.classList.remove("text-fit-tight","text-fit-overflow");
   const length=summaryInput.value.length;
-  const target=`${Z_SUMMARY_MIN}–${Z_SUMMARY_MAX}`;
+  const ideal=`${Z_SUMMARY_IDEAL_MIN}–${Z_SUMMARY_IDEAL_MAX}`;
 
-  if(length>Z_SUMMARY_MAX){
-    zSetSummaryStatus("fit-warning",`${length} Zeichen · zu lang · bitte kürzen (Ziel ${target})`);
-  }else if(length<Z_SUMMARY_MIN){
-    zSetSummaryStatus("fit-tight",`${length} Zeichen · noch kurz (Ziel ${target})`);
-  }else{
-    zSetSummaryStatus("fit-ok",`${length} Zeichen · Ziel ${target} · passt`);
-  }
+  const setLengthStatus=()=>{
+    if(length>=Z_SUMMARY_HARD_MAX){
+      zSetSummaryStatus("fit-warning",`${length} Zeichen · zu lang · bitte kürzen (ideal ${ideal})`);
+    }else if(length>Z_SUMMARY_IDEAL_MAX){
+      zSetSummaryStatus("fit-tight",`${length} Zeichen · etwas kürzen (ideal ${ideal})`);
+    }else if(length<Z_SUMMARY_IDEAL_MIN){
+      zSetSummaryStatus("fit-tight",`${length} Zeichen · sehr kurz (ideal ${ideal})`);
+    }else{
+      zSetSummaryStatus("fit-ok",`${length} Zeichen · idealer Bereich ${ideal}`);
+    }
+  };
+  setLengthStatus();
 
   if(zPreviewMode!=="th" || copy.clientHeight<20)return;
-  const overflows=()=>copy.scrollHeight>copy.clientHeight+2;
 
-  if(overflows()){
-    card.classList.add("text-fit-tight");
-  }
+  const isCrowded=()=>{
+    if(copy.scrollHeight>copy.clientHeight+2)return true;
+    const children=[...copy.children].filter(el=>{
+      const style=getComputedStyle(el);
+      return style.display!=="none" && style.visibility!=="hidden" && el.getBoundingClientRect().height>0;
+    });
+    if(!children.length)return false;
+    const box=copy.getBoundingClientRect();
+    const first=children[0].getBoundingClientRect();
+    const last=children[children.length-1].getBoundingClientRect();
+    const reserve=Math.max(28,box.height*Z_TEXT_AIR_RESERVE);
+    return (first.top-box.top)<reserve || (box.bottom-last.bottom)<reserve;
+  };
 
-  if(overflows()){
+  if(isCrowded())card.classList.add("text-fit-tight");
+
+  if(isCrowded()){
     card.classList.add("text-fit-overflow");
-    zSetSummaryStatus("fit-warning",`${length} Zeichen · passt nicht ins Feld · bitte kürzen`);
-  }else if(card.classList.contains("text-fit-tight") && length<=Z_SUMMARY_MAX){
-    zSetSummaryStatus("fit-tight",`${length} Zeichen · passt knapp · Zeilenabstand leicht reduziert`);
+    zSetSummaryStatus("fit-warning",`${length} Zeichen · zu wenig Luft im Feld · bitte kürzen`);
+  }else if(card.classList.contains("text-fit-tight")){
+    if(length>Z_SUMMARY_IDEAL_MAX){
+      zSetSummaryStatus("fit-tight",`${length} Zeichen · knapp · bitte etwas kürzen`);
+    }else{
+      zSetSummaryStatus("fit-tight",`${length} Zeichen · knapp · Darstellung leicht verdichtet`);
+    }
+  }else{
+    setLengthStatus();
   }
 }
 
@@ -1897,6 +1921,25 @@ function zSchedulePreviewFit(){
   zPreviewFitFrame=requestAnimationFrame(()=>{
     zPreviewFitFrame=requestAnimationFrame(zFitPreviewText);
   });
+}
+
+function zRenderQr(targetSelector,url,size=78){
+  const target=$(targetSelector);
+  if(!target)return;
+  target.innerHTML="";
+  if(!url || typeof QRCode==="undefined")return;
+  try{
+    new QRCode(target,{
+      text:url,
+      width:size,
+      height:size,
+      colorDark:"#111111",
+      colorLight:"#ffffff",
+      correctLevel:QRCode.CorrectLevel.M
+    });
+  }catch(error){
+    console.warn("QR-Code konnte nicht erzeugt werden.",error);
+  }
 }
 
 function updateZPreview(){
@@ -1913,10 +1956,13 @@ function updateZPreview(){
   zSchedulePreviewFit();
   const sourceLink=$("#zPreviewSource");
   sourceLink.href=source||"#";
+  sourceLink.classList.toggle("hidden",!source);
   sourceLink.classList.toggle("disabled-link",!source);
   const interviewLink=$("#zPreviewInterview");
   interviewLink.href=interview||"#";
-  interviewLink.classList.toggle("hidden",!interview||zPreviewMode==="th");
+  interviewLink.classList.toggle("hidden",!interview);
+  zRenderQr("#zPreviewSourceQr",source,78);
+  zRenderQr("#zPreviewInterviewQr",interview,78);
   const imageBox=$("#zPreviewImage");
   imageBox.style.backgroundImage=image?`url('${image.replace(/'/g,"%27")}')`:"";
   imageBox.classList.toggle("has-image",!!image);
