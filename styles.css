@@ -222,3 +222,14 @@ body.interview-screen-open{overflow:hidden}
 .z-share-actions{align-items:center;flex-wrap:wrap;margin-top:10px}
 .z-share-actions .hint{margin:0;flex:1 1 280px}
 .z-share-actions button:disabled{opacity:.45;cursor:not-allowed}
+
+/* Z-Panel: kurze Texte und automatische Passprüfung */
+.z-summary-status{font-weight:700}
+.z-summary-status.fit-ok{color:#176b3a}
+.z-summary-status.fit-tight{color:#8a5a00}
+.z-summary-status.fit-warning{color:#a3261f}
+.z-preview-card.mode-th .z-preview-copy{height:100%;min-height:0}
+.z-preview-card.text-fit-tight .z-preview-copy p{line-height:1.30}
+.z-preview-card.text-fit-overflow{outline:3px solid rgba(163,38,31,.55);outline-offset:-3px}
+.z-preview-card.text-fit-overflow .z-preview-copy{background:rgba(163,38,31,.035)}
+

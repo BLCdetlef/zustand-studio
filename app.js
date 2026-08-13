@@ -4,6 +4,8 @@ const KEY="zustandStudioPrototypeV1";
 const BACKUP_FORMAT="zustand-studio-backup-v1";
 const BACKUP_VERSION=1;
 const Z_PANEL_PUBLIC_URL="https://blcdetlef.github.io/zustand-panel/";
+const Z_SUMMARY_MIN=350;
+const Z_SUMMARY_MAX=450;
 
 class LocalDemoStorage {
   load(){ try{return JSON.parse(localStorage.getItem(KEY))||this.empty()}catch{return this.empty()} }
@@ -1584,16 +1586,16 @@ function zCandidateSummary(c){
   if(topic)sentences.push(`${c.name}${c.institution?" ("+c.institution+")":""} forscht zu folgenden Themen: ${topic}.`);
   c.coreFindings.slice(0,3).forEach(x=>{
     const text=String(x||"").trim();
-    if(text && sentences.join(" ").length<470)sentences.push(text);
+    if(text && sentences.join(" ").length<390)sentences.push(text);
   });
   const trend=String(c.measurements[0]?.trend||"").trim();
-  if(trend && sentences.join(" ").length<430)sentences.push(trend);
+  if(trend && sentences.join(" ").length<360)sentences.push(trend);
   if(!sentences.length)sentences.push(`${c.name}${c.institution?" ("+c.institution+")":""} hat noch kein erweitertes Forschungsprofil im Studio. Die Forschungsangaben müssen vor einer Veröffentlichung noch redaktionell ergänzt werden.`);
   let text=sentences.join(" ").replace(/\s+/g," ").trim();
-  if(text.length>550){
-    const cut=text.slice(0,547);
+  if(text.length>Z_SUMMARY_MAX){
+    const cut=text.slice(0,Z_SUMMARY_MAX-3);
     const last=Math.max(cut.lastIndexOf(". "),cut.lastIndexOf("; "),cut.lastIndexOf(", "));
-    text=(last>350?cut.slice(0,last+1):cut.replace(/\s+\S*$/,""))+" …";
+    text=(last>300?cut.slice(0,last+1):cut.replace(/\s+\S*$/,""))+" …";
   }
   return text;
 }
@@ -1704,7 +1706,7 @@ function zValidation(a,{forRelease=false}={}){
   if(missing.length)return `Bitte zuerst ergänzen: ${missing.join(", ")}.`;
   if(!/^https?:\/\//i.test(a.sourceUrl))return "Der Quellenlink sollte mit http:// oder https:// beginnen.";
   if(a.interviewUrl && !/^https?:\/\//i.test(a.interviewUrl))return "Der Interview-Link sollte mit http:// oder https:// beginnen.";
-  if(forRelease && (a.summary.length<350 || a.summary.length>550))return `Der Kurztext hat ${a.summary.length} Zeichen. Für die Freigabe sollten es 350–550 Zeichen sein.`;
+  if(forRelease && (a.summary.length<Z_SUMMARY_MIN || a.summary.length>Z_SUMMARY_MAX))return `Der Kurztext hat ${a.summary.length} Zeichen. Für die Freigabe sollten es ${Z_SUMMARY_MIN}–${Z_SUMMARY_MAX} Zeichen sein.`;
   return "";
 }
 
@@ -1847,6 +1849,56 @@ function renderZPanel(){
   updateZPreview();
 }
 
+let zPreviewFitFrame=0;
+
+function zSetSummaryStatus(kind,text){
+  const count=$("#zSummaryCount");
+  if(!count)return;
+  count.classList.remove("fit-ok","fit-tight","fit-warning");
+  if(kind)count.classList.add(kind);
+  count.textContent=text;
+}
+
+function zFitPreviewText(){
+  const card=$("#zPreviewCard");
+  const copy=card?.querySelector(".z-preview-copy");
+  const summaryInput=$("#zSummary");
+  if(!card||!copy||!summaryInput)return;
+
+  card.classList.remove("text-fit-tight","text-fit-overflow");
+  const length=summaryInput.value.length;
+  const target=`${Z_SUMMARY_MIN}–${Z_SUMMARY_MAX}`;
+
+  if(length>Z_SUMMARY_MAX){
+    zSetSummaryStatus("fit-warning",`${length} Zeichen · zu lang · bitte kürzen (Ziel ${target})`);
+  }else if(length<Z_SUMMARY_MIN){
+    zSetSummaryStatus("fit-tight",`${length} Zeichen · noch kurz (Ziel ${target})`);
+  }else{
+    zSetSummaryStatus("fit-ok",`${length} Zeichen · Ziel ${target} · passt`);
+  }
+
+  if(zPreviewMode!=="th" || copy.clientHeight<20)return;
+  const overflows=()=>copy.scrollHeight>copy.clientHeight+2;
+
+  if(overflows()){
+    card.classList.add("text-fit-tight");
+  }
+
+  if(overflows()){
+    card.classList.add("text-fit-overflow");
+    zSetSummaryStatus("fit-warning",`${length} Zeichen · passt nicht ins Feld · bitte kürzen`);
+  }else if(card.classList.contains("text-fit-tight") && length<=Z_SUMMARY_MAX){
+    zSetSummaryStatus("fit-tight",`${length} Zeichen · passt knapp · Zeilenabstand leicht reduziert`);
+  }
+}
+
+function zSchedulePreviewFit(){
+  cancelAnimationFrame(zPreviewFitFrame);
+  zPreviewFitFrame=requestAnimationFrame(()=>{
+    zPreviewFitFrame=requestAnimationFrame(zFitPreviewText);
+  });
+}
+
 function updateZPreview(){
   const title=$("#zTitle")?.value.trim()||"Titel des Beitrags";
   const summary=$("#zSummary")?.value.trim()||"Hier erscheint der Kurztext.";
@@ -1858,7 +1910,7 @@ function updateZPreview(){
   $("#zPreviewTitle").textContent=title;
   $("#zPreviewSummary").textContent=summary;
   $("#zPreviewMeta").textContent=`${category} · ${boundary}`;
-  $("#zSummaryCount").textContent=`${$("#zSummary").value.length} Zeichen · Ziel 350–550`;
+  zSchedulePreviewFit();
   const sourceLink=$("#zPreviewSource");
   sourceLink.href=source||"#";
   sourceLink.classList.toggle("disabled-link",!source);
