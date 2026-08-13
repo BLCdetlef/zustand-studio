@@ -168,12 +168,15 @@ body.interview-screen-open{overflow:hidden}
 .z-preview-copy h3{font-size:clamp(18px,2.45vw,28px);line-height:1.08;margin:0 0 11px}
 .z-preview-copy p{font-size:clamp(13px,1.42vw,16px);line-height:1.38;margin:0 0 12px}
 .z-preview-copy a{color:inherit;overflow-wrap:anywhere}
-.z-preview-qr-row{display:flex;align-items:flex-start;gap:18px;margin-top:2px;min-height:102px}
-.z-preview-qr-item{display:flex;flex-direction:column;align-items:center;gap:5px;text-decoration:none!important;font-size:11px;font-weight:800;line-height:1.15;text-align:center}
+.z-preview-qr-row{display:flex;flex-wrap:nowrap;align-items:flex-start;justify-content:flex-start;gap:18px;margin-top:2px;min-height:102px}
+.z-preview-qr-item{display:flex;flex:0 0 auto;flex-direction:column;align-items:center;gap:6px;text-decoration:none!important;font-size:11px;font-weight:800;line-height:1.15;text-align:center}
 .z-preview-qr-code{display:block;width:78px;height:78px;padding:4px;background:#fff;border:1px solid #d8d8d2}
-.z-preview-qr-code img,.z-preview-qr-code canvas{display:block!important;width:68px!important;height:68px!important}
-.z-preview-qr-label{white-space:nowrap}
-.z-preview-qr-item.hidden{display:none}
+/* QRCode.js erzeugt Canvas + IMG. In modernen Browsern zeigen wir bewusst nur das Canvas,
+   sonst würde derselbe QR-Code zweimal untereinander erscheinen. */
+.z-preview-qr-code canvas{display:block!important;width:68px!important;height:68px!important}
+.z-preview-qr-code img{display:none!important}
+.z-preview-qr-label{display:block;white-space:nowrap;color:#333}
+.z-preview-qr-item.hidden{display:none!important}
 .disabled-link{pointer-events:none;opacity:.35}
 .z-export-note{margin-top:20px}
 .z-export-note code{font-size:.95em}
