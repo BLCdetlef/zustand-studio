@@ -159,16 +159,20 @@
       <textarea id="aNote" placeholder="Keine sensiblen persönlichen Einschätzungen in diesem Prototyp speichern."></textarea>
 
       <div class="actions">
-        <button class="primary" id="saveAcquisition">Status speichern</button>
+        <button class="primary" id="saveAcquisition">Akquise und Mail speichern</button>
       </div>
     </article>
 
     <article class="card">
       <div class="cardhead">
-        <h3>Kurze Erstmail</h3>
-        <button class="ghost" id="copyMail">Kopieren</button>
+        <h3>E-Mail-Entwurf</h3>
+        <div class="candidate-actions">
+          <button class="ghost" id="resetMailDraft" type="button">Vorschlag neu erzeugen</button>
+          <button class="ghost" id="copyMail">Kopieren</button>
+        </div>
       </div>
-      <textarea class="output tall" id="mailOutput" readonly></textarea>
+      <textarea class="output tall" id="mailOutput" placeholder="E-Mail-Entwurf auswählen oder direkt hier schreiben."></textarea>
+      <p class="hint" id="mailSaveHint">Änderungen werden für den ausgewählten Kandidaten lokal automatisch gespeichert.</p>
     </article>
   </div>
 </section>
@@ -231,11 +235,18 @@
       <textarea id="iNotes" class="tall" placeholder="Als erstes eine offene Einstiegsfrage. Danach nur wenige Reservefragen – nicht als abzuarbeitender Fragenkatalog."></textarea>
     </div>
 
+    <div class="interview-prep-block" id="gwlFeedbackBlock">
+      <div class="interview-prep-heading"><span>↩</span><strong>Auswertung für GWL</strong></div>
+      <textarea id="iGwlFeedback" class="tall" placeholder="Nach dem Interview: neue oder korrigierte Quantitäten, Quellen, fachliche Einordnungen und verbleibende Wissenslücken. Dieser Text wird nur als prüfpflichtiger GWL-Rückspielentwurf exportiert."></textarea>
+      <p class="hint" id="gwlFeedbackHint">Bei einem GWL-Kandidaten enthält der Export eindeutige Referenzen auf die zugrunde liegenden Messwerte, Studien, Wirkungspfade und Wissenslücken.</p>
+    </div>
+
     <div class="actions interview-actions">
       <button class="primary" id="saveInterview">Lokal speichern</button>
       <button class="ghost" id="loadInterviewDraft">Vorschlag laden</button>
       <button class="ghost" id="openInterviewScreen">Interview-Bildschirm öffnen</button>
       <button class="ghost" id="startTraining">🎧 Kernaussagen trainieren</button>
+      <button class="ghost" id="exportGwlFeedback">GWL-Rückspielentwurf</button>
     </div>
 
     <p class="hint">Der Trainer übt bewusst nicht den Gesprächsverlauf. Er wiederholt die Anmoderation und die Kernaussagen der Forschung, damit du im Interview frei reagieren kannst.</p>
@@ -592,6 +603,7 @@
 </footer>
 
 <script src="qrcode.min.js"></script>
+<script src="gwl-import.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

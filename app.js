@@ -307,7 +307,28 @@ if(importButton && importFile){
 
     try{
       const parsed=JSON.parse(await file.text());
-      const incoming=Array.isArray(parsed)?parsed:parsed?.candidates;
+      let incoming=Array.isArray(parsed)?parsed:parsed?.candidates;
+      let gwlProjection=null;
+
+      if(parsed?.format?.startsWith?.("gwl-knowledge-network-")){
+        if(!window.GwlStudioImport)throw new Error("Der GWL-Importadapter ist nicht geladen.");
+        gwlProjection=window.GwlStudioImport.project(parsed,file.name);
+        incoming=[gwlProjection.candidate];
+        const c=gwlProjection.candidate;
+        const ctx=c.gwlContext||{};
+        const preview=[
+          `GWL-Wissensdatei erkannt: ${ctx.sourceFormat||parsed.format}`,
+          `Person: ${c.name}${c.institution?` · ${c.institution}`:""}`,
+          `Übernahme: ${c.coreFindings.length} Kernaussagen · ${c.measurements.length} Studiengrundlagen · ${c.keyNumbers.length} Quantitäten · ${c.reserveQuestions.length} Reservefragen`,
+          "",
+          ...gwlProjection.warnings.map(warning=>`⚠ ${warning}`),
+          "",
+          "Nur das redaktionelle Arbeitsprofil und GWL-Referenzen werden im Studio gespeichert. Das GWL-Wissensnetz bleibt die führende Quelle.",
+          "",
+          "Import fortsetzen?"
+        ];
+        if(!confirm(preview.join("\n")))return;
+      }
 
       if(!Array.isArray(incoming)){
         throw new Error("Die JSON-Datei enthält keine Kandidatenliste.");
@@ -372,6 +393,7 @@ if(importButton && importFile){
           if(!String(existing.period||"").trim())existing.period=String(raw?.period||"").trim();
           if(!String(existing.why||"").trim())existing.why=String(raw?.why||raw?.reason||"").trim();
           mergeCandidateResearch(existing,raw);
+          if(raw?.gwlContext&&typeof raw.gwlContext==="object")existing.gwlContext=JSON.parse(JSON.stringify(raw.gwlContext));
           ensureCandidateResearch(existing);
           updated++;
           continue;
@@ -400,6 +422,7 @@ if(importButton && importFile){
           reserveQuestions:[]
         };
         mergeCandidateResearch(record,raw);
+        if(raw?.gwlContext&&typeof raw.gwlContext==="object")record.gwlContext=JSON.parse(JSON.stringify(raw.gwlContext));
         ensureCandidateResearch(record);
         data.candidates.push(record);
         added++;
@@ -410,8 +433,9 @@ if(importButton && importFile){
 
       const parts=[];
       if(added)parts.push(`${added} neu importiert`);
-      if(updated)parts.push(`${updated} bestehende Kontakt${updated===1?"":"e"} aktualisiert`);
+      if(updated)parts.push(`${updated} bestehende${updated===1?"s Profil":" Profile"} aktualisiert`);
       if(skipped)parts.push(`${skipped} übersprungen`);
+      if(gwlProjection)parts.push("GWL-Herkunft gespeichert");
       alert(parts.length?parts.join(" · "):"Keine Änderungen vorgenommen.");
     }catch(err){
       alert("Import nicht möglich: "+err.message);
@@ -624,6 +648,8 @@ function renderCandidates(){
               ${c.why?`<p><b>Einordnung:</b> ${esc(c.why)}</p>`:""}
               ${(c.openingQuestion||c.question)?`<p><b>Einstiegsfrage:</b> ${esc(c.openingQuestion||c.question)}</p>`:""}
               ${(c.measurements?.length||c.publications?.length)?`<p><b>Recherchegrundlage:</b> ${c.measurements?.length||0} Messreihe${c.measurements?.length===1?"":"n"} · ${c.publications?.length||0} Veröffentlichung${c.publications?.length===1?"":"en"}</p>`:""}
+              ${c.gwlContext?`<p><b>GWL-Grundlage:</b> ${esc(c.gwlContext.sourceFormat||"Wissensnetz")} · Version ${esc(c.gwlContext.sourceVersion||"unbekannt")} · Status <b>${esc(c.gwlContext.sourceStatus||"unbekannt")}</b><br><span class="muted">${esc(c.gwlContext.sourceFile||"")}</span></p>`:""}
+              ${c.gwlContext?.importantLimitation?`<p><b>Wissenschaftliche Grenze:</b> ${esc(c.gwlContext.importantLimitation)}</p>`:""}
               ${!hasResearchProfile(c)?`<p><button class="ghost small" onclick="researchCandidateProfile('${c.id}')">Forschungsprofil ergänzen</button></p>`:""}
               ${c.phone?`<p><b>Dienstl. Telefon:</b> ${esc(c.phone)}</p>`:""}
               ${c.address?`<p><b>Dienstl. Postanschrift:</b> ${esc(c.address)}</p>`:""}
@@ -759,17 +785,20 @@ window.removeCandidate=id=>{
 
 function selected(sel){return data.candidates.find(c=>c.id===$(sel).value)}
 
-function setAcquisitionMail(c,status){
+function setAcquisitionMailTitle(status){
   const mailTitle=$("#mailOutput")?.closest(".card")?.querySelector("h3");
+  if(mailTitle)mailTitle.textContent=status==="zugesagt"?"E-Mail nach Zusage":"E-Mail-Entwurf";
+}
 
+function setAcquisitionMail(c,status){
   if(!c){
     $("#mailOutput").value="";
-    if(mailTitle)mailTitle.textContent="Kurze Erstmail";
+    setAcquisitionMailTitle("");
     return;
   }
 
   if(status==="zugesagt"){
-    if(mailTitle)mailTitle.textContent="Zweite E-Mail nach Zusage";
+    setAcquisitionMailTitle(status);
     $("#mailOutput").value=`Betreff: Interview für ZUSTAND – Terminabstimmung
 
 Guten Tag ${c.name},
@@ -794,7 +823,7 @@ E-Mail: detlef.hau@th-luebeck.de`;
     return;
   }
 
-  if(mailTitle)mailTitle.textContent="Kurze Erstmail";
+  setAcquisitionMailTitle(status);
   $("#mailOutput").value=`Betreff: Interviewanfrage – ZUSTAND / TH Lübeck
 
 Guten Tag ${c.name},
@@ -824,17 +853,42 @@ function makeMail(){
   const status=a.status||"noch nicht angeschrieben";
   $("#aStatus").value=status;
   $("#aNote").value=a.note||"";
-  setAcquisitionMail(c,status);
+  setAcquisitionMailTitle(status);
+  if(Object.prototype.hasOwnProperty.call(a,"mailDraft"))$("#mailOutput").value=String(a.mailDraft||"");
+  else setAcquisitionMail(c,status);
 }
 $("#aCandidate").onchange=makeMail;
 $("#aStatus").onchange=()=>{
   const c=selected("#aCandidate");
+  if(!c)return;
+  setAcquisitionMailTitle($("#aStatus").value);
+  const a=data.acquisition[c.id]||{};
+  data.acquisition[c.id]={...a,status:$("#aStatus").value,note:$("#aNote").value,mailDraft:$("#mailOutput").value};
+  storage.save(data);
+};
+$("#mailOutput").oninput=()=>{
+  const c=selected("#aCandidate");
+  if(!c)return;
+  const a=data.acquisition[c.id]||{};
+  data.acquisition[c.id]={...a,status:$("#aStatus").value,note:$("#aNote").value,mailDraft:$("#mailOutput").value};
+  storage.save(data);
+  $("#mailSaveHint").textContent="Zuletzt bearbeiteter Entwurf lokal gespeichert.";
+};
+$("#resetMailDraft").onclick=()=>{
+  const c=selected("#aCandidate");
+  if(!c)return alert("Bitte Kandidaten auswählen.");
+  if($("#mailOutput").value.trim()&&!confirm("Den bearbeiteten E-Mail-Entwurf durch einen neuen Vorschlag für den aktuellen Status ersetzen?"))return;
   setAcquisitionMail(c,$("#aStatus").value);
+  const a=data.acquisition[c.id]||{};
+  data.acquisition[c.id]={...a,status:$("#aStatus").value,note:$("#aNote").value,mailDraft:$("#mailOutput").value};
+  storage.save(data);
+  $("#mailSaveHint").textContent="Neuer Vorschlag lokal gespeichert.";
 };
 $("#saveAcquisition").onclick=()=>{
   const c=selected("#aCandidate");
   if(!c)return alert("Bitte Kandidaten auswählen.");
-  data.acquisition[c.id]={status:$("#aStatus").value,note:$("#aNote").value};
+  const a=data.acquisition[c.id]||{};
+  data.acquisition[c.id]={...a,status:$("#aStatus").value,note:$("#aNote").value,mailDraft:$("#mailOutput").value};
   persist();
 };
 
@@ -990,7 +1044,8 @@ function makeInterviewDraft(c){
     coreFindings,
     evidence:formatEvidence(c),
     connections:formatConnections(c),
-    notes:structuredQuestions||questions.join("\n\n")
+    notes:structuredQuestions||questions.join("\n\n"),
+    gwlFeedback:""
   };
 }
 function completeInterviewShape(c,value){
@@ -998,14 +1053,14 @@ function completeInterviewShape(c,value){
   if(typeof value==="string")return {...draft,notes:value};
   if(!value || typeof value!=="object")return draft;
   const result={...draft};
-  for(const key of ["intro","coreFindings","evidence","connections","notes","recordingAt","broadcastAt"]){
+  for(const key of ["intro","coreFindings","evidence","connections","notes","gwlFeedback","recordingAt","broadcastAt"]){
     if(Object.prototype.hasOwnProperty.call(value,key))result[key]=String(value[key]||"");
   }
   return result;
 }
 
 function getInterview(c){
-  if(!c)return {intro:"",coreFindings:"",evidence:"",connections:"",notes:"",recordingAt:"",broadcastAt:""};
+  if(!c)return {intro:"",coreFindings:"",evidence:"",connections:"",notes:"",gwlFeedback:"",recordingAt:"",broadcastAt:""};
   const saved=data.interviews[c.id];
   if(saved!==undefined)return completeInterviewShape(c,saved);
   return makeInterviewDraft(c);
@@ -1013,7 +1068,7 @@ function getInterview(c){
 
 function showInterviewForSelectedCandidate(forceDraft=false){
   const c=selected("#iCandidate");
-  const fields=["#iIntro","#iCoreFindings","#iEvidence","#iConnections","#iNotes","#iRecordingAt","#iBroadcastAt"];
+  const fields=["#iIntro","#iCoreFindings","#iEvidence","#iConnections","#iNotes","#iGwlFeedback","#iRecordingAt","#iBroadcastAt"];
   if(!c){fields.forEach(id=>$(id).value="");return;}
 
   // Beim Laden eines neuen Textvorschlags bleiben bereits eingetragene Termine erhalten.
@@ -1024,8 +1079,14 @@ function showInterviewForSelectedCandidate(forceDraft=false){
   $("#iEvidence").value=interview.evidence||"";
   $("#iConnections").value=interview.connections||"";
   $("#iNotes").value=interview.notes||"";
+  $("#iGwlFeedback").value=interview.gwlFeedback||"";
   $("#iRecordingAt").value=interview.recordingAt||"";
   $("#iBroadcastAt").value=interview.broadcastAt||"";
+  const hasGwl=Boolean(c.gwlContext);
+  $("#gwlFeedbackHint").textContent=hasGwl
+    ?`Verknüpft mit ${c.gwlContext.sourceFile||c.gwlContext.sourceFormat}. Der Export bleibt ein prüfpflichtiger Entwurf.`
+    :"Dieser Kandidat ist noch nicht mit einer GWL-Wissensdatei verknüpft; ein Rückspielentwurf kann erst danach exportiert werden.";
+  $("#exportGwlFeedback").disabled=!hasGwl;
   stopTraining();
 }
 
@@ -1048,6 +1109,7 @@ function currentInterviewEditorValues(){
     evidence:$("#iEvidence").value,
     connections:$("#iConnections").value,
     notes:$("#iNotes").value,
+    gwlFeedback:$("#iGwlFeedback").value,
     recordingAt:$("#iRecordingAt").value,
     broadcastAt:$("#iBroadcastAt").value
   };
@@ -1058,6 +1120,16 @@ $("#saveInterview").onclick=()=>{
   if(!c)return alert("Bitte Kandidaten auswählen.");
   data.interviews[c.id]=currentInterviewEditorValues();
   persist();
+};
+
+$("#exportGwlFeedback").onclick=()=>{
+  const c=selected("#iCandidate");
+  if(!c?.gwlContext)return alert("Dieser Kandidat ist nicht mit einer GWL-Wissensdatei verknüpft.");
+  const values=currentInterviewEditorValues();
+  data.interviews[c.id]=values;
+  storage.save(data);
+  const slug=String(c.name||"interview").toLowerCase().replace(/[^a-z0-9äöüß]+/gi,"_").replace(/^_+|_+$/g,"");
+  downloadJson(`gwl_interview_feedback_${slug}.json`,window.GwlStudioImport.feedback(c,values));
 };
 
 function parseLocalDateTime(value){

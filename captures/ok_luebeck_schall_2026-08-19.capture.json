@@ -1,0 +1,38 @@
+{
+  "format": "zustand-radio-capture-plan-v1",
+  "station": "Lübeck FM im OK Lübeck",
+  "stream": "http://radio.oksh.de:8000/luebeckfm.mp3",
+  "date": "2026-08-19",
+  "timezone": "Europe/Berlin",
+  "captureStartedAt": "2026-08-19T15:56:02+02:00",
+  "captureMaximumMinutes": 90,
+  "target": {
+    "titleMustContain": "ZUSTAND",
+    "expectedTitle": "ZUSTAND – Vermessung unserer Zukunft",
+    "expectedResponsible": "Detlef Hau",
+    "expectedStart": "2026-08-19T16:00:00+02:00",
+    "expectedEnd": "2026-08-19T17:00:00+02:00",
+    "analysisStartOffsetSeconds": 238,
+    "analysisEndOffsetSeconds": 3838,
+    "interviewExpectedAround": "2026-08-19T16:30:00+02:00",
+    "interviewSearchStartOffsetSeconds": 2038
+  },
+  "series": {
+    "regularBroadcastWindow": "mittwochs 16:00–17:00 Uhr",
+    "typicalEpisodeDurationMinutes": {
+      "minimum": 20,
+      "maximum": 30
+    },
+    "durationMayVarySignificantly": true,
+    "segmentationRule": "Beginn und Ende anhand von Sendungskennung, Anmoderation und Übergang zur Folgesendung bestimmen; nicht allein anhand einer festen Episodendauer.",
+    "distribution": [
+      "Lübeck FM im OK Lübeck",
+      "später über Castopod"
+    ]
+  },
+  "evidenceRule": "Interviewaussagen sind Hinweise und Prüfaufträge. Quantitäten werden erst nach Rückführung auf belastbare Primärquellen als GWL-Evidenz vorgeschlagen.",
+  "scheduleEvidence": {
+    "url": "https://www.oksh.de/hl/hoeren/programm/?tag=2026-08-19",
+    "note": "Der aktuelle Tagesplan weist zwischen 12:00 und 17:00 Uhr eine Lücke auf. Die indexierte Programmübersicht und das wiederkehrende Mittwochsschema nennen ZUSTAND um 16:00 Uhr; um 17:00 Uhr folgt luut & düütlich. Die spätere Audioabgrenzung muss zusätzlich anhand der gesprochenen Sendungskennung erfolgen."
+  }
+}
