@@ -1,0 +1,70 @@
+{
+  "format": "zustand-studio-candidates-v2",
+  "topic": "Mikroplastik in der Ostsee – Langzeitentwicklung in Plankton und Fischen",
+  "candidates": [
+    {
+      "name": "Dr. Jan Dierking",
+      "institution": "GEOMAR Helmholtz-Zentrum für Ozeanforschung Kiel, Marine Evolutionsökologie",
+      "topic": "Mikroplastik in archivierten Planktonproben sowie in Hering und Sprotte aus der Ostsee",
+      "period": "1987–2015",
+      "email": "jdierking@geomar.de",
+      "phone": "+49 431 600-4579",
+      "address": "GEOMAR Helmholtz-Zentrum für Ozeanforschung Kiel, Wischhofstraße 1–3, 24148 Kiel",
+      "source": "https://www.geomar.de/en/jdierking",
+      "why": "Sehr gut geeignet für ein deutschsprachiges Interview über die Frage, wie sich langfristige Veränderungen von Mikroplastik überhaupt messen lassen. Dierking ist Mitautor einer seltenen Ostsee-Langzeitstudie über fast drei Jahrzehnte. Der überraschende fehlende zeitliche Anstieg in den untersuchten Proben ermöglicht ein differenziertes Gespräch über Messbefunde, regionale Einträge, Transport, Nahrungsnetze und Grenzen der Verallgemeinerung. GEOMAR führt ihn aktuell weiterhin als Wissenschaftler der Marinen Evolutionsökologie.",
+      "question": "Obwohl die Kunststoffproduktion stark gestiegen ist, zeigte Ihre Ostsee-Auswertung über fast drei Jahrzehnte keinen Anstieg des Mikroplastiks. Was wurde genau untersucht – und wie ist dieser überraschende Befund einzuordnen?",
+      "coreFindings": [
+        "Die Studie untersuchte archivierte Planktonproben und Verdauungstrakte von Hering und Sprotte aus der Ostsee über den Zeitraum 1987 bis 2015.",
+        "In den untersuchten Proben ließ sich weder im Plankton noch in den Verdauungstrakten der Fische ein statistisch signifikanter zeitlicher Anstieg der Mikroplastikkonzentration nachweisen.",
+        "Das Ergebnis bedeutet nicht, dass die Kunststoffverschmutzung insgesamt unverändert oder unproblematisch ist; es beschreibt ausschließlich die untersuchten Proben, Arten, Orte und Zeitpunkte.",
+        "Mikroplastik war während des gesamten Untersuchungszeitraums in der Ostsee und in den untersuchten Fischen vorhanden.",
+        "Die Ähnlichkeit von Partikelzusammensetzung und Größenverteilung in Plankton und Fischverdauungstrakten spricht für eine Verbindung zwischen Umweltvorkommen und Aufnahme durch die Fische.",
+        "Die Autoren folgern vorsichtig, dass das regionale Belastungsmuster stärker mit konkreten menschlichen Aktivitäten zusammenhängen könnte als mit der globalen Kunststoffproduktion allein."
+      ],
+      "measurements": [
+        {
+          "name": "Langzeitauswertung Mikroplastik in Plankton, Hering und Sprotte der Ostsee",
+          "period": "1987–2015",
+          "measured": "Kunststoffpartikel in archivierten Planktonproben und in Verdauungstrakten von Atlantischem Hering und Europäischer Sprotte",
+          "method": "Auswertung eines einzigartigen archivierten Probensatzes, der ursprünglich für Nahrungsnetzuntersuchungen gesammelt und konserviert worden war; Vergleich der Partikelkonzentrationen und -merkmale über die Zeit",
+          "role": "Jan Dierking ist Mitautor der peer-reviewten Studie und war als GEOMAR-Wissenschaftler an der Auswertung beteiligt. Eine darüber hinausgehende individuelle Aufgabenverteilung wird in den hier geprüften offiziellen Quellen nicht ausgewiesen.",
+          "trend": "Kein statistisch signifikanter zeitlicher Anstieg in den untersuchten Plankton- oder Fischproben",
+          "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/29055586/"
+        }
+      ],
+      "publications": [
+        {
+          "title": "No increase in marine microplastic concentration over the last three decades – A case study from the Baltic Sea",
+          "year": "2018",
+          "url": "https://doi.org/10.1016/j.scitotenv.2017.10.101",
+          "relevance": "Zentrale Originalpublikation zur Langzeitentwicklung von Mikroplastik in Ostsee-Plankton sowie Hering und Sprotte; Jan Dierking ist Mitautor."
+        }
+      ],
+      "keyNumbers": [
+        "Untersuchungszeitraum: 1987–2015, also knapp drei Jahrzehnte.",
+        "Untersucht wurden 814 Fische; 20 Prozent enthielten Kunststoffpartikel.",
+        "Von den in Fischen gefundenen Kunststoffpartikeln waren 95 Prozent Mikroplastik unter 5 Millimetern.",
+        "93 Prozent dieser Mikroplastikpartikel waren Fasern.",
+        "Mittlere Mikroplastikkonzentration in den Planktonproben: 0,21 ± 0,15 Partikel pro Kubikmeter."
+      ],
+      "connections": [
+        "Mikroplastik in der Wassersäule kann von planktonfressenden Fischen aufgenommen werden und wird damit Teil mariner Nahrungsnetze.",
+        "Globale Kunststoffproduktion, regionale Eintragsquellen und tatsächlich in bestimmten Umweltkompartimenten gemessene Konzentrationen müssen analytisch getrennt werden.",
+        "Transport, Sedimentation, räumliche Verlagerung und unterschiedliche menschliche Aktivitäten können dazu beitragen, dass globale Produktionszuwächse nicht als einfacher lokaler Zeittrend erscheinen.",
+        "Mikroplastik gehört zur umfassenderen Belastung durch neuartige, langlebige Stoffe; die konkrete Ostsee-Reihe ist jedoch kein unmittelbarer Messwert der planetaren Grenze."
+      ],
+      "uncertainties": [
+        "Der fehlende signifikante Trend gilt nur für den untersuchten Probensatz und darf nicht auf die gesamte Ostsee, alle Partikelgrößen oder alle Organismen übertragen werden.",
+        "Archivierte Proben wurden ursprünglich für Nahrungsnetzstudien gesammelt; historische Probennahme und Konservierung waren daher nicht speziell für heutige Mikroplastik-Monitoringstandards konzipiert.",
+        "Ein fehlender zeitlicher Trend belegt weder eine fehlende ökologische Wirkung noch eine unveränderte gesamte Kunststoffmenge im Ökosystem.",
+        "Die von den Autoren diskutierte Verbindung zu spezifischen regionalen menschlichen Aktivitäten ist eine Interpretation und kein direkter Kausalnachweis."
+      ],
+      "openingQuestion": "Herr Dierking, bevor wir über Ursachen oder Folgen sprechen: Was wurde in Ihrer Ostsee-Langzeitstudie tatsächlich gemessen, und woher stammen die Proben, mit denen Sie fast drei Jahrzehnte zurückblicken konnten?",
+      "reserveQuestions": [
+        "Wie erklären Sie, dass trotz stark gestiegener Kunststoffproduktion in dieser Reihe kein zeitlicher Anstieg erkennbar war?",
+        "Welche Aussage lässt sich aus den 20 Prozent belasteten Fischen ableiten – und welche ausdrücklich nicht?",
+        "Wie müsste ein heutiges Ostsee-Monitoring aufgebaut sein, damit wir künftige Veränderungen zuverlässiger erkennen können?"
+      ]
+    }
+  ]
+}

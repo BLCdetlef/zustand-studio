@@ -172,12 +172,10 @@
       candidate:{name:candidate.name,institution:candidate.institution,studioCandidateId:candidate.id},
       interview:{recordingAt:clean(interview?.recordingAt),broadcastAt:clean(interview?.broadcastAt)},
       editorialAssessment:{
-        notes:clean(interview?.gwlFeedback),
+        panelContent:clean(interview?.evidence),
         preparationContext:{
-          coreFindings:clean(interview?.coreFindings),
-          evidence:clean(interview?.evidence),
-          quantitiesConnectionsAndUncertainties:clean(interview?.connections),
-          questions:clean(interview?.notes)
+          moderationAndFirstQuestion:clean(interview?.intro),
+          coreTopics:clean(interview?.coreFindings)
         }
       },
       reviewRule:"Keine Aussage automatisch in GWL übernehmen. Quantitäten, Einheiten, Zeit-/Raumbezug, Primärquelle und Evidenzstatus wissenschaftlich prüfen."

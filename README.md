@@ -29,3 +29,5 @@ Die Recherche enthält jetzt die Auswahl **Deutsch bevorzugt / Deutsch erforderl
 Unter **Kandidaten → JSON importieren** kann neben dem Studio-Kandidatenformat auch ein Wissensnetz im Format `gwl-knowledge-network-v1.3` gewählt werden. Das Studio übernimmt daraus nur ein kompaktes Arbeitsprofil für Kandidatenauswahl und Interviewvorbereitung. GWL-Format, Version, Status und die IDs der verwendeten Evidenzen, Messwerte, Wirkungspfade, Quellen und Wissenslücken bleiben als Herkunftsnachweis verknüpft.
 
 Im Interviewbereich kann anschließend ein **GWL-Rückspielentwurf** exportiert werden. Dieser ist immer als redaktioneller Entwurf gekennzeichnet und darf erst nach wissenschaftlicher Quellen- und Evidenzprüfung in GWL übernommen werden.
+
+Die Interviewvorbereitung verwendet drei Felder: **An- und Abmoderation + erste Frage**, **Kernthemen** und **Inhalte für GWL-Panel**.

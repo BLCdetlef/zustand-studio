@@ -212,33 +212,20 @@
     </div>
     <p class="hint">Die Termine erscheinen oben automatisch nach Datum und Uhrzeit sortiert – mit Wochentag, z. B. Di 18.08.2026 · 15:00.</p>
 
-    <label>Anmoderation / kurze Vorstellung des Gastes</label>
-    <textarea id="iIntro" class="introtext" placeholder="Wer ist mein Gast, wo arbeitet die Person und warum sprechen wir heute miteinander?"></textarea>
-
     <div class="interview-prep-block">
-      <div class="interview-prep-heading"><span>1</span><strong>Kernaussagen der Forschung</strong></div>
-      <textarea id="iCoreFindings" class="tall" placeholder="4–6 kurze Aussagen, die ich in eigenen Worten wiedergeben können möchte. Beobachtung und Interpretation möglichst trennen."></textarea>
+      <div class="interview-prep-heading"><span>1</span><strong>An- und Abmoderation + erste Frage</strong></div>
+      <textarea id="iIntro" class="interview-primary-text" placeholder="Anmoderation und Vorstellung des Gastes, anschließend die erste Frage und zum Schluss die Abmoderation."></textarea>
     </div>
 
     <div class="interview-prep-block">
-      <div class="interview-prep-heading"><span>2</span><strong>Messreihen, Monitoring, Datensätze & Quellen</strong></div>
-      <textarea id="iEvidence" class="verytall" placeholder="Was wird seit wann und wie gemessen? Welche Rolle hat der Gast? Welche Publikationen oder offiziellen Auswertungen gehören dazu? Quellenlinks können direkt mitgeführt werden."></textarea>
+      <div class="interview-prep-heading"><span>2</span><strong>Kernthemen</strong></div>
+      <textarea id="iCoreFindings" class="tall" placeholder="Zentrale Aussagen, wichtige Zahlen, Zusammenhänge und Unsicherheiten für das Gespräch."></textarea>
     </div>
 
     <div class="interview-prep-block">
-      <div class="interview-prep-heading"><span>3</span><strong>Zahlen, Zusammenhänge & Unsicherheiten</strong></div>
-      <textarea id="iConnections" class="tall" placeholder="Wichtige Größenordnungen mit Einheit, Ursachen, Folgen, Wechselwirkungen sowie Grenzen der Aussagekraft."></textarea>
-    </div>
-
-    <div class="interview-prep-block">
-      <div class="interview-prep-heading"><span>4</span><strong>Einstiegsfrage & Reservefragen</strong></div>
-      <textarea id="iNotes" class="tall" placeholder="Als erstes eine offene Einstiegsfrage. Danach nur wenige Reservefragen – nicht als abzuarbeitender Fragenkatalog."></textarea>
-    </div>
-
-    <div class="interview-prep-block" id="gwlFeedbackBlock">
-      <div class="interview-prep-heading"><span>↩</span><strong>Auswertung für GWL</strong></div>
-      <textarea id="iGwlFeedback" class="tall" placeholder="Nach dem Interview: neue oder korrigierte Quantitäten, Quellen, fachliche Einordnungen und verbleibende Wissenslücken. Dieser Text wird nur als prüfpflichtiger GWL-Rückspielentwurf exportiert."></textarea>
-      <p class="hint" id="gwlFeedbackHint">Bei einem GWL-Kandidaten enthält der Export eindeutige Referenzen auf die zugrunde liegenden Messwerte, Studien, Wirkungspfade und Wissenslücken.</p>
+      <div class="interview-prep-heading"><span>3</span><strong>Inhalte für GWL-Panel</strong></div>
+      <textarea id="iEvidence" class="verytall" placeholder="Messreihen, Datensätze, Quellen und die fachlich geprüften Inhalte, die später für das GWL-Panel verwendet werden können."></textarea>
+      <p class="hint" id="gwlFeedbackHint">Bei einem GWL-Kandidaten kann dieses Feld als prüfpflichtiger GWL-Rückspielentwurf exportiert werden.</p>
     </div>
 
     <div class="actions interview-actions">
@@ -557,28 +544,18 @@
     </section>
 
     <section id="interviewScreenIntroSection" class="interview-read-section">
-      <h2>Anmoderation</h2>
+      <h2>1. An- und Abmoderation + erste Frage</h2>
       <div id="interviewScreenIntro" class="interview-read-text"></div>
     </section>
 
     <section id="interviewScreenCoreFindingsSection" class="interview-read-section">
-      <h2>1. Kernaussagen der Forschung</h2>
+      <h2>2. Kernthemen</h2>
       <div id="interviewScreenCoreFindings" class="interview-read-text"></div>
     </section>
 
     <section id="interviewScreenEvidenceSection" class="interview-read-section">
-      <h2>2. Messreihen, Monitoring, Datensätze & Quellen</h2>
+      <h2>3. Inhalte für GWL-Panel</h2>
       <div id="interviewScreenEvidence" class="interview-read-text"></div>
-    </section>
-
-    <section id="interviewScreenConnectionsSection" class="interview-read-section">
-      <h2>3. Zahlen, Zusammenhänge & Unsicherheiten</h2>
-      <div id="interviewScreenConnections" class="interview-read-text"></div>
-    </section>
-
-    <section id="interviewScreenQuestionsSection" class="interview-read-section">
-      <h2>4. Einstiegsfrage & Reservefragen</h2>
-      <div id="interviewScreenQuestions" class="interview-read-questions"></div>
     </section>
   </div>
 </div>

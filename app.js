@@ -936,15 +936,8 @@ function formatConnections(c){
   return blocks.join("\n\n");
 }
 
-function structuredInterviewQuestions(c){
-  const opening=String(c?.openingQuestion||"").trim();
-  const reserve=textList(c?.reserveQuestions);
-  if(!opening && !reserve.length)return "";
-  return [opening,...reserve].filter(Boolean).join("\n\n");
-}
-
 function makeInterviewDraft(c){
-  if(!c)return {intro:"",notes:""};
+  if(!c)return {intro:"",coreFindings:"",evidence:""};
 
   const name=c.name||"mein Gast";
   const institution=c.institution||"";
@@ -1037,30 +1030,35 @@ function makeInterviewDraft(c){
     ];
   }
 
-  const structuredQuestions=structuredInterviewQuestions(c);
-  const coreFindings=textList(c.coreFindings).join("\n\n");
+  const firstQuestion=String(c.openingQuestion||c.question||questions[0]||"").trim();
+  const moderation=[
+    `ANMODERATION\n${intro}`,
+    firstQuestion?`ERSTE FRAGE\n${firstQuestion}`:"",
+    `ABMODERATION\nVielen Dank für das Gespräch. Sie hörten ZUSTAND – Die Vermessung unserer Zukunft im Offenen Kanal Lübeck.`
+  ].filter(Boolean).join("\n\n");
+  const coreTopics=[
+    textList(c.coreFindings).join("\n\n"),
+    formatConnections(c)
+  ].filter(Boolean).join("\n\n");
   return {
-    intro,
-    coreFindings,
-    evidence:formatEvidence(c),
-    connections:formatConnections(c),
-    notes:structuredQuestions||questions.join("\n\n"),
-    gwlFeedback:""
+    intro:moderation,
+    coreFindings:coreTopics,
+    evidence:formatEvidence(c)
   };
 }
 function completeInterviewShape(c,value){
   const draft={...makeInterviewDraft(c),recordingAt:"",broadcastAt:""};
-  if(typeof value==="string")return {...draft,notes:value};
+  if(typeof value==="string")return {...draft,intro:value};
   if(!value || typeof value!=="object")return draft;
   const result={...draft};
-  for(const key of ["intro","coreFindings","evidence","connections","notes","gwlFeedback","recordingAt","broadcastAt"]){
+  for(const key of ["intro","coreFindings","evidence","recordingAt","broadcastAt"]){
     if(Object.prototype.hasOwnProperty.call(value,key))result[key]=String(value[key]||"");
   }
   return result;
 }
 
 function getInterview(c){
-  if(!c)return {intro:"",coreFindings:"",evidence:"",connections:"",notes:"",gwlFeedback:"",recordingAt:"",broadcastAt:""};
+  if(!c)return {intro:"",coreFindings:"",evidence:"",recordingAt:"",broadcastAt:""};
   const saved=data.interviews[c.id];
   if(saved!==undefined)return completeInterviewShape(c,saved);
   return makeInterviewDraft(c);
@@ -1068,7 +1066,7 @@ function getInterview(c){
 
 function showInterviewForSelectedCandidate(forceDraft=false){
   const c=selected("#iCandidate");
-  const fields=["#iIntro","#iCoreFindings","#iEvidence","#iConnections","#iNotes","#iGwlFeedback","#iRecordingAt","#iBroadcastAt"];
+  const fields=["#iIntro","#iCoreFindings","#iEvidence","#iRecordingAt","#iBroadcastAt"];
   if(!c){fields.forEach(id=>$(id).value="");return;}
 
   // Beim Laden eines neuen Textvorschlags bleiben bereits eingetragene Termine erhalten.
@@ -1077,9 +1075,6 @@ function showInterviewForSelectedCandidate(forceDraft=false){
   $("#iIntro").value=interview.intro||"";
   $("#iCoreFindings").value=interview.coreFindings||"";
   $("#iEvidence").value=interview.evidence||"";
-  $("#iConnections").value=interview.connections||"";
-  $("#iNotes").value=interview.notes||"";
-  $("#iGwlFeedback").value=interview.gwlFeedback||"";
   $("#iRecordingAt").value=interview.recordingAt||"";
   $("#iBroadcastAt").value=interview.broadcastAt||"";
   const hasGwl=Boolean(c.gwlContext);
@@ -1096,7 +1091,7 @@ $("#loadInterviewDraft").onclick=()=>{
   const c=selected("#iCandidate");
   if(!c)return alert("Bitte zuerst einen Kandidaten auswählen.");
 
-  const hasText=["#iIntro","#iCoreFindings","#iEvidence","#iConnections","#iNotes"].some(id=>$(id).value.trim());
+  const hasText=["#iIntro","#iCoreFindings","#iEvidence"].some(id=>$(id).value.trim());
   if(hasText && !confirm("Die aktuellen Interviewtexte durch den aus den Kandidatendaten erzeugten Vorschlag ersetzen?"))return;
 
   showInterviewForSelectedCandidate(true);
@@ -1107,9 +1102,6 @@ function currentInterviewEditorValues(){
     intro:$("#iIntro").value,
     coreFindings:$("#iCoreFindings").value,
     evidence:$("#iEvidence").value,
-    connections:$("#iConnections").value,
-    notes:$("#iNotes").value,
-    gwlFeedback:$("#iGwlFeedback").value,
     recordingAt:$("#iRecordingAt").value,
     broadcastAt:$("#iBroadcastAt").value
   };
@@ -1301,9 +1293,7 @@ function fillInterviewScreen(){
   const intro=$("#iIntro").value.trim();
   const coreFindings=$("#iCoreFindings").value.trim();
   const evidence=$("#iEvidence").value.trim();
-  const connections=$("#iConnections").value.trim();
-  const notes=$("#iNotes").value.trim();
-  if(!intro && !coreFindings && !evidence && !connections && !notes)return false;
+  if(!intro && !coreFindings && !evidence)return false;
 
   $("#interviewScreenCandidate").textContent=[c.name,c.institution].filter(Boolean).join(" · ");
 
@@ -1323,40 +1313,6 @@ function fillInterviewScreen(){
 
   fillReadText("#interviewScreenEvidence",evidence);
   $("#interviewScreenEvidenceSection").classList.toggle("hidden",!evidence);
-
-  fillReadText("#interviewScreenConnections",connections);
-  $("#interviewScreenConnectionsSection").classList.toggle("hidden",!connections);
-
-  const questions=$("#interviewScreenQuestions");
-  questions.replaceChildren();
-  interviewParagraphs(notes).forEach((text,index)=>{
-    const row=document.createElement("div");
-    row.className="interview-question"+(index===0?" interview-opening-question":"");
-
-    const number=document.createElement("span");
-    number.className="interview-question-number";
-    number.textContent=String(index+1);
-
-    const content=document.createElement("div");
-    if(index===0){
-      const role=document.createElement("span");
-      role.className="interview-question-role";
-      role.textContent="Einstiegsfrage";
-      content.appendChild(role);
-    }else{
-      const role=document.createElement("span");
-      role.className="interview-question-role";
-      role.textContent=`Reserve ${index}`;
-      content.appendChild(role);
-    }
-    const p=document.createElement("p");
-    p.textContent=text;
-    content.appendChild(p);
-
-    row.append(number,content);
-    questions.appendChild(row);
-  });
-  $("#interviewScreenQuestionsSection").classList.toggle("hidden",!notes);
   return true;
 }
 
