@@ -200,43 +200,92 @@
     <label>Kandidat</label>
     <select id="iCandidate"></select>
 
-    <div class="grid two interview-date-grid">
-      <div>
-        <label>Aufnahme</label>
-        <input id="iRecordingAt" type="datetime-local">
+    <nav class="interview-process" aria-label="Interview-Arbeitsschritte">
+      <button type="button" data-interview-step="preparation"><span>1</span>Vorbereitung<small id="iStepPreparationStatus">offen</small></button>
+      <button type="button" data-interview-step="recording"><span>2</span>Aufnahme<small id="iStepRecordingStatus">offen</small></button>
+      <button type="button" data-interview-step="publication"><span>3</span>Veröffentlichung<small id="iStepPublicationStatus">offen</small></button>
+      <button type="button" data-interview-step="transcript"><span>4</span>Transkript<small id="iStepTranscriptStatus">offen</small></button>
+      <button type="button" data-interview-step="zarticle"><span>5</span>Z-Beitrag<small id="iStepZArticleStatus">offen</small></button>
+    </nav>
+
+    <section class="interview-step-panel" data-interview-panel="preparation">
+      <div class="step-heading"><div><div class="kicker">SCHRITT 1</div><h3>Gespräch vorbereiten</h3></div></div>
+
+      <div class="interview-curve-block">
+        <div class="interview-prep-heading"><span>↗</span><strong>BLC26-Kurve (optional)</strong></div>
+        <div class="grid two">
+          <div>
+            <label>Kurventitel</label>
+            <input id="iCurveTitle" placeholder="z. B. Globaler Waldbestand">
+          </div>
+          <div>
+            <label>Kurven-ID</label>
+            <input id="iCurveId" placeholder="Stabile curveId aus BLC26 / GWL">
+          </div>
+        </div>
+        <label>Link zur Kurve</label>
+        <input id="iCurveUrl" type="url" placeholder="https://…">
+        <p class="hint">Der Link kann dem Gast vorab geschickt und im Interview-Bildschirm direkt geöffnet werden. Ohne Kurvenbezug bleiben Interviews unverändert möglich.</p>
       </div>
-      <div>
-        <label>Sendung</label>
-        <input id="iBroadcastAt" type="datetime-local">
+
+      <div class="interview-prep-block">
+        <div class="interview-prep-heading"><span>1</span><strong>An- und Abmoderation + erste Frage</strong></div>
+        <textarea id="iIntro" class="interview-primary-text" placeholder="Anmoderation und Vorstellung des Gastes, anschließend die erste Frage und zum Schluss die Abmoderation."></textarea>
       </div>
-    </div>
-    <p class="hint">Die Termine erscheinen oben automatisch nach Datum und Uhrzeit sortiert – mit Wochentag, z. B. Di 18.08.2026 · 15:00.</p>
 
-    <div class="interview-prep-block">
-      <div class="interview-prep-heading"><span>1</span><strong>An- und Abmoderation + erste Frage</strong></div>
-      <textarea id="iIntro" class="interview-primary-text" placeholder="Anmoderation und Vorstellung des Gastes, anschließend die erste Frage und zum Schluss die Abmoderation."></textarea>
-    </div>
+      <div class="interview-prep-block">
+        <div class="interview-prep-heading"><span>2</span><strong>Kernthemen</strong></div>
+        <textarea id="iCoreFindings" class="tall" placeholder="Zentrale Aussagen, wichtige Zahlen, Zusammenhänge und Unsicherheiten für das Gespräch."></textarea>
+      </div>
 
-    <div class="interview-prep-block">
-      <div class="interview-prep-heading"><span>2</span><strong>Kernthemen</strong></div>
-      <textarea id="iCoreFindings" class="tall" placeholder="Zentrale Aussagen, wichtige Zahlen, Zusammenhänge und Unsicherheiten für das Gespräch."></textarea>
-    </div>
+      <div class="interview-prep-block">
+        <div class="interview-prep-heading"><span>3</span><strong>Inhalte für GWL-Panel</strong></div>
+        <textarea id="iEvidence" class="verytall" placeholder="Messreihen, Datensätze, Quellen und die fachlich geprüften Inhalte, die später für das GWL-Panel verwendet werden können."></textarea>
+        <p class="hint" id="gwlFeedbackHint">Bei einem GWL-Kandidaten kann dieses Feld als prüfpflichtiger GWL-Rückspielentwurf exportiert werden.</p>
+      </div>
 
-    <div class="interview-prep-block">
-      <div class="interview-prep-heading"><span>3</span><strong>Inhalte für GWL-Panel</strong></div>
-      <textarea id="iEvidence" class="verytall" placeholder="Messreihen, Datensätze, Quellen und die fachlich geprüften Inhalte, die später für das GWL-Panel verwendet werden können."></textarea>
-      <p class="hint" id="gwlFeedbackHint">Bei einem GWL-Kandidaten kann dieses Feld als prüfpflichtiger GWL-Rückspielentwurf exportiert werden.</p>
-    </div>
+      <div class="actions interview-actions">
+        <button class="primary" id="saveInterview">Lokal speichern</button>
+        <button class="ghost" id="loadInterviewDraft">Vorschlag laden</button>
+        <button class="ghost" id="openInterviewScreen">Interview-Bildschirm öffnen</button>
+        <button class="ghost" id="startTraining">🎧 Kernaussagen trainieren</button>
+        <button class="ghost" id="exportGwlFeedback">GWL-Rückspielentwurf</button>
+      </div>
+      <p class="hint">Der Trainer wiederholt Anmoderation und Kernaussagen, damit du im Interview frei reagieren kannst.</p>
+    </section>
 
-    <div class="actions interview-actions">
-      <button class="primary" id="saveInterview">Lokal speichern</button>
-      <button class="ghost" id="loadInterviewDraft">Vorschlag laden</button>
-      <button class="ghost" id="openInterviewScreen">Interview-Bildschirm öffnen</button>
-      <button class="ghost" id="startTraining">🎧 Kernaussagen trainieren</button>
-      <button class="ghost" id="exportGwlFeedback">GWL-Rückspielentwurf</button>
-    </div>
+    <section class="interview-step-panel hidden" data-interview-panel="recording">
+      <div class="step-heading"><div><div class="kicker">SCHRITT 2</div><h3>Aufnahme planen</h3></div></div>
+      <div class="grid two interview-date-grid">
+        <div><label>Aufnahme</label><input id="iRecordingAt" type="datetime-local"></div>
+        <div><label>Sendung</label><input id="iBroadcastAt" type="datetime-local"></div>
+      </div>
+      <p class="hint">Die Termine erscheinen oben automatisch chronologisch in der Terminübersicht.</p>
+      <div class="actions"><button class="primary" id="saveInterviewRecording" type="button">Termine speichern</button></div>
+    </section>
 
-    <p class="hint">Der Trainer übt bewusst nicht den Gesprächsverlauf. Er wiederholt die Anmoderation und die Kernaussagen der Forschung, damit du im Interview frei reagieren kannst.</p>
+    <section class="interview-step-panel hidden" data-interview-panel="publication">
+      <div class="step-heading"><div><div class="kicker">SCHRITT 3</div><h3>Sendung verlinken</h3></div></div>
+      <label>OKL-Link (optional)</label><input id="iOklUrl" type="url" placeholder="https://…">
+      <label>Castopod-Episodenlink (optional)</label><input id="iCastopodUrl" type="url" placeholder="https://…">
+      <label>Weiterer Podcast-Link (optional)</label><input id="iPodcastUrl" type="url" placeholder="https://…">
+      <div class="actions"><button class="primary" id="saveInterviewPublication" type="button">Veröffentlichung speichern</button></div>
+    </section>
+
+    <section class="interview-step-panel hidden" data-interview-panel="transcript">
+      <div class="step-heading"><div><div class="kicker">SCHRITT 4</div><h3>Transkript ablegen</h3></div></div>
+      <label>Quelle des Transkripts (optional)</label><input id="iTranscriptSource" placeholder="z. B. Apple Podcasts oder manuell korrigiert">
+      <label>Transkript</label><textarea id="iTranscript" class="verytall" placeholder="Transkript hier einfügen. Es bleibt zunächst intern und wird nicht automatisch veröffentlicht."></textarea>
+      <p class="hint">Aussagen aus dem Transkript bleiben redaktionelles Material. Zahlen und fachliche Aussagen müssen vor einer Veröffentlichung anhand der Quellen geprüft werden.</p>
+      <div class="actions"><button class="primary" id="saveInterviewTranscript" type="button">Transkript speichern</button></div>
+    </section>
+
+    <section class="interview-step-panel hidden" data-interview-panel="zarticle">
+      <div class="step-heading"><div><div class="kicker">SCHRITT 5</div><h3>Z-Beitrag erstellen</h3></div></div>
+      <div id="iZArticleInfo" class="notice">Noch kein Z-Beitrag mit diesem Interview verknüpft.</div>
+      <p>Hier entsteht ein redaktioneller Ausgangsentwurf. Prüfung, Gestaltung, Freigabe und Export erfolgen anschließend in der Z‑Panel-Redaktion.</p>
+      <div class="actions"><button class="primary" id="prepareZArticleFromInterview" type="button">Z-Beitrag vorbereiten</button></div>
+    </section>
   </article>
 
   <article id="trainingPanel" class="card training hidden">
@@ -420,6 +469,9 @@
         </div>
       </div>
 
+      <label>BLC26-Kurve (optional)</label>
+      <input id="zCurveUrl" placeholder="https://…">
+
       <label>Bildidee / redaktioneller Hinweis (intern)</label>
       <textarea id="zImageIdea" placeholder="Kurze Bildidee, z. B. alter Holzbalken im Prüfstand; keine Waldmetapher. Bei realen Personen keine KI-Porträts oder erfundene Ähnlichkeit. Wird nicht in news.json veröffentlicht."></textarea>
 
@@ -539,6 +591,11 @@
         <div id="interviewScreenCoreQuestionRow" class="interview-context-item hidden">
           <span>Zeitraum</span>
           <strong id="interviewScreenCoreQuestion"></strong>
+        </div>
+        <div id="interviewScreenCurveRow" class="interview-context-item hidden">
+          <span>BLC26-Kurve</span>
+          <strong id="interviewScreenCurve"></strong>
+          <a id="interviewScreenCurveLink" class="hidden" href="#" target="_blank" rel="noopener">Kurve öffnen ↗</a>
         </div>
       </div>
     </section>

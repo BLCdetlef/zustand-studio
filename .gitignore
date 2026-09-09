@@ -1,1 +1,7 @@
 captures/*.mp3
+
+# Private Studio-Arbeitsdaten und lokale Zusammenführung
+zustand-*-backup.json
+anja_engel_zustand_studio.json
+melanie_bergmann_awi_zustand_studio.json
+merge-backups.cjs

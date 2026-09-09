@@ -48,6 +48,18 @@ ZUSTAND Studio – Testhinweise Schutz vor KI-Porträts
 10. Bestehende Funktionen kurz gegenprüfen:
     Kandidaten, Interviewtermine, Trainer, Z-Panel-Entwurf speichern, Prompt kopieren, news.json-Export.
 
+11. Interview-Prozessleiste prüfen:
+    - Kandidat auswählen und nacheinander Vorbereitung, Aufnahme, Veröffentlichung, Transkript und Z-Beitrag öffnen
+    - die fünf Schritte schalten nur ihren jeweiligen Arbeitsbereich um und nicht die Hauptansicht
+    - Status wechselt nach Eingaben auf bearbeitet, geplant, verlinkt oder vorhanden
+    - auf schmalem Bildschirm bleibt die Leiste horizontal scrollbar
+
+12. Z-Beitrag aus Interview prüfen:
+    - unter Veröffentlichung einen Castopod- oder OKL-Link speichern
+    - optional Kurve und Transkript speichern
+    - unter Z-Beitrag einen Entwurf vorbereiten
+    - erneuter Aufruf öffnet denselben Beitrag und erzeugt kein Duplikat
+
 Technische Prüfung:
 - app.js mit node --check geprüft
 - Testfall Günther Schall: Porträtidee wird bereinigt

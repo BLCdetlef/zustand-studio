@@ -31,3 +31,7 @@ Unter **Kandidaten → JSON importieren** kann neben dem Studio-Kandidatenformat
 Im Interviewbereich kann anschließend ein **GWL-Rückspielentwurf** exportiert werden. Dieser ist immer als redaktioneller Entwurf gekennzeichnet und darf erst nach wissenschaftlicher Quellen- und Evidenzprüfung in GWL übernommen werden.
 
 Die Interviewvorbereitung verwendet drei Felder: **An- und Abmoderation + erste Frage**, **Kernthemen** und **Inhalte für GWL-Panel**.
+
+Optional kann ein Interview mit einer konkreten BLC26-Kurve verknüpft werden. Kurventitel, stabile Kurven-ID und Link bleiben am Interview gespeichert, erscheinen im Interview-Bildschirm und können in einen neuen Z-Panel-Entwurf übernommen werden. Interviews und Beiträge ohne Kurvenbezug bleiben möglich.
+
+Der Interviewbereich führt durch fünf Arbeitsschritte: **Vorbereitung → Aufnahme → Veröffentlichung → Transkript → Z-Beitrag**. OKL-, Castopod- und weitere Podcast-Links sowie ein internes Transkript bleiben beim Interview gespeichert. Ein einmal angelegter Z-Beitrag wird beim erneuten Aufruf geöffnet statt dupliziert.

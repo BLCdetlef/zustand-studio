@@ -175,9 +175,9 @@ function persist(){storage.save(data); renderAll()}
 function nav(view){
   $$(".view").forEach(x=>x.classList.remove("active"));
   $("#"+view).classList.add("active");
-  $$("nav button").forEach(x=>x.classList.toggle("active",x.dataset.view===view));
+  $$("#nav button").forEach(x=>x.classList.toggle("active",x.dataset.view===view));
 }
-$$("nav button").forEach(b=>b.onclick=()=>{
+$$("#nav button").forEach(b=>b.onclick=()=>{
   nav(b.dataset.view);
   if(b.dataset.view==="interview"){
     showInterviewForSelectedCandidate(false);
@@ -1047,18 +1047,21 @@ function makeInterviewDraft(c){
   };
 }
 function completeInterviewShape(c,value){
-  const draft={...makeInterviewDraft(c),recordingAt:"",broadcastAt:""};
+  const draft={
+    ...makeInterviewDraft(c),recordingAt:"",broadcastAt:"",curveTitle:"",curveId:"",curveUrl:"",
+    oklUrl:"",castopodUrl:"",podcastUrl:"",transcriptSource:"",transcript:"",zArticleId:""
+  };
   if(typeof value==="string")return {...draft,intro:value};
   if(!value || typeof value!=="object")return draft;
   const result={...draft};
-  for(const key of ["intro","coreFindings","evidence","recordingAt","broadcastAt"]){
+  for(const key of ["intro","coreFindings","evidence","recordingAt","broadcastAt","curveTitle","curveId","curveUrl","oklUrl","castopodUrl","podcastUrl","transcriptSource","transcript","zArticleId"]){
     if(Object.prototype.hasOwnProperty.call(value,key))result[key]=String(value[key]||"");
   }
   return result;
 }
 
 function getInterview(c){
-  if(!c)return {intro:"",coreFindings:"",evidence:"",recordingAt:"",broadcastAt:""};
+  if(!c)return completeInterviewShape(null,null);
   const saved=data.interviews[c.id];
   if(saved!==undefined)return completeInterviewShape(c,saved);
   return makeInterviewDraft(c);
@@ -1066,22 +1069,44 @@ function getInterview(c){
 
 function showInterviewForSelectedCandidate(forceDraft=false){
   const c=selected("#iCandidate");
-  const fields=["#iIntro","#iCoreFindings","#iEvidence","#iRecordingAt","#iBroadcastAt"];
-  if(!c){fields.forEach(id=>$(id).value="");return;}
+  const fields=["#iIntro","#iCoreFindings","#iEvidence","#iRecordingAt","#iBroadcastAt","#iCurveTitle","#iCurveId","#iCurveUrl","#iOklUrl","#iCastopodUrl","#iPodcastUrl","#iTranscriptSource","#iTranscript"];
+  if(!c){fields.forEach(id=>$(id).value="");renderInterviewProcessStatus();return;}
 
   // Beim Laden eines neuen Textvorschlags bleiben bereits eingetragene Termine erhalten.
   const saved=getInterview(c);
-  const interview=forceDraft?{...makeInterviewDraft(c),recordingAt:saved.recordingAt||"",broadcastAt:saved.broadcastAt||""}:saved;
+  const interview=forceDraft?{
+    ...makeInterviewDraft(c),
+    recordingAt:saved.recordingAt||"",
+    broadcastAt:saved.broadcastAt||"",
+    curveTitle:saved.curveTitle||"",
+    curveId:saved.curveId||"",
+    curveUrl:saved.curveUrl||"",
+    oklUrl:saved.oklUrl||"",
+    castopodUrl:saved.castopodUrl||"",
+    podcastUrl:saved.podcastUrl||"",
+    transcriptSource:saved.transcriptSource||"",
+    transcript:saved.transcript||"",
+    zArticleId:saved.zArticleId||""
+  }:saved;
   $("#iIntro").value=interview.intro||"";
   $("#iCoreFindings").value=interview.coreFindings||"";
   $("#iEvidence").value=interview.evidence||"";
   $("#iRecordingAt").value=interview.recordingAt||"";
   $("#iBroadcastAt").value=interview.broadcastAt||"";
+  $("#iCurveTitle").value=interview.curveTitle||"";
+  $("#iCurveId").value=interview.curveId||"";
+  $("#iCurveUrl").value=interview.curveUrl||"";
+  $("#iOklUrl").value=interview.oklUrl||"";
+  $("#iCastopodUrl").value=interview.castopodUrl||"";
+  $("#iPodcastUrl").value=interview.podcastUrl||"";
+  $("#iTranscriptSource").value=interview.transcriptSource||"";
+  $("#iTranscript").value=interview.transcript||"";
   const hasGwl=Boolean(c.gwlContext);
   $("#gwlFeedbackHint").textContent=hasGwl
     ?`Verknüpft mit ${c.gwlContext.sourceFile||c.gwlContext.sourceFormat}. Der Export bleibt ein prüfpflichtiger Entwurf.`
     :"Dieser Kandidat ist noch nicht mit einer GWL-Wissensdatei verknüpft; ein Rückspielentwurf kann erst danach exportiert werden.";
   $("#exportGwlFeedback").disabled=!hasGwl;
+  renderInterviewProcessStatus();
   stopTraining();
 }
 
@@ -1103,16 +1128,73 @@ function currentInterviewEditorValues(){
     coreFindings:$("#iCoreFindings").value,
     evidence:$("#iEvidence").value,
     recordingAt:$("#iRecordingAt").value,
-    broadcastAt:$("#iBroadcastAt").value
+    broadcastAt:$("#iBroadcastAt").value,
+    curveTitle:$("#iCurveTitle").value.trim(),
+    curveId:$("#iCurveId").value.trim(),
+    curveUrl:$("#iCurveUrl").value.trim(),
+    oklUrl:$("#iOklUrl").value.trim(),
+    castopodUrl:$("#iCastopodUrl").value.trim(),
+    podcastUrl:$("#iPodcastUrl").value.trim(),
+    transcriptSource:$("#iTranscriptSource").value.trim(),
+    transcript:$("#iTranscript").value,
+    zArticleId:String(getInterview(selected("#iCandidate")).zArticleId||"")
   };
 }
+
+let activeInterviewStep="preparation";
+function setInterviewStep(step){
+  activeInterviewStep=step||"preparation";
+  $$('[data-interview-step]').forEach(button=>{
+    const active=button.dataset.interviewStep===activeInterviewStep;
+    button.classList.toggle("active",active);
+    button.setAttribute("aria-current",active?"step":"false");
+  });
+  $$('[data-interview-panel]').forEach(panel=>panel.classList.toggle("hidden",panel.dataset.interviewPanel!==activeInterviewStep));
+}
+
+function renderInterviewProcessStatus(){
+  const c=selected("#iCandidate");
+  const i=c?currentInterviewEditorValues():completeInterviewShape(null,null);
+  const preparation=Boolean(i.intro.trim()||i.coreFindings.trim()||i.evidence.trim());
+  const recording=Boolean(i.recordingAt||i.broadcastAt);
+  const publication=Boolean(i.oklUrl||i.castopodUrl||i.podcastUrl);
+  const transcript=Boolean(i.transcript.trim());
+  const article=i.zArticleId?zArticleById(i.zArticleId):null;
+  $("#iStepPreparationStatus").textContent=preparation?"bearbeitet":"offen";
+  $("#iStepRecordingStatus").textContent=recording?"geplant":"offen";
+  $("#iStepPublicationStatus").textContent=publication?"verlinkt":"offen";
+  $("#iStepTranscriptStatus").textContent=transcript?"vorhanden":"offen";
+  $("#iStepZArticleStatus").textContent=article?zStatusLabel(article.workflowStatus):"offen";
+  $("#iZArticleInfo").textContent=article
+    ?`Verknüpfter Beitrag: ${article.title||"Ohne Titel"} · ${zStatusLabel(article.workflowStatus)}.`
+    :"Noch kein Z-Beitrag mit diesem Interview verknüpft.";
+  const button=$("#prepareZArticleFromInterview");
+  button.textContent=article?"Z-Beitrag öffnen":"Z-Beitrag vorbereiten";
+}
+
+$$('[data-interview-step]').forEach(button=>button.addEventListener("click",()=>setInterviewStep(button.dataset.interviewStep)));
+setInterviewStep(activeInterviewStep);
 
 $("#saveInterview").onclick=()=>{
   const c=selected("#iCandidate");
   if(!c)return alert("Bitte Kandidaten auswählen.");
   data.interviews[c.id]=currentInterviewEditorValues();
   persist();
+  renderInterviewProcessStatus();
 };
+
+function saveCurrentInterview(message){
+  const c=selected("#iCandidate");
+  if(!c)return alert("Bitte Kandidaten auswählen.");
+  data.interviews[c.id]=currentInterviewEditorValues();
+  storage.save(data);
+  renderInterviewSchedule();
+  renderInterviewProcessStatus();
+  if(message)alert(message);
+}
+$("#saveInterviewRecording").onclick=()=>saveCurrentInterview("Termine lokal gespeichert.");
+$("#saveInterviewPublication").onclick=()=>saveCurrentInterview("Veröffentlichungslinks lokal gespeichert.");
+$("#saveInterviewTranscript").onclick=()=>saveCurrentInterview("Transkript lokal gespeichert.");
 
 $("#exportGwlFeedback").onclick=()=>{
   const c=selected("#iCandidate");
@@ -1123,6 +1205,60 @@ $("#exportGwlFeedback").onclick=()=>{
   const slug=String(c.name||"interview").toLowerCase().replace(/[^a-z0-9äöüß]+/gi,"_").replace(/^_+|_+$/g,"");
   downloadJson(`gwl_interview_feedback_${slug}.json`,window.GwlStudioImport.feedback(c,values));
 };
+
+function prepareZArticleFromInterview(){
+  const c=selected("#iCandidate");
+  if(!c)return alert("Bitte zuerst einen Kandidaten auswählen.");
+  const interview=currentInterviewEditorValues();
+  data.interviews[c.id]=interview;
+  const existing=interview.zArticleId?zArticleById(interview.zArticleId):null;
+  if(existing){
+    storage.save(data);
+    currentZArticleId=existing.id;
+    nav("zpanel");
+    renderZPanel();
+    populateZEditor(existing);
+    return;
+  }
+  const source=zCandidateSource(c);
+  const curveTitle=interview.curveTitle||"";
+  const title=curveTitle?`${curveTitle}: Einordnung aus dem Interview`:zCandidateTitle(c);
+  const article=zNormalizeArticle({
+    id:crypto.randomUUID(),
+    candidateId:c.id,
+    title,
+    summary:zCandidateSummary(c),
+    category:curveTitle?"Wie wissen wir das?":"Menschen der Forschung",
+    planetaryBoundary:"QS",
+    keywords:zCandidateKeywords(c),
+    sourceTitle:source.title,
+    sourceUrl:source.url,
+    publicationDate:source.date,
+    interviewUrl:interview.castopodUrl||interview.oklUrl||interview.podcastUrl,
+    curveUrl:interview.curveUrl,
+    imageIdea:zPersonProtectedImageIdea({
+      title,
+      summary:zCandidateSummary(c),
+      category:curveTitle?"Wie wissen wir das?":"Menschen der Forschung",
+      planetaryBoundary:"QS",
+      keywords:zCandidateKeywords(c),
+      candidateId:c.id,
+      candidateName:c.name
+    })
+  });
+  data.zArticles.unshift(article);
+  interview.zArticleId=article.id;
+  data.interviews[c.id]=interview;
+  currentZArticleId=article.id;
+  storage.save(data);
+  nav("zpanel");
+  renderZPanel();
+  populateZEditor(article);
+  $("#zTitle").focus();
+  alert("Z-Panel-Entwurf vorbereitet. Bitte Titel, Kurztext, Bereich, Quelle und später den veröffentlichten Interview-Link redaktionell prüfen und ergänzen.");
+}
+
+$("#prepareZArticleFromInterview").onclick=prepareZArticleFromInterview;
 
 function parseLocalDateTime(value){
   const text=String(value||"").trim();
@@ -1303,7 +1439,15 @@ function fillInterviewScreen(){
   $("#interviewScreenCoreQuestion").textContent=period;
   $("#interviewScreenTopicRow").classList.toggle("hidden",!topic);
   $("#interviewScreenCoreQuestionRow").classList.toggle("hidden",!period);
-  $("#interviewScreenContextSection").classList.toggle("hidden",!topic&&!period);
+  const curveTitle=$("#iCurveTitle").value.trim();
+  const curveId=$("#iCurveId").value.trim();
+  const curveUrl=$("#iCurveUrl").value.trim();
+  $("#interviewScreenCurve").textContent=[curveTitle,curveId].filter(Boolean).join(" · ");
+  $("#interviewScreenCurveRow").classList.toggle("hidden",!curveTitle&&!curveId&&!curveUrl);
+  const curveLink=$("#interviewScreenCurveLink");
+  curveLink.href=curveUrl||"#";
+  curveLink.classList.toggle("hidden",!curveUrl);
+  $("#interviewScreenContextSection").classList.toggle("hidden",!topic&&!period&&!curveTitle&&!curveId&&!curveUrl);
 
   fillReadText("#interviewScreenIntro",intro);
   $("#interviewScreenIntroSection").classList.toggle("hidden",!intro);
@@ -1561,6 +1705,7 @@ function zNormalizeArticle(a={}){
     imageFormat:["Automatisch","JPG","SVG"].includes(String(a.imageFormat||""))?String(a.imageFormat):"Automatisch",
     imagePrompt:String(a.imagePrompt||""),
     interviewUrl:String(a.interviewUrl||""),
+    curveUrl:String(a.curveUrl||""),
     workflowStatus:["entwurf","geprueft","freigegeben","veroeffentlicht"].includes(a.workflowStatus)?a.workflowStatus:"entwurf",
     visibility:a.visibility==="archiviert"?"archiviert":"aktiv",
     created:String(a.created||zToday()),
@@ -1708,6 +1853,7 @@ function zFormArticle(){
     imageFormat:$("#zImageFormat").value,
     imagePrompt:$("#zImagePrompt").value.trim(),
     interviewUrl:$("#zInterviewUrl").value.trim(),
+    curveUrl:$("#zCurveUrl").value.trim(),
     lastModified:zNow()
   });
 }
@@ -1736,6 +1882,7 @@ function zValidation(a,{forRelease=false}={}){
   if(missing.length)return `Bitte zuerst ergänzen: ${missing.join(", ")}.`;
   if(!/^https?:\/\//i.test(a.sourceUrl))return "Der Quellenlink sollte mit http:// oder https:// beginnen.";
   if(a.interviewUrl && !/^https?:\/\//i.test(a.interviewUrl))return "Der Interview-Link sollte mit http:// oder https:// beginnen.";
+  if(a.curveUrl && !/^https?:\/\//i.test(a.curveUrl))return "Der Kurven-Link sollte mit http:// oder https:// beginnen.";
   if(forRelease && a.summary.length>=Z_SUMMARY_HARD_MAX)return `Der Kurztext hat ${a.summary.length} Zeichen. Ab ${Z_SUMMARY_HARD_MAX} Zeichen ist er für die Freigabe zu lang. Ideal sind ${Z_SUMMARY_IDEAL_MIN}–${Z_SUMMARY_IDEAL_MAX} Zeichen.`;
   return "";
 }
@@ -1794,6 +1941,7 @@ function clearZEditor(){
   $("#zImageFormat").value="Automatisch";
   $("#zImagePrompt").value="";
   $("#zInterviewUrl").value="";
+  $("#zCurveUrl").value="";
   updateZImageAdvice();
   updateZEditorState(null);
   updateZPreview();
@@ -1818,6 +1966,7 @@ function populateZEditor(article){
   $("#zImageFormat").value=a.imageFormat;
   $("#zImagePrompt").value=a.imagePrompt;
   $("#zInterviewUrl").value=a.interviewUrl;
+  $("#zCurveUrl").value=a.curveUrl;
   updateZImageAdvice();
   showZGroup();
   updateZEditorState(a);
@@ -2100,6 +2249,7 @@ function zPublicArticle(a){
     imageStyle:base.imageStyle||publicImageStyle
   };
   if(a.interviewUrl && !out.links.some(link=>link?.url===a.interviewUrl))out.links.push({label:"Zum Interview",url:a.interviewUrl});
+  if(a.curveUrl && !out.links.some(link=>link?.url===a.curveUrl))out.links.push({label:"Zur Kurve in BLC26",url:a.curveUrl});
   if(a.imageFile)out.imageFile=a.imageFile;
   return out;
 }
@@ -2276,7 +2426,7 @@ $("#zImportCandidateProfile").onclick=importCandidateProfileToZArticle;
 $("#zBuildImagePrompt").onclick=buildZImagePrompt;
 $("#zCopyImagePrompt").onclick=()=>void copyZImagePrompt();
 $("#zCopyCorrectionLink").onclick=()=>void copyZCorrectionLink();
-["#zTitle","#zSummary","#zCategory","#zBoundary","#zKeywords","#zSourceTitle","#zSource","#zPublicationDate","#zImageFile","#zImageIdea","#zImageStyle","#zImageFormat","#zImagePrompt","#zInterviewUrl"].forEach(sel=>{
+["#zTitle","#zSummary","#zCategory","#zBoundary","#zKeywords","#zSourceTitle","#zSource","#zPublicationDate","#zImageFile","#zImageIdea","#zImageStyle","#zImageFormat","#zImagePrompt","#zInterviewUrl","#zCurveUrl"].forEach(sel=>{
   $(sel).addEventListener("input",()=>{updateZPreview();updateZImageAdvice();});
   $(sel).addEventListener("change",()=>{updateZPreview();updateZImageAdvice();});
 });

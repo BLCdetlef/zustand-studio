@@ -170,7 +170,24 @@
         relevantIds:ctx.relevantIds
       },
       candidate:{name:candidate.name,institution:candidate.institution,studioCandidateId:candidate.id},
-      interview:{recordingAt:clean(interview?.recordingAt),broadcastAt:clean(interview?.broadcastAt)},
+      interview:{
+        recordingAt:clean(interview?.recordingAt),
+        broadcastAt:clean(interview?.broadcastAt),
+        curveContext:{
+          title:clean(interview?.curveTitle),
+          curveId:clean(interview?.curveId),
+          url:clean(interview?.curveUrl)
+        },
+        publicationLinks:{
+          okl:clean(interview?.oklUrl),
+          castopod:clean(interview?.castopodUrl),
+          podcast:clean(interview?.podcastUrl)
+        },
+        transcript:{
+          source:clean(interview?.transcriptSource),
+          available:Boolean(clean(interview?.transcript))
+        }
+      },
       editorialAssessment:{
         panelContent:clean(interview?.evidence),
         preparationContext:{
