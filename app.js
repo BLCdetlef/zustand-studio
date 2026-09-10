@@ -1194,7 +1194,9 @@ function updateTranscriptWorkflowUi(){
   const badge=$("#iTranscriptStatusBadge");
   badge.textContent=transcriptStatusLabel(activeTranscriptStatus);
   badge.className=`transcript-status status-${activeTranscriptStatus}`;
-  $("#setTranscriptDraft").disabled=activeTranscriptStatus==="draft";
+  // Auch ein bereits als Entwurf markierter, aber neu importierter oder geänderter
+  // Text muss jederzeit erneut lokal gespeichert werden können.
+  $("#setTranscriptDraft").disabled=false;
   $("#setTranscriptReview").disabled=activeTranscriptStatus==="review";
   $("#setTranscriptApproved").disabled=activeTranscriptStatus!=="review";
   const dates=[];
