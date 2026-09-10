@@ -273,11 +273,46 @@
     </section>
 
     <section class="interview-step-panel hidden" data-interview-panel="transcript">
-      <div class="step-heading"><div><div class="kicker">SCHRITT 4</div><h3>Transkript ablegen</h3></div></div>
-      <label>Quelle des Transkripts (optional)</label><input id="iTranscriptSource" placeholder="z. B. Apple Podcasts oder manuell korrigiert">
-      <label>Transkript</label><textarea id="iTranscript" class="verytall" placeholder="Transkript hier einfügen. Es bleibt zunächst intern und wird nicht automatisch veröffentlicht."></textarea>
-      <p class="hint">Aussagen aus dem Transkript bleiben redaktionelles Material. Zahlen und fachliche Aussagen müssen vor einer Veröffentlichung anhand der Quellen geprüft werden.</p>
-      <div class="actions"><button class="primary" id="saveInterviewTranscript" type="button">Transkript speichern</button></div>
+      <div class="step-heading transcript-heading">
+        <div><div class="kicker">SCHRITT 4</div><h3>Transkript bearbeiten und freigeben</h3></div>
+        <span id="iTranscriptStatusBadge" class="transcript-status status-draft">Entwurf</span>
+      </div>
+
+      <div class="transcript-import-block">
+        <div class="grid two">
+          <div><label>Audio-URL</label><input id="iTranscriptAudioUrl" type="url" placeholder="https://…/folge.mp3"></div>
+          <div><label>Quelle des Transkripts</label><input id="iTranscriptSource" placeholder="z. B. Groq · whisper-large-v3"></div>
+        </div>
+        <audio id="iTranscriptAudio" class="transcript-audio" controls preload="metadata"></audio>
+        <input id="iTranscriptJsonFile" type="file" accept="application/json,.json" class="hidden">
+        <div class="actions transcript-import-actions">
+          <button class="ghost" id="importTranscriptJson" type="button">Groq-JSON importieren</button>
+          <button class="ghost" id="exportTranscriptTxt" type="button">TXT exportieren</button>
+          <button class="ghost" id="exportTranscriptJson" type="button">JSON exportieren</button>
+        </div>
+        <p class="hint" id="iTranscriptImportInfo">Groq-JSON enthält Text und Zeitmarken. Die Datei wird nur lokal im Browser verarbeitet.</p>
+      </div>
+
+      <div class="transcript-tools">
+        <div><label>Suchen</label><input id="iTranscriptFind" placeholder="z. B. Dietle V."></div>
+        <div><label>Ersetzen durch</label><input id="iTranscriptReplace" placeholder="z. B. Detlef Hau"></div>
+        <button class="ghost" id="replaceTranscriptText" type="button">Alle ersetzen</button>
+      </div>
+
+      <div id="iTranscriptSegments" class="transcript-segments hidden" aria-label="Transkript mit Zeitmarken"></div>
+      <div id="iTranscriptPlainEditor">
+        <label>Transkript</label><textarea id="iTranscript" class="verytall" placeholder="Transkript hier einfügen oder Groq-JSON importieren. Es bleibt intern, bis es ausdrücklich freigegeben wird."></textarea>
+      </div>
+      <p class="hint">Klicke bei segmentierten Transkripten auf eine Zeitmarke, um die entsprechende Stelle anzuhören. Namen, Zahlen und fachliche Aussagen müssen redaktionell geprüft werden.</p>
+
+      <div class="transcript-workflow" aria-label="Freigabestatus">
+        <div class="transcript-workflow-buttons">
+          <button class="ghost" id="setTranscriptDraft" type="button">Als Entwurf speichern</button>
+          <button class="ghost" id="setTranscriptReview" type="button">Zur Prüfung geben</button>
+          <button class="primary" id="setTranscriptApproved" type="button">Transkript freigeben</button>
+        </div>
+        <div id="iTranscriptWorkflowInfo" class="hint">Noch nicht gespeichert.</div>
+      </div>
     </section>
 
     <section class="interview-step-panel hidden" data-interview-panel="zarticle">

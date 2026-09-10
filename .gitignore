@@ -1,4 +1,6 @@
 captures/*.mp3
+.env.local
+transcripts/
 
 # Private Studio-Arbeitsdaten und lokale Zusammenführung
 zustand-*-backup.json

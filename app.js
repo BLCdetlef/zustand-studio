@@ -1049,14 +1049,23 @@ function makeInterviewDraft(c){
 function completeInterviewShape(c,value){
   const draft={
     ...makeInterviewDraft(c),recordingAt:"",broadcastAt:"",curveTitle:"",curveId:"",curveUrl:"",
-    oklUrl:"",castopodUrl:"",podcastUrl:"",transcriptSource:"",transcript:"",zArticleId:""
+    oklUrl:"",castopodUrl:"",podcastUrl:"",transcriptSource:"",transcript:"",transcriptAudioUrl:"",
+    transcriptStatus:"draft",transcriptSegments:[],transcriptUpdatedAt:"",transcriptReviewedAt:"",
+    transcriptApprovedAt:"",zArticleId:""
   };
   if(typeof value==="string")return {...draft,intro:value};
   if(!value || typeof value!=="object")return draft;
   const result={...draft};
-  for(const key of ["intro","coreFindings","evidence","recordingAt","broadcastAt","curveTitle","curveId","curveUrl","oklUrl","castopodUrl","podcastUrl","transcriptSource","transcript","zArticleId"]){
+  for(const key of ["intro","coreFindings","evidence","recordingAt","broadcastAt","curveTitle","curveId","curveUrl","oklUrl","castopodUrl","podcastUrl","transcriptSource","transcript","transcriptAudioUrl","transcriptStatus","transcriptUpdatedAt","transcriptReviewedAt","transcriptApprovedAt","zArticleId"]){
     if(Object.prototype.hasOwnProperty.call(value,key))result[key]=String(value[key]||"");
   }
+  if(Array.isArray(value.transcriptSegments))result.transcriptSegments=value.transcriptSegments.map((segment,index)=>({
+    id:String(segment?.id??index),
+    start:Number(segment?.start)||0,
+    end:Number(segment?.end)||0,
+    text:String(segment?.text||"").trim()
+  }));
+  if(!["draft","review","approved"].includes(result.transcriptStatus))result.transcriptStatus="draft";
   return result;
 }
 
@@ -1069,8 +1078,8 @@ function getInterview(c){
 
 function showInterviewForSelectedCandidate(forceDraft=false){
   const c=selected("#iCandidate");
-  const fields=["#iIntro","#iCoreFindings","#iEvidence","#iRecordingAt","#iBroadcastAt","#iCurveTitle","#iCurveId","#iCurveUrl","#iOklUrl","#iCastopodUrl","#iPodcastUrl","#iTranscriptSource","#iTranscript"];
-  if(!c){fields.forEach(id=>$(id).value="");renderInterviewProcessStatus();return;}
+  const fields=["#iIntro","#iCoreFindings","#iEvidence","#iRecordingAt","#iBroadcastAt","#iCurveTitle","#iCurveId","#iCurveUrl","#iOklUrl","#iCastopodUrl","#iPodcastUrl","#iTranscriptSource","#iTranscriptAudioUrl","#iTranscript"];
+  if(!c){fields.forEach(id=>$(id).value="");loadTranscriptEditor(completeInterviewShape(null,null));renderInterviewProcessStatus();return;}
 
   // Beim Laden eines neuen Textvorschlags bleiben bereits eingetragene Termine erhalten.
   const saved=getInterview(c);
@@ -1086,6 +1095,12 @@ function showInterviewForSelectedCandidate(forceDraft=false){
     podcastUrl:saved.podcastUrl||"",
     transcriptSource:saved.transcriptSource||"",
     transcript:saved.transcript||"",
+    transcriptAudioUrl:saved.transcriptAudioUrl||"",
+    transcriptStatus:saved.transcriptStatus||"draft",
+    transcriptSegments:saved.transcriptSegments||[],
+    transcriptUpdatedAt:saved.transcriptUpdatedAt||"",
+    transcriptReviewedAt:saved.transcriptReviewedAt||"",
+    transcriptApprovedAt:saved.transcriptApprovedAt||"",
     zArticleId:saved.zArticleId||""
   }:saved;
   $("#iIntro").value=interview.intro||"";
@@ -1100,7 +1115,8 @@ function showInterviewForSelectedCandidate(forceDraft=false){
   $("#iCastopodUrl").value=interview.castopodUrl||"";
   $("#iPodcastUrl").value=interview.podcastUrl||"";
   $("#iTranscriptSource").value=interview.transcriptSource||"";
-  $("#iTranscript").value=interview.transcript||"";
+  $("#iTranscriptAudioUrl").value=interview.transcriptAudioUrl||"";
+  loadTranscriptEditor(interview);
   const hasGwl=Boolean(c.gwlContext);
   $("#gwlFeedbackHint").textContent=hasGwl
     ?`Verknüpft mit ${c.gwlContext.sourceFile||c.gwlContext.sourceFormat}. Der Export bleibt ein prüfpflichtiger Entwurf.`
@@ -1123,6 +1139,7 @@ $("#loadInterviewDraft").onclick=()=>{
 };
 
 function currentInterviewEditorValues(){
+  const transcript=transcriptEditorText();
   return {
     intro:$("#iIntro").value,
     coreFindings:$("#iCoreFindings").value,
@@ -1136,10 +1153,235 @@ function currentInterviewEditorValues(){
     castopodUrl:$("#iCastopodUrl").value.trim(),
     podcastUrl:$("#iPodcastUrl").value.trim(),
     transcriptSource:$("#iTranscriptSource").value.trim(),
-    transcript:$("#iTranscript").value,
+    transcriptAudioUrl:$("#iTranscriptAudioUrl").value.trim(),
+    transcript,
+    transcriptStatus:activeTranscriptStatus,
+    transcriptSegments:activeTranscriptSegments.map(segment=>({...segment})),
+    transcriptUpdatedAt:activeTranscriptDates.updatedAt,
+    transcriptReviewedAt:activeTranscriptDates.reviewedAt,
+    transcriptApprovedAt:activeTranscriptDates.approvedAt,
     zArticleId:String(getInterview(selected("#iCandidate")).zArticleId||"")
   };
 }
+
+let activeTranscriptSegments=[];
+let activeTranscriptStatus="draft";
+let activeTranscriptDates={updatedAt:"",reviewedAt:"",approvedAt:""};
+
+function transcriptEditorText(){
+  if(activeTranscriptSegments.length)return activeTranscriptSegments.map(segment=>segment.text.trim()).filter(Boolean).join("\n\n");
+  return $("#iTranscript").value;
+}
+
+function transcriptTime(seconds){
+  const value=Math.max(0,Number(seconds)||0);
+  const minutes=Math.floor(value/60);
+  const secs=Math.floor(value%60);
+  return `${minutes}:${String(secs).padStart(2,"0")}`;
+}
+
+function transcriptStatusLabel(status){
+  return status==="approved"?"Freigegeben":status==="review"?"In Prüfung":"Entwurf";
+}
+
+function transcriptDateLabel(value){
+  if(!value)return "";
+  const date=new Date(value);
+  return Number.isNaN(date.getTime())?"":date.toLocaleString("de-DE",{dateStyle:"medium",timeStyle:"short"});
+}
+
+function updateTranscriptWorkflowUi(){
+  const badge=$("#iTranscriptStatusBadge");
+  badge.textContent=transcriptStatusLabel(activeTranscriptStatus);
+  badge.className=`transcript-status status-${activeTranscriptStatus}`;
+  $("#setTranscriptDraft").disabled=activeTranscriptStatus==="draft";
+  $("#setTranscriptReview").disabled=activeTranscriptStatus==="review";
+  $("#setTranscriptApproved").disabled=activeTranscriptStatus!=="review";
+  const dates=[];
+  if(activeTranscriptDates.updatedAt)dates.push(`gespeichert ${transcriptDateLabel(activeTranscriptDates.updatedAt)}`);
+  if(activeTranscriptDates.reviewedAt)dates.push(`zur Prüfung ${transcriptDateLabel(activeTranscriptDates.reviewedAt)}`);
+  if(activeTranscriptDates.approvedAt)dates.push(`freigegeben ${transcriptDateLabel(activeTranscriptDates.approvedAt)}`);
+  $("#iTranscriptWorkflowInfo").textContent=dates.length?dates.join(" · "):"Noch nicht gespeichert.";
+}
+
+function setTranscriptAudioSource(url){
+  const audio=$("#iTranscriptAudio");
+  const next=String(url||"").trim();
+  if(audio.dataset.source===next)return;
+  audio.dataset.source=next;
+  if(next)audio.src=next;
+  else audio.removeAttribute("src");
+  audio.load();
+}
+
+function markTranscriptChanged(){
+  if(activeTranscriptStatus!=="draft"){
+    activeTranscriptStatus="draft";
+    activeTranscriptDates.reviewedAt="";
+    activeTranscriptDates.approvedAt="";
+  }
+  updateTranscriptWorkflowUi();
+  renderInterviewProcessStatus();
+}
+
+function renderTranscriptSegments(){
+  const container=$("#iTranscriptSegments");
+  const plain=$("#iTranscriptPlainEditor");
+  container.replaceChildren();
+  const hasSegments=activeTranscriptSegments.length>0;
+  container.classList.toggle("hidden",!hasSegments);
+  plain.classList.toggle("hidden",hasSegments);
+  if(!hasSegments)return;
+
+  activeTranscriptSegments.forEach((segment,index)=>{
+    const row=document.createElement("article");
+    row.className="transcript-segment";
+    const time=document.createElement("button");
+    time.type="button";
+    time.className="transcript-time";
+    time.textContent=transcriptTime(segment.start);
+    time.title=`Audio bei ${transcriptTime(segment.start)} abspielen`;
+    time.onclick=()=>{
+      const audio=$("#iTranscriptAudio");
+      if(!audio.src)return alert("Bitte zuerst eine Audio-URL eintragen.");
+      audio.currentTime=segment.start;
+      audio.play().catch(()=>{});
+    };
+    const editor=document.createElement("textarea");
+    editor.className="transcript-segment-text";
+    editor.value=segment.text;
+    editor.setAttribute("aria-label",`Transkriptabschnitt ab ${transcriptTime(segment.start)}`);
+    editor.oninput=()=>{
+      activeTranscriptSegments[index].text=editor.value;
+      $("#iTranscript").value=transcriptEditorText();
+      markTranscriptChanged();
+    };
+    row.append(time,editor);
+    container.append(row);
+  });
+}
+
+function loadTranscriptEditor(interview){
+  activeTranscriptSegments=Array.isArray(interview.transcriptSegments)?interview.transcriptSegments.map((segment,index)=>({
+    id:String(segment.id??index),start:Number(segment.start)||0,end:Number(segment.end)||0,text:String(segment.text||"")
+  })):[];
+  activeTranscriptStatus=["draft","review","approved"].includes(interview.transcriptStatus)?interview.transcriptStatus:"draft";
+  activeTranscriptDates={
+    updatedAt:interview.transcriptUpdatedAt||"",
+    reviewedAt:interview.transcriptReviewedAt||"",
+    approvedAt:interview.transcriptApprovedAt||""
+  };
+  $("#iTranscript").value=interview.transcript||transcriptEditorText();
+  setTranscriptAudioSource(interview.transcriptAudioUrl||"");
+  renderTranscriptSegments();
+  updateTranscriptWorkflowUi();
+  const count=activeTranscriptSegments.length;
+  $("#iTranscriptImportInfo").textContent=count
+    ?`${count} Abschnitte mit Zeitmarken geladen. Die Bearbeitung bleibt lokal.`
+    :"Groq-JSON enthält Text und Zeitmarken. Die Datei wird nur lokal im Browser verarbeitet.";
+}
+
+$("#iTranscriptAudioUrl").addEventListener("change",event=>setTranscriptAudioSource(event.target.value));
+$("#iTranscript").addEventListener("input",markTranscriptChanged);
+$("#importTranscriptJson").onclick=()=>$("#iTranscriptJsonFile").click();
+$("#iTranscriptJsonFile").onchange=async event=>{
+  const file=event.target.files?.[0];
+  if(!file)return;
+  try{
+    const imported=JSON.parse(await file.text());
+    const segments=Array.isArray(imported.segments)?imported.segments:[];
+    activeTranscriptSegments=segments.map((segment,index)=>({
+      id:String(segment.id??index),start:Number(segment.start)||0,end:Number(segment.end)||0,text:String(segment.text||"").trim()
+    })).filter(segment=>segment.text);
+    const text=String(imported.text||activeTranscriptSegments.map(segment=>segment.text).join("\n\n")).trim();
+    if(!text)throw new Error("Die JSON-Datei enthält keinen Transkripttext.");
+    $("#iTranscript").value=text;
+    if(!$("#iTranscriptSource").value.trim())$("#iTranscriptSource").value=`Groq · ${imported.model||"Whisper"}`;
+    activeTranscriptStatus="draft";
+    activeTranscriptDates={updatedAt:"",reviewedAt:"",approvedAt:""};
+    renderTranscriptSegments();
+    updateTranscriptWorkflowUi();
+    $("#iTranscriptImportInfo").textContent=`${file.name}: ${activeTranscriptSegments.length||1} Abschnitt${activeTranscriptSegments.length===1?"":"e"} importiert${imported.language?` · Sprache ${imported.language}`:""}.`;
+    renderInterviewProcessStatus();
+  }catch(error){
+    alert(`Transkript konnte nicht importiert werden: ${error.message}`);
+  }finally{
+    event.target.value="";
+  }
+};
+
+$("#replaceTranscriptText").onclick=()=>{
+  const find=$("#iTranscriptFind").value;
+  if(!find)return alert("Bitte einen Suchtext eingeben.");
+  const replacement=$("#iTranscriptReplace").value;
+  let replacements=0;
+  const replaceAll=text=>String(text).split(find).map((part,index,array)=>{
+    if(index<array.length-1)replacements++;
+    return part;
+  }).join(replacement);
+  if(activeTranscriptSegments.length){
+    activeTranscriptSegments=activeTranscriptSegments.map(segment=>({...segment,text:replaceAll(segment.text)}));
+    $("#iTranscript").value=transcriptEditorText();
+    renderTranscriptSegments();
+  }else $("#iTranscript").value=replaceAll($("#iTranscript").value);
+  if(!replacements)return alert("Der Suchtext wurde nicht gefunden.");
+  markTranscriptChanged();
+  alert(`${replacements} Ersetzung${replacements===1?"":"en"} vorgenommen.`);
+};
+
+function transcriptDownloadName(extension){
+  const candidate=selected("#iCandidate");
+  const slug=String(candidate?.name||"transkript").toLowerCase().replace(/[^a-z0-9äöüß]+/gi,"_").replace(/^_+|_+$/g,"");
+  return `${slug||"transkript"}.${extension}`;
+}
+
+function downloadTranscriptFile(name,contents,type){
+  const link=document.createElement("a");
+  link.href=URL.createObjectURL(new Blob([contents],{type}));
+  link.download=name;
+  link.click();
+  setTimeout(()=>URL.revokeObjectURL(link.href),1000);
+}
+
+$("#exportTranscriptTxt").onclick=()=>{
+  const text=transcriptEditorText().trim();
+  if(!text)return alert("Noch kein Transkript vorhanden.");
+  downloadTranscriptFile(transcriptDownloadName("txt"),`${text}\n`,"text/plain;charset=utf-8");
+};
+$("#exportTranscriptJson").onclick=()=>{
+  const text=transcriptEditorText().trim();
+  if(!text)return alert("Noch kein Transkript vorhanden.");
+  const output={version:"zustand-transcript-v1",status:activeTranscriptStatus,audioUrl:$("#iTranscriptAudioUrl").value.trim(),source:$("#iTranscriptSource").value.trim(),text,segments:activeTranscriptSegments};
+  downloadTranscriptFile(transcriptDownloadName("json"),`${JSON.stringify(output,null,2)}\n`,"application/json");
+};
+
+function saveTranscriptWithStatus(status){
+  const c=selected("#iCandidate");
+  if(!c)return alert("Bitte Kandidaten auswählen.");
+  if(!transcriptEditorText().trim())return alert("Bitte zuerst ein Transkript eingeben oder importieren.");
+  if(status==="approved" && activeTranscriptStatus!=="review")return alert("Das Transkript muss vor der Freigabe zunächst zur Prüfung gegeben werden.");
+  const now=new Date().toISOString();
+  activeTranscriptStatus=status;
+  activeTranscriptDates.updatedAt=now;
+  if(status==="draft"){
+    activeTranscriptDates.reviewedAt="";
+    activeTranscriptDates.approvedAt="";
+  }
+  if(status==="review"){
+    activeTranscriptDates.reviewedAt=now;
+    activeTranscriptDates.approvedAt="";
+  }
+  if(status==="approved")activeTranscriptDates.approvedAt=now;
+  data.interviews[c.id]=currentInterviewEditorValues();
+  storage.save(data);
+  updateTranscriptWorkflowUi();
+  renderInterviewProcessStatus();
+  alert(status==="approved"?"Transkript freigegeben.":status==="review"?"Transkript ist jetzt in Prüfung.":"Transkript als Entwurf gespeichert.");
+}
+
+$("#setTranscriptDraft").onclick=()=>saveTranscriptWithStatus("draft");
+$("#setTranscriptReview").onclick=()=>saveTranscriptWithStatus("review");
+$("#setTranscriptApproved").onclick=()=>saveTranscriptWithStatus("approved");
 
 let activeInterviewStep="preparation";
 function setInterviewStep(step){
@@ -1163,7 +1405,7 @@ function renderInterviewProcessStatus(){
   $("#iStepPreparationStatus").textContent=preparation?"bearbeitet":"offen";
   $("#iStepRecordingStatus").textContent=recording?"geplant":"offen";
   $("#iStepPublicationStatus").textContent=publication?"verlinkt":"offen";
-  $("#iStepTranscriptStatus").textContent=transcript?"vorhanden":"offen";
+  $("#iStepTranscriptStatus").textContent=transcript?transcriptStatusLabel(i.transcriptStatus):"offen";
   $("#iStepZArticleStatus").textContent=article?zStatusLabel(article.workflowStatus):"offen";
   $("#iZArticleInfo").textContent=article
     ?`Verknüpfter Beitrag: ${article.title||"Ohne Titel"} · ${zStatusLabel(article.workflowStatus)}.`
@@ -1194,7 +1436,6 @@ function saveCurrentInterview(message){
 }
 $("#saveInterviewRecording").onclick=()=>saveCurrentInterview("Termine lokal gespeichert.");
 $("#saveInterviewPublication").onclick=()=>saveCurrentInterview("Veröffentlichungslinks lokal gespeichert.");
-$("#saveInterviewTranscript").onclick=()=>saveCurrentInterview("Transkript lokal gespeichert.");
 
 $("#exportGwlFeedback").onclick=()=>{
   const c=selected("#iCandidate");

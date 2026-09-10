@@ -35,3 +35,15 @@ Die Interviewvorbereitung verwendet drei Felder: **An- und Abmoderation + erste 
 Optional kann ein Interview mit einer konkreten BLC26-Kurve verknüpft werden. Kurventitel, stabile Kurven-ID und Link bleiben am Interview gespeichert, erscheinen im Interview-Bildschirm und können in einen neuen Z-Panel-Entwurf übernommen werden. Interviews und Beiträge ohne Kurvenbezug bleiben möglich.
 
 Der Interviewbereich führt durch fünf Arbeitsschritte: **Vorbereitung → Aufnahme → Veröffentlichung → Transkript → Z-Beitrag**. OKL-, Castopod- und weitere Podcast-Links sowie ein internes Transkript bleiben beim Interview gespeichert. Ein einmal angelegter Z-Beitrag wird beim erneuten Aufruf geöffnet statt dupliziert.
+
+### Transkript-Redaktion
+
+Im Arbeitsschritt **Transkript** kann ein Groq-`verbose_json` mit Segment-Zeitmarken importiert werden. Die Zeitmarken springen im hinterlegten Audio direkt zur passenden Stelle. Korrekturen, Suchen/Ersetzen sowie TXT- und JSON-Export erfolgen lokal im Browser. Der verbindliche Ablauf lautet **Entwurf → In Prüfung → Freigegeben**; jede spätere Textänderung setzt den Status wieder auf Entwurf.
+
+Für einen lokalen Groq-Test:
+
+1. `.env.local.example` nach `.env.local` kopieren und den API-Schlüssel eintragen. `.env.local` wird von Git ignoriert.
+2. `node scripts/transcribe-groq.mjs [optionale-audio-url]` ausführen.
+3. Die erzeugte JSON-Datei aus `transcripts/` im Interviewbereich importieren.
+
+Der Helfer übergibt die öffentliche Audio-URL an Groq und speichert die Audiodatei nicht lokal. `transcripts/` wird ebenfalls nicht in Git aufgenommen.

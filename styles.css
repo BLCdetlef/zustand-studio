@@ -211,6 +211,27 @@ body.interview-screen-open{overflow:hidden}
 .interview-step-panel{padding-top:2px}
 .step-heading{display:flex;justify-content:space-between;align-items:start;margin-bottom:12px}
 .step-heading h3{margin:2px 0 0}
+.transcript-heading{align-items:center}
+.transcript-status{display:inline-flex;align-items:center;border:1px solid;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:800;white-space:nowrap}
+.status-draft{color:#69511b;background:#fff8df;border-color:#d5bd72}
+.status-review{color:#174f78;background:#eaf5fc;border-color:#84b7d7}
+.status-approved{color:#17613b;background:#e9f8ef;border-color:#83c39e}
+.transcript-import-block{padding:16px;border:1px solid var(--line);border-radius:10px;background:#fafaf7;margin-bottom:18px}
+.transcript-import-block label{margin-top:0}
+.transcript-audio{display:block;width:100%;margin-top:14px}
+.transcript-import-actions{flex-wrap:wrap}
+.transcript-tools{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;margin:18px 0}
+.transcript-tools label{margin-top:0}
+.transcript-tools button{height:42px}
+.transcript-segments{display:grid;gap:9px;max-height:620px;overflow:auto;padding:4px 8px 4px 0;margin:12px 0}
+.transcript-segment{display:grid;grid-template-columns:68px minmax(0,1fr);gap:10px;align-items:start}
+.transcript-time{border:1px solid #aaa;border-radius:7px;background:#fff;padding:9px 6px;font-weight:800;font-variant-numeric:tabular-nums;cursor:pointer}
+.transcript-time:hover{background:#111;color:#fff;border-color:#111}
+.transcript-segment-text{min-height:88px;margin:0}
+.transcript-workflow{margin-top:18px;padding:16px;border:1px solid var(--line);border-radius:10px;background:#f6f6f3}
+.transcript-workflow-buttons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.transcript-workflow button:disabled{opacity:.45;cursor:not-allowed}
+.transcript-workflow .hint{margin:12px 0 0}
 @media(max-width:760px){
   .schedule-head{align-items:flex-start;flex-direction:column;gap:4px}
   .schedule-note{white-space:normal}
@@ -220,6 +241,10 @@ body.interview-screen-open{overflow:hidden}
   .schedule-person{grid-column:1/-1}
   .interview-process{display:flex;overflow-x:auto;padding-bottom:5px;scroll-snap-type:x proximity}
   .interview-process button{flex:0 0 150px;scroll-snap-align:start}
+  .transcript-tools{grid-template-columns:1fr}
+  .transcript-tools button{height:auto}
+  .transcript-workflow-buttons{grid-template-columns:1fr}
+  .transcript-segment{grid-template-columns:58px minmax(0,1fr)}
 }
 
 
