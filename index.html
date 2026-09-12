@@ -82,8 +82,23 @@
   </div>
 
   <div class="card group-filter-card">
-    <label>Kontakte filtern</label>
-    <select id="candidateGroupFilter"></select>
+    <div class="candidate-filter-grid">
+      <div>
+        <label for="candidateGroupFilter">Gruppe filtern</label>
+        <select id="candidateGroupFilter"></select>
+      </div>
+      <div>
+        <label for="candidateStatusFilter">Akquise-Status filtern</label>
+        <select id="candidateStatusFilter">
+          <option value="__all__">Alle Status</option>
+          <option value="noch nicht angeschrieben">noch nicht angeschrieben</option>
+          <option value="angefragt">angefragt</option>
+          <option value="zugesagt">zugesagt</option>
+          <option value="abgesagt">abgesagt</option>
+          <option value="später nachfragen">später nachfragen</option>
+        </select>
+      </div>
+    </div>
   </div>
 
   <div id="groupManager" class="card hidden">

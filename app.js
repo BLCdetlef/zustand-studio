@@ -567,6 +567,7 @@ $("#newGroupName").addEventListener("keydown",e=>{
   if(e.key==="Enter"){e.preventDefault();$("#addGroup").click();}
 });
 $("#candidateGroupFilter").onchange=renderCandidates;
+$("#candidateStatusFilter").onchange=renderCandidates;
 
 function candidateOptions(){
   const opts='<option value="">Bitte auswählen</option>'+data.candidates.map(c=>`<option value="${c.id}">${esc(c.name)}${c.institution?" · "+esc(c.institution):""}</option>`).join("");
@@ -630,7 +631,11 @@ function statusInfo(status){
 function renderCandidates(){
   $("#candidateCount").textContent=data.candidates.length;
   const filter=$("#candidateGroupFilter")?.value||"__all__";
-  const shown=filteredCandidatesByGroup(filter);
+  const statusFilter=$("#candidateStatusFilter")?.value||"__all__";
+  const shown=filteredCandidatesByGroup(filter).filter(candidate=>{
+    if(statusFilter==="__all__")return true;
+    return String(data.acquisition[candidate.id]?.status||"noch nicht angeschrieben").toLocaleLowerCase()===statusFilter.toLocaleLowerCase();
+  });
 
   $("#candidateList").innerHTML=shown.length
     ? shown.map(c=>{
