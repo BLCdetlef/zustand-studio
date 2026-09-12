@@ -651,6 +651,8 @@ function renderCandidates(){
               <button class="text-button" onclick="toggleCandidateDetails('${c.id}')">Details</button>
               <span>·</span>
               <button class="text-button" onclick="editCandidate('${c.id}')">Bearbeiten</button>
+              <span>·</span>
+              <button class="text-button danger" onclick="removeCandidate('${c.id}')">Löschen</button>
             </div>
             <div id="details-${c.id}" class="candidate-details hidden">
               ${c.period?`<p><b>Zeitraum:</b> ${esc(c.period)}</p>`:""}
@@ -664,7 +666,7 @@ function renderCandidates(){
               ${c.address?`<p><b>Dienstl. Postanschrift:</b> ${esc(c.address)}</p>`:""}
               ${c.source?`<p><b>Profil/Kontakt:</b> <span class="break">${esc(c.source)}</span></p>`:""}
               <p class="privacy-note">Nur öffentlich bereitgestellte dienstliche Kontaktdaten speichern.</p>
-              <button class="ghost small" onclick="removeCandidate('${c.id}')">Kontakt entfernen</button>
+              <button class="ghost small danger" onclick="removeCandidate('${c.id}')">Kandidaten löschen</button>
             </div>
           </div>
         </article>`;
@@ -783,13 +785,36 @@ window.editCandidate=id=>{
   $("#candidateForm").scrollIntoView({behavior:"smooth",block:"start"});
 };
 window.removeCandidate=id=>{
-  if(confirm("Kandidaten aus dem lokalen Prototyp entfernen?")){
-    data.candidates=data.candidates.filter(c=>c.id!==id);
-    delete data.acquisition[id];
-    delete data.interviews[id];
-    delete data.zDrafts[id];
-    persist();
+  const candidate=data.candidates.find(c=>c.id===id);
+  if(!candidate)return;
+  const hasAcquisition=Boolean(data.acquisition[id]);
+  const hasInterview=Boolean(data.interviews[id]);
+  const linkedArticles=data.zArticles.filter(article=>article?.candidateId===id);
+  const consequences=[
+    hasAcquisition?"Akquise-Daten werden gelöscht.":"",
+    hasInterview?"Interviewvorbereitung und Transkript werden gelöscht.":"",
+    data.zDrafts[id]?"Alter Z-Entwurf wird gelöscht.":"",
+    linkedArticles.length?`${linkedArticles.length} Z-Panel-Beitrag${linkedArticles.length===1?" bleibt":"e bleiben"} erhalten; nur die Kandidaten-Verknüpfung wird entfernt.`:""
+  ].filter(Boolean);
+  const message=[
+    `Kandidaten „${candidate.name}“ wirklich löschen?`,
+    "",
+    ...(consequences.length?consequences:["Der Kandidatendatensatz wird gelöscht."]),
+    "",
+    "Die Änderung wird zunächst verschlüsselt zwischengespeichert und erst mit „Verschlüsselt speichern“ nach Drive übertragen."
+  ].join("\n");
+  if(!confirm(message))return;
+  data.candidates=data.candidates.filter(c=>c.id!==id);
+  delete data.acquisition[id];
+  delete data.interviews[id];
+  delete data.zDrafts[id];
+  linkedArticles.forEach(article=>{article.candidateId="";article.lastModified=zNow();});
+  if($("#saveCandidate")?.dataset.editId===id){
+    $("#saveCandidate").dataset.editId="";
+    $("#saveCandidate").textContent="Kandidat speichern";
+    $("#candidateForm").classList.add("hidden");
   }
+  persist();
 };
 
 function selected(sel){return data.candidates.find(c=>c.id===$(sel).value)}

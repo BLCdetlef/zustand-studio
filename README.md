@@ -25,6 +25,8 @@ Nach erfolgreichem verschlüsseltem Speichern kann der lokale Klartext über **L
 
 Während einer geschützten Sitzung legt das Studio nach Änderungen zusätzlich einen verschlüsselten lokalen Zwischenstand ab. Nach versehentlichem Neuladen kann er mit **Zwischenstand laden** und demselben Studio-Passwort wiederhergestellt werden. Ein gelber Speicherstatus und die Browser-Warnung kennzeichnen Änderungen, die noch nicht nach Drive übertragen wurden. Der Zwischenstand ersetzt keine regelmäßige Drive-Speicherung.
 
+Einzelne Kandidaten können direkt in der Kandidatenliste nach einer namentlichen Sicherheitsabfrage gelöscht werden. Zugehörige Akquise- und Interviewdaten werden dabei mit entfernt; vorhandene Z-Panel-Beiträge bleiben erhalten und werden lediglich vom Kandidaten entkoppelt.
+
 ## Hosting
 Die Anwendung besteht nur aus statischem HTML, CSS und JavaScript und ist nicht an GitHub Pages gebunden. Sie kann später auf eine andere Hosting-Infrastruktur umziehen.
 
