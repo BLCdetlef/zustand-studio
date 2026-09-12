@@ -1,4 +1,4 @@
-# ZUSTAND Studio – Prototyp
+# ZUSTAND Studio
 
 Neustart der webbasierten Studio- und Redaktionsanwendung für das Projekt ZUSTAND / BRUCHLAST.
 
@@ -8,7 +8,7 @@ Recherche → Kandidaten → Akquise → Interview → Z-Panel-Entwurf.
 Die Recherche folgt dem Prinzip **„erst Messreihe, dann Mensch“**.
 
 ## Datenschutz / Speicher
-Diese Prototyp-Version speichert Arbeitsdaten ausschließlich im `localStorage` des verwendeten Browsers.
+Das Studio speichert Arbeitsdaten lokal im Browser oder verschlüsselt im privaten App-Datenbereich von Google Drive.
 Es werden keine Arbeitsdaten an GitHub übertragen.
 
 **Nicht für sensible oder besonders schutzbedürftige personenbezogene Daten verwenden.**
