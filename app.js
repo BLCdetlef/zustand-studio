@@ -10,14 +10,19 @@ const Z_SUMMARY_HARD_MAX=560;
 const Z_TEXT_AIR_RESERVE=0.06;
 
 class LocalDemoStorage {
+  constructor(){this.protectedSession=false}
   load(){ try{return JSON.parse(localStorage.getItem(KEY))||this.empty()}catch{return this.empty()} }
-  save(data){ localStorage.setItem(KEY,JSON.stringify(data)) }
+  save(data){ if(!this.protectedSession)localStorage.setItem(KEY,JSON.stringify(data)) }
   clear(){ localStorage.removeItem(KEY) }
+  enableProtectedSession(){this.protectedSession=true}
+  hasPlaintext(){return localStorage.getItem(KEY)!==null}
   empty(){return {candidates:[], groups:[], acquisition:{}, interviews:{}, zDrafts:{}, zArticles:[], zPublicBaselineImported:false, zPublicBaselineName:""}}
 }
 
 // Später austauschbar: class NextcloudStorage { load(); save(); ... }
 const storage = new LocalDemoStorage();
+const GOOGLE_CLIENT_ID_KEY="zustandStudioGoogleClientId";
+const DEFAULT_GOOGLE_CLIENT_ID="756170096695-8hqja9ij1ti5s16nnt1t2tukanf8mh44.apps.googleusercontent.com";
 
 function normalizeStudioData(raw){
   const normalized=(raw&&typeof raw==="object"&&!Array.isArray(raw))?raw:storage.empty();
@@ -2958,3 +2963,103 @@ function renderAll(){
   }
 }
 renderAll();
+
+function setupEncryptedDriveSync(){
+  const api=window.ZustandDriveSync;
+  const clientIdInput=$("#googleClientId");
+  const passphraseInput=$("#studioPassphrase");
+  const connectButton=$("#connectGoogleDrive");
+  const loadButton=$("#loadEncryptedDrive");
+  const saveButton=$("#saveEncryptedDrive");
+  const clearPlaintextButton=$("#clearLocalPlaintext");
+  const status=$("#driveSyncStatus");
+  if(!api||!clientIdInput||!passphraseInput||!connectButton||!loadButton||!saveButton||!clearPlaintextButton||!status)return;
+
+  let client=null;
+  clientIdInput.value=localStorage.getItem(GOOGLE_CLIENT_ID_KEY)||DEFAULT_GOOGLE_CLIENT_ID;
+  const setStatus=(message,isError=false)=>{
+    status.textContent=message;
+    status.classList.toggle("error",isError);
+  };
+  const showStorageMode=()=>{
+    const badge=$("#storageBadge");
+    if(badge&&storage.protectedSession)badge.textContent="Speicher: geschützte Sitzung + Drive";
+    clearPlaintextButton.disabled=!client||!storage.hasPlaintext();
+  };
+  const hasMeaningfulData=()=>Boolean(
+    data.candidates.length||data.groups.length||Object.keys(data.acquisition).length||
+    Object.keys(data.interviews).length||Object.keys(data.zDrafts).length||data.zArticles.length
+  );
+  const passphrase=()=>{
+    const value=passphraseInput.value;
+    if(value.length<12)throw new Error("Bitte ein Studio-Passwort mit mindestens 12 Zeichen eingeben.");
+    return value;
+  };
+
+  connectButton.onclick=async()=>{
+    const clientId=clientIdInput.value.trim();
+    if(!clientId)return setStatus("Bitte zuerst die Google OAuth Client-ID eintragen.",true);
+    connectButton.disabled=true;
+    setStatus("Google-Anmeldung wird geöffnet …");
+    try{
+      client=new api.DriveSyncClient({clientId});
+      await client.authorize();
+      localStorage.setItem(GOOGLE_CLIENT_ID_KEY,clientId);
+      const remote=await client.locate();
+      loadButton.disabled=false;
+      saveButton.disabled=false;
+      showStorageMode();
+      setStatus(remote?`Verbunden · Online-Datei zuletzt geändert: ${new Date(remote.modifiedTime).toLocaleString("de-DE")}`:"Verbunden · Noch keine Online-Datei vorhanden.");
+    }catch(error){
+      client=null;
+      setStatus(error.message,true);
+    }finally{connectButton.disabled=false;}
+  };
+
+  loadButton.onclick=async()=>{
+    if(!client)return;
+    try{
+      const secret=passphrase();
+      if(!confirm("Die verschlüsselte Online-Datei laden? Der aktuelle lokale Datenstand wird erst nach erfolgreicher Entschlüsselung ersetzt."))return;
+      setStatus("Verschlüsselte Online-Datei wird geladen …");
+      const envelope=await client.load();
+      if(!envelope)return setStatus("In Drive wurde noch keine Studio-Datei gefunden.",true);
+      data=migrateLegacyZDrafts(normalizeStudioData(await api.decryptJson(envelope,secret)));
+      storage.enableProtectedSession();
+      storage.save(data);
+      renderAll();
+      showStorageMode();
+      setStatus(`Online-Daten geladen · ${new Date().toLocaleString("de-DE")}`);
+    }catch(error){setStatus(error.message,true);}
+  };
+
+  saveButton.onclick=async()=>{
+    if(!client)return;
+    try{
+      const secret=passphrase();
+      if(!hasMeaningfulData())throw new Error("Leerer Datenstand wird nicht online gespeichert. Bitte zuerst eine Studio-Sicherung wiederherstellen.");
+      const remote=await client.locate();
+      const question=remote
+        ?"Den aktuellen lokalen Stand jetzt verschlüsseln und die Online-Datei ersetzen?"
+        :"Erstmals eine verschlüsselte Studio-Datei im privaten App-Bereich von Google Drive anlegen?";
+      if(!confirm(question))return;
+      setStatus("Studio-Daten werden im Browser verschlüsselt …");
+      const envelope=await api.encryptJson(data,secret);
+      await client.save(envelope,{expectedModifiedTime:remote?.modifiedTime||""});
+      clearPlaintextButton.disabled=!storage.hasPlaintext();
+      setStatus(`Verschlüsselt gespeichert · ${new Date(client.modifiedTime).toLocaleString("de-DE")}`);
+    }catch(error){setStatus(error.message,true);}
+  };
+
+  clearPlaintextButton.onclick=()=>{
+    if(!client)return;
+    if(!storage.hasPlaintext())return setStatus("In diesem Browser ist kein lokaler Klartext-Datenstand vorhanden.");
+    if(!confirm("Den unverschlüsselten lokalen Studio-Datenstand aus diesem Browser entfernen?\n\nDie aktuell geöffneten Daten bleiben bis zum Schließen oder Neuladen in dieser Sitzung sichtbar. Danach müssen sie mit Google-Anmeldung und Studio-Passwort aus Drive geladen werden."))return;
+    storage.clear();
+    storage.enableProtectedSession();
+    showStorageMode();
+    setStatus("Lokaler Klartext entfernt · geschützte Sitzung aktiv.");
+  };
+}
+
+setupEncryptedDriveSync();

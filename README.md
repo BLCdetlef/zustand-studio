@@ -15,6 +15,14 @@ Es werden keine Arbeitsdaten an GitHub übertragen.
 
 Die Speicherschicht ist bewusst gekapselt (`LocalDemoStorage` in `app.js`). Sie soll später durch eine von der TH Lübeck freigegebene Lösung (z. B. Nextcloud/THL-Infrastruktur) ersetzt werden können.
 
+### Experimentelle verschlüsselte Drive-Synchronisation
+
+Im Fußbereich steht eine manuelle Testsynchronisation zur Verfügung. Sie verschlüsselt den vollständigen Studio-Datenstand bereits im Browser mit AES-256-GCM; das Studio-Passwort wird nicht gespeichert. Google Drive erhält nur die verschlüsselte Hülldatei im privaten App-Datenbereich. Die Anwendung fordert dafür ausschließlich den eng begrenzten OAuth-Bereich `drive.appdata` an.
+
+Für die Verbindung ist die öffentliche OAuth-Web-Client-ID des Projekts `ZUSTAND Studio` vorkonfiguriert. Ein Client-Schlüssel wird von der Browseranwendung weder benötigt noch gespeichert. Solange die Verbindung nicht ausdrücklich ausgelöst wurde, arbeitet das Studio unverändert ausschließlich lokal. Laden und Speichern erfolgen absichtlich manuell und jeweils nach Bestätigung. Vor realen sensiblen Daten müssen OAuth-Konfiguration, Wiederherstellung, Konfliktschutz, Passwortaufbewahrung und Löschkonzept vollständig getestet und dokumentiert werden.
+
+Nach erfolgreichem verschlüsseltem Speichern kann der lokale Klartext über **Lokalen Klartext entfernen** ausdrücklich gelöscht werden. Anschließend arbeitet die geöffnete Seite nur noch im Arbeitsspeicher. Beim Schließen oder Neuladen wird die Sitzung gesperrt; die Daten müssen erneut aus Drive geladen und mit dem Studio-Passwort entschlüsselt werden. Ein leerer Datenstand kann nicht als Online-Datei gespeichert werden.
+
 ## Hosting
 Die Anwendung besteht nur aus statischem HTML, CSS und JavaScript und ist nicht an GitHub Pages gebunden. Sie kann später auf eine andere Hosting-Infrastruktur umziehen.
 

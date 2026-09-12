@@ -658,6 +658,23 @@
     <span>Im Browser gespeichert · Vor Sicherung offene Änderungen speichern · Sicherung enthält keine Bilddateien</span>
   </div>
   <div class="footer-actions">
+    <details class="online-storage" id="onlineStorage">
+      <summary>Verschlüsselter Online-Speicher</summary>
+      <div class="online-storage-body">
+        <p>Manuelle Testsynchronisation mit einer verschlüsselten Datei im privaten App-Bereich von Google Drive.</p>
+        <label for="googleClientId">Google OAuth Client-ID</label>
+        <input id="googleClientId" type="text" autocomplete="off" placeholder="…apps.googleusercontent.com">
+        <label for="studioPassphrase">Studio-Passwort (mindestens 12 Zeichen)</label>
+        <input id="studioPassphrase" type="password" autocomplete="off">
+        <div class="actions">
+          <button class="ghost" id="connectGoogleDrive" type="button">Mit Google verbinden</button>
+          <button class="ghost" id="loadEncryptedDrive" type="button" disabled>Aus Drive laden</button>
+          <button class="ghost" id="saveEncryptedDrive" type="button" disabled>Verschlüsselt speichern</button>
+          <button class="ghost danger" id="clearLocalPlaintext" type="button" disabled>Lokalen Klartext entfernen</button>
+        </div>
+        <p class="hint" id="driveSyncStatus">Nicht verbunden. Das Passwort wird nicht gespeichert.</p>
+      </div>
+    </details>
     <button class="ghost" id="downloadStudioBackup">Studio-Sicherung herunterladen</button>
     <button class="ghost" id="restoreStudioBackup">Sicherung wiederherstellen</button>
     <input class="hidden" id="restoreStudioBackupFile" type="file" accept=".json,application/json">
@@ -673,6 +690,7 @@
 
 <script src="qrcode.min.js"></script>
 <script src="gwl-import.js"></script>
+<script src="drive-sync.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
