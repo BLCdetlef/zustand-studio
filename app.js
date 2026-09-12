@@ -3011,7 +3011,10 @@ function setupEncryptedDriveSync(){
   const saveButton=$("#saveEncryptedDrive");
   const clearPlaintextButton=$("#clearLocalPlaintext");
   const status=$("#driveSyncStatus");
-  if(!api||!clientIdInput||!passphraseInput||!connectButton||!loadDraftButton||!loadButton||!saveButton||!clearPlaintextButton||!status)return;
+  const recoveryNotice=$("#draftRecoveryNotice");
+  const recoveryButton=$("#openDraftRecovery");
+  const onlineStorage=$("#onlineStorage");
+  if(!api||!clientIdInput||!passphraseInput||!connectButton||!loadDraftButton||!loadButton||!saveButton||!clearPlaintextButton||!status||!recoveryNotice||!recoveryButton||!onlineStorage)return;
 
   let client=null;
   let sessionPassphrase="";
@@ -3077,7 +3080,19 @@ function setupEncryptedDriveSync(){
     showStorageMode();
   };
   storage.onProtectedSave=scheduleEncryptedDraft;
-  loadDraftButton.disabled=!localStorage.getItem(ENCRYPTED_DRAFT_KEY);
+  const encryptedDraftFound=Boolean(localStorage.getItem(ENCRYPTED_DRAFT_KEY));
+  loadDraftButton.disabled=!encryptedDraftFound;
+  recoveryNotice.classList.toggle("hidden",!encryptedDraftFound);
+  if(encryptedDraftFound){
+    onlineStorage.open=true;
+    setStatus("Verschlüsselter Zwischenstand gefunden · Studio-Passwort eingeben und „Zwischenstand laden“ wählen.");
+  }
+
+  recoveryButton.onclick=()=>{
+    onlineStorage.open=true;
+    onlineStorage.scrollIntoView({behavior:"smooth",block:"center"});
+    setTimeout(()=>passphraseInput.focus(),350);
+  };
 
   window.addEventListener("beforeunload",event=>{
     if(!driveDirty)return;
@@ -3090,6 +3105,7 @@ function setupEncryptedDriveSync(){
     driveDirty=false;
     changeVersion=0;
     loadDraftButton.disabled=true;
+    recoveryNotice.classList.add("hidden");
     const badge=$("#storageBadge");
     if(badge){badge.textContent="Speicher: lokal / Demo";badge.classList.remove("storage-dirty");}
   });
@@ -3112,6 +3128,7 @@ function setupEncryptedDriveSync(){
       data=migrateLegacyZDrafts(normalizeStudioData(await api.decryptJson(JSON.parse(stored),secret)));
       await enableProtectedData(secret,{dirty:true});
       renderAll();
+      recoveryNotice.classList.add("hidden");
       setStatus("Verschlüsselten Zwischenstand geladen · noch nicht in Drive gespeichert.");
     }catch(error){setStatus(error.message,true);}
   };
@@ -3147,6 +3164,7 @@ function setupEncryptedDriveSync(){
       data=migrateLegacyZDrafts(normalizeStudioData(await api.decryptJson(envelope,secret)));
       await enableProtectedData(secret,{dirty:false});
       renderAll();
+      recoveryNotice.classList.add("hidden");
       showStorageMode();
       setStatus(`Online-Daten geladen · ${new Date().toLocaleString("de-DE")}`);
     }catch(error){setStatus(error.message,true);}
