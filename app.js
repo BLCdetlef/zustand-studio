@@ -10,9 +10,12 @@ const Z_SUMMARY_HARD_MAX=560;
 const Z_TEXT_AIR_RESERVE=0.06;
 
 class LocalDemoStorage {
-  constructor(){this.protectedSession=false}
+  constructor(){this.protectedSession=false;this.onProtectedSave=null}
   load(){ try{return JSON.parse(localStorage.getItem(KEY))||this.empty()}catch{return this.empty()} }
-  save(data){ if(!this.protectedSession)localStorage.setItem(KEY,JSON.stringify(data)) }
+  save(data){
+    if(!this.protectedSession)localStorage.setItem(KEY,JSON.stringify(data));
+    else this.onProtectedSave?.(data);
+  }
   clear(){ localStorage.removeItem(KEY) }
   enableProtectedSession(){this.protectedSession=true}
   hasPlaintext(){return localStorage.getItem(KEY)!==null}
@@ -22,6 +25,7 @@ class LocalDemoStorage {
 // Später austauschbar: class NextcloudStorage { load(); save(); ... }
 const storage = new LocalDemoStorage();
 const GOOGLE_CLIENT_ID_KEY="zustandStudioGoogleClientId";
+const ENCRYPTED_DRAFT_KEY="zustandStudioEncryptedDraftV1";
 const DEFAULT_GOOGLE_CLIENT_ID="756170096695-8hqja9ij1ti5s16nnt1t2tukanf8mh44.apps.googleusercontent.com";
 
 function normalizeStudioData(raw){
@@ -2694,6 +2698,9 @@ $("#clearDemo").onclick=()=>{
   if(answer!=="LÖSCHEN")return;
   downloadStudioBackup("vor-loeschen");
   storage.clear();
+  localStorage.removeItem(ENCRYPTED_DRAFT_KEY);
+  storage.protectedSession=false;
+  window.dispatchEvent(new Event("zustand:local-clear"));
   data=migrateLegacyZDrafts(normalizeStudioData(storage.load()));
   currentZArticleId="";
   renderAll();
@@ -2969,13 +2976,20 @@ function setupEncryptedDriveSync(){
   const clientIdInput=$("#googleClientId");
   const passphraseInput=$("#studioPassphrase");
   const connectButton=$("#connectGoogleDrive");
+  const loadDraftButton=$("#loadEncryptedDraft");
   const loadButton=$("#loadEncryptedDrive");
   const saveButton=$("#saveEncryptedDrive");
   const clearPlaintextButton=$("#clearLocalPlaintext");
   const status=$("#driveSyncStatus");
-  if(!api||!clientIdInput||!passphraseInput||!connectButton||!loadButton||!saveButton||!clearPlaintextButton||!status)return;
+  if(!api||!clientIdInput||!passphraseInput||!connectButton||!loadDraftButton||!loadButton||!saveButton||!clearPlaintextButton||!status)return;
 
   let client=null;
+  let sessionPassphrase="";
+  let driveDirty=false;
+  let draftTimer=0;
+  let draftWriting=false;
+  let draftQueued=false;
+  let changeVersion=0;
   clientIdInput.value=localStorage.getItem(GOOGLE_CLIENT_ID_KEY)||DEFAULT_GOOGLE_CLIENT_ID;
   const setStatus=(message,isError=false)=>{
     status.textContent=message;
@@ -2983,7 +2997,13 @@ function setupEncryptedDriveSync(){
   };
   const showStorageMode=()=>{
     const badge=$("#storageBadge");
-    if(badge&&storage.protectedSession)badge.textContent="Speicher: geschützte Sitzung + Drive";
+    if(badge&&storage.protectedSession){
+      badge.textContent=driveDirty
+        ?"Speicher: Änderungen offen · verschlüsselt zwischengespeichert"
+        :"Speicher: gesichert · verschlüsselt lokal + Drive";
+      badge.classList.toggle("storage-dirty",driveDirty);
+    }
+    loadDraftButton.disabled=!localStorage.getItem(ENCRYPTED_DRAFT_KEY);
     clearPlaintextButton.disabled=!client||!storage.hasPlaintext();
   };
   const hasMeaningfulData=()=>Boolean(
@@ -2994,6 +3014,76 @@ function setupEncryptedDriveSync(){
     const value=passphraseInput.value;
     if(value.length<12)throw new Error("Bitte ein Studio-Passwort mit mindestens 12 Zeichen eingeben.");
     return value;
+  };
+  const writeEncryptedDraft=async()=>{
+    if(!storage.protectedSession||!sessionPassphrase)return;
+    if(draftWriting){draftQueued=true;return;}
+    draftWriting=true;
+    try{
+      const snapshot=JSON.parse(JSON.stringify(data));
+      const envelope=await api.encryptJson(snapshot,sessionPassphrase);
+      envelope.draftSavedAt=new Date().toISOString();
+      localStorage.setItem(ENCRYPTED_DRAFT_KEY,JSON.stringify(envelope));
+      showStorageMode();
+    }catch(error){setStatus(`Lokaler Zwischenstand fehlgeschlagen: ${error.message}`,true);}
+    finally{
+      draftWriting=false;
+      if(draftQueued){draftQueued=false;void writeEncryptedDraft();}
+    }
+  };
+  const scheduleEncryptedDraft=()=>{
+    if(!storage.protectedSession||!sessionPassphrase)return;
+    changeVersion++;
+    driveDirty=true;
+    showStorageMode();
+    clearTimeout(draftTimer);
+    draftTimer=setTimeout(()=>void writeEncryptedDraft(),700);
+  };
+  const enableProtectedData=async(secret,{dirty=false}={})=>{
+    sessionPassphrase=secret;
+    storage.enableProtectedSession();
+    driveDirty=dirty;
+    await writeEncryptedDraft();
+    showStorageMode();
+  };
+  storage.onProtectedSave=scheduleEncryptedDraft;
+  loadDraftButton.disabled=!localStorage.getItem(ENCRYPTED_DRAFT_KEY);
+
+  window.addEventListener("beforeunload",event=>{
+    if(!driveDirty)return;
+    event.preventDefault();
+    event.returnValue="";
+  });
+  window.addEventListener("zustand:local-clear",()=>{
+    clearTimeout(draftTimer);
+    sessionPassphrase="";
+    driveDirty=false;
+    changeVersion=0;
+    loadDraftButton.disabled=true;
+    const badge=$("#storageBadge");
+    if(badge){badge.textContent="Speicher: lokal / Demo";badge.classList.remove("storage-dirty");}
+  });
+
+  const captureInterviewDraft=()=>{
+    if(!storage.protectedSession)return;
+    const candidate=selected("#iCandidate");
+    if(!candidate)return;
+    data.interviews[candidate.id]=currentInterviewEditorValues();
+    storage.save(data);
+  };
+  $("#interview").addEventListener("input",captureInterviewDraft);
+  $("#interview").addEventListener("change",captureInterviewDraft);
+
+  loadDraftButton.onclick=async()=>{
+    try{
+      const secret=passphrase();
+      const stored=localStorage.getItem(ENCRYPTED_DRAFT_KEY);
+      if(!stored)return setStatus("Kein verschlüsselter Zwischenstand in diesem Browser vorhanden.",true);
+      data=migrateLegacyZDrafts(normalizeStudioData(await api.decryptJson(JSON.parse(stored),secret)));
+      await enableProtectedData(secret,{dirty:true});
+      renderAll();
+      setStatus("Verschlüsselten Zwischenstand geladen · noch nicht in Drive gespeichert.");
+    }catch(error){setStatus(error.message,true);}
   };
 
   connectButton.onclick=async()=>{
@@ -3025,8 +3115,7 @@ function setupEncryptedDriveSync(){
       const envelope=await client.load();
       if(!envelope)return setStatus("In Drive wurde noch keine Studio-Datei gefunden.",true);
       data=migrateLegacyZDrafts(normalizeStudioData(await api.decryptJson(envelope,secret)));
-      storage.enableProtectedSession();
-      storage.save(data);
+      await enableProtectedData(secret,{dirty:false});
       renderAll();
       showStorageMode();
       setStatus(`Online-Daten geladen · ${new Date().toLocaleString("de-DE")}`);
@@ -3044,21 +3133,30 @@ function setupEncryptedDriveSync(){
         :"Erstmals eine verschlüsselte Studio-Datei im privaten App-Bereich von Google Drive anlegen?";
       if(!confirm(question))return;
       setStatus("Studio-Daten werden im Browser verschlüsselt …");
-      const envelope=await api.encryptJson(data,secret);
+      const saveVersion=changeVersion;
+      const snapshot=JSON.parse(JSON.stringify(data));
+      const envelope=await api.encryptJson(snapshot,secret);
       await client.save(envelope,{expectedModifiedTime:remote?.modifiedTime||""});
+      sessionPassphrase=secret;
+      driveDirty=changeVersion!==saveVersion;
+      await writeEncryptedDraft();
+      showStorageMode();
       clearPlaintextButton.disabled=!storage.hasPlaintext();
       setStatus(`Verschlüsselt gespeichert · ${new Date(client.modifiedTime).toLocaleString("de-DE")}`);
     }catch(error){setStatus(error.message,true);}
   };
 
-  clearPlaintextButton.onclick=()=>{
+  clearPlaintextButton.onclick=async()=>{
     if(!client)return;
     if(!storage.hasPlaintext())return setStatus("In diesem Browser ist kein lokaler Klartext-Datenstand vorhanden.");
     if(!confirm("Den unverschlüsselten lokalen Studio-Datenstand aus diesem Browser entfernen?\n\nDie aktuell geöffneten Daten bleiben bis zum Schließen oder Neuladen in dieser Sitzung sichtbar. Danach müssen sie mit Google-Anmeldung und Studio-Passwort aus Drive geladen werden."))return;
-    storage.clear();
-    storage.enableProtectedSession();
-    showStorageMode();
-    setStatus("Lokaler Klartext entfernt · geschützte Sitzung aktiv.");
+    try{
+      const secret=passphrase();
+      await enableProtectedData(secret,{dirty:true});
+      storage.clear();
+      showStorageMode();
+      setStatus("Lokaler Klartext entfernt · verschlüsselter Zwischenstand aktiv · Drive-Speicherung empfohlen.");
+    }catch(error){setStatus(error.message,true);}
   };
 }
 

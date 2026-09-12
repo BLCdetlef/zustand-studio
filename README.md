@@ -21,7 +21,9 @@ Im Fußbereich steht eine manuelle Testsynchronisation zur Verfügung. Sie versc
 
 Für die Verbindung ist die öffentliche OAuth-Web-Client-ID des Projekts `ZUSTAND Studio` vorkonfiguriert. Ein Client-Schlüssel wird von der Browseranwendung weder benötigt noch gespeichert. Solange die Verbindung nicht ausdrücklich ausgelöst wurde, arbeitet das Studio unverändert ausschließlich lokal. Laden und Speichern erfolgen absichtlich manuell und jeweils nach Bestätigung. Vor realen sensiblen Daten müssen OAuth-Konfiguration, Wiederherstellung, Konfliktschutz, Passwortaufbewahrung und Löschkonzept vollständig getestet und dokumentiert werden.
 
-Nach erfolgreichem verschlüsseltem Speichern kann der lokale Klartext über **Lokalen Klartext entfernen** ausdrücklich gelöscht werden. Anschließend arbeitet die geöffnete Seite nur noch im Arbeitsspeicher. Beim Schließen oder Neuladen wird die Sitzung gesperrt; die Daten müssen erneut aus Drive geladen und mit dem Studio-Passwort entschlüsselt werden. Ein leerer Datenstand kann nicht als Online-Datei gespeichert werden.
+Nach erfolgreichem verschlüsseltem Speichern kann der lokale Klartext über **Lokalen Klartext entfernen** ausdrücklich gelöscht werden. Anschließend arbeitet die geöffnete Seite ohne lokale Klartextkopie. Beim Schließen oder Neuladen wird die Sitzung gesperrt; die Daten müssen mit dem Studio-Passwort aus dem verschlüsselten Zwischenstand oder aus Drive geladen werden. Ein leerer Datenstand kann nicht als Online-Datei gespeichert werden.
+
+Während einer geschützten Sitzung legt das Studio nach Änderungen zusätzlich einen verschlüsselten lokalen Zwischenstand ab. Nach versehentlichem Neuladen kann er mit **Zwischenstand laden** und demselben Studio-Passwort wiederhergestellt werden. Ein gelber Speicherstatus und die Browser-Warnung kennzeichnen Änderungen, die noch nicht nach Drive übertragen wurden. Der Zwischenstand ersetzt keine regelmäßige Drive-Speicherung.
 
 ## Hosting
 Die Anwendung besteht nur aus statischem HTML, CSS und JavaScript und ist nicht an GitHub Pages gebunden. Sie kann später auf eine andere Hosting-Infrastruktur umziehen.
