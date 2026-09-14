@@ -2600,7 +2600,7 @@ function backupSummary(restored){
   return `${candidates} Kandidat:innen, ${interviews} Interview-Datensätze, ${zArticles} Z-Panel-Beiträge`;
 }
 
-async function restoreStudioBackup(file){
+async function restoreStudioBackup(file,{guided=false}={}){
   try{
     const parsed=JSON.parse(await file.text());
     if(!parsed||parsed.format!==BACKUP_FORMAT||!parsed.data||typeof parsed.data!=="object"){
@@ -2620,9 +2620,12 @@ async function restoreStudioBackup(file){
     currentZArticleId="";
     renderAll();
     nav("research");
-    alert("Studio-Sicherung wurde erfolgreich wiederhergestellt.");
+    window.dispatchEvent(new CustomEvent("zustand:backup-restored",{detail:{guided,summary:backupSummary(restored)}}));
+    if(!guided)alert("Studio-Sicherung wurde erfolgreich wiederhergestellt.");
+    return true;
   }catch(error){
     alert(`Sicherung konnte nicht wiederhergestellt werden: ${error.message||error}`);
+    return false;
   }
 }
 function inferZCategory(raw={}){
@@ -2745,6 +2748,13 @@ $("#restoreStudioBackup").onclick=()=>$("#restoreStudioBackupFile").click();
 $("#restoreStudioBackupFile").onchange=async event=>{
   const file=event.target.files?.[0];
   if(file)await restoreStudioBackup(file);
+  event.target.value="";
+};
+
+$("#backupToDrive").onclick=()=>$("#backupToDriveFile").click();
+$("#backupToDriveFile").onchange=async event=>{
+  const file=event.target.files?.[0];
+  if(file)await restoreStudioBackup(file,{guided:true});
   event.target.value="";
 };
 
@@ -3033,6 +3043,7 @@ function setupEncryptedDriveSync(){
   const clientIdInput=$("#googleClientId");
   const passphraseInput=$("#studioPassphrase");
   const connectButton=$("#connectGoogleDrive");
+  const guidedSaveButton=$("#guidedDriveSave");
   const loadDraftButton=$("#loadEncryptedDraft");
   const loadButton=$("#loadEncryptedDrive");
   const saveButton=$("#saveEncryptedDrive");
@@ -3041,7 +3052,7 @@ function setupEncryptedDriveSync(){
   const recoveryNotice=$("#draftRecoveryNotice");
   const recoveryButton=$("#openDraftRecovery");
   const onlineStorage=$("#onlineStorage");
-  if(!api||!clientIdInput||!passphraseInput||!connectButton||!loadDraftButton||!loadButton||!saveButton||!clearPlaintextButton||!status||!recoveryNotice||!recoveryButton||!onlineStorage)return;
+  if(!api||!clientIdInput||!passphraseInput||!connectButton||!guidedSaveButton||!loadDraftButton||!loadButton||!saveButton||!clearPlaintextButton||!status||!recoveryNotice||!recoveryButton||!onlineStorage)return;
 
   let client=null;
   let sessionPassphrase="";
@@ -3118,8 +3129,20 @@ function setupEncryptedDriveSync(){
   recoveryButton.onclick=()=>{
     onlineStorage.open=true;
     onlineStorage.scrollIntoView({behavior:"smooth",block:"center"});
+    guidedSaveButton.dataset.restoreDraft="true";
+    guidedSaveButton.textContent="Zwischenstand wiederherstellen & verschlüsselt speichern";
     setTimeout(()=>passphraseInput.focus(),350);
   };
+
+  window.addEventListener("zustand:backup-restored",event=>{
+    if(!event.detail?.guided)return;
+    onlineStorage.open=true;
+    onlineStorage.scrollIntoView({behavior:"smooth",block:"center"});
+    guidedSaveButton.dataset.restoreDraft="";
+    guidedSaveButton.textContent="Mit Google verbinden & verschlüsselt speichern";
+    setStatus(`Sicherung geladen: ${event.detail.summary}. Studio-Passwort eingeben und sicher speichern.`);
+    setTimeout(()=>passphraseInput.focus(),350);
+  });
 
   window.addEventListener("beforeunload",event=>{
     if(!driveDirty)return;
@@ -3178,6 +3201,48 @@ function setupEncryptedDriveSync(){
       client=null;
       setStatus(error.message,true);
     }finally{connectButton.disabled=false;}
+  };
+
+  guidedSaveButton.onclick=async()=>{
+    const clientId=clientIdInput.value.trim();
+    if(!clientId)return setStatus("Bitte zuerst die Google OAuth Client-ID eintragen.",true);
+    guidedSaveButton.disabled=true;
+    try{
+      const secret=passphrase();
+      if(guidedSaveButton.dataset.restoreDraft==="true"){
+        const stored=localStorage.getItem(ENCRYPTED_DRAFT_KEY);
+        if(!stored)throw new Error("Kein verschlüsselter Zwischenstand in diesem Browser vorhanden.");
+        data=migrateLegacyZDrafts(normalizeStudioData(await api.decryptJson(JSON.parse(stored),secret)));
+        renderAll();
+      }
+      if(!hasMeaningfulData())throw new Error("Bitte zuerst über „Sicherung in Google Drive speichern“ eine Studio-Sicherung auswählen.");
+      setStatus("Google-Anmeldung wird geöffnet …");
+      client=new api.DriveSyncClient({clientId});
+      await client.authorize();
+      localStorage.setItem(GOOGLE_CLIENT_ID_KEY,clientId);
+      const remote=await client.locate();
+      const question=remote
+        ?"Den wiederhergestellten Stand jetzt verschlüsseln und die vorhandene Online-Datei ersetzen?"
+        :"Den wiederhergestellten Stand jetzt verschlüsselt im privaten App-Bereich von Google Drive speichern?";
+      if(!confirm(question))return setStatus("Speichern abgebrochen. Die wiederhergestellten Daten bleiben lokal erhalten.");
+      setStatus("Studio-Daten werden im Browser verschlüsselt und in Google Drive gespeichert …");
+      const snapshot=JSON.parse(JSON.stringify(data));
+      const envelope=await api.encryptJson(snapshot,secret);
+      await client.save(envelope,{expectedModifiedTime:remote?.modifiedTime||""});
+      await enableProtectedData(secret,{dirty:false});
+      loadButton.disabled=false;
+      saveButton.disabled=false;
+      recoveryNotice.classList.add("hidden");
+      guidedSaveButton.dataset.restoreDraft="";
+      guidedSaveButton.textContent="Aktuellen Stand erneut verschlüsselt speichern";
+      setStatus(`Fertig: verschlüsselt in Google Drive gespeichert · ${new Date(client.modifiedTime).toLocaleString("de-DE")}`);
+    }catch(error){
+      client=null;
+      setStatus(error.message,true);
+    }finally{
+      guidedSaveButton.disabled=false;
+      showStorageMode();
+    }
   };
 
   loadButton.onclick=async()=>{

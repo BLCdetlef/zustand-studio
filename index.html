@@ -27,9 +27,9 @@
 <aside class="draft-recovery-notice hidden" id="draftRecoveryNotice" role="status">
   <div>
     <strong>Verschlüsselter Zwischenstand vorhanden</strong>
-    <span>Gib dein Studio-Passwort ein und stelle die zuletzt bearbeiteten Daten wieder her.</span>
+    <span>Gib dein Studio-Passwort ein. Danach kannst du den Stand in einem Schritt wiederherstellen und in Google Drive sichern.</span>
   </div>
-  <button class="primary" id="openDraftRecovery" type="button">Jetzt wiederherstellen</button>
+  <button class="primary" id="openDraftRecovery" type="button">Sicher fortsetzen</button>
 </aside>
 
 <main>
@@ -710,21 +710,29 @@
     <span>Speicherstatus oben beachten · Sicherung enthält keine Bilddateien</span>
   </div>
   <div class="footer-actions">
+    <button class="primary" id="backupToDrive" type="button">Sicherung in Google Drive speichern</button>
+    <input class="hidden" id="backupToDriveFile" type="file" accept=".json,application/json">
     <details class="online-storage" id="onlineStorage">
       <summary>Verschlüsselter Online-Speicher</summary>
       <div class="online-storage-body">
-        <p>Manuelle Testsynchronisation mit einer verschlüsselten Datei im privaten App-Bereich von Google Drive.</p>
+        <p id="driveSyncIntro">Geführte Sicherung: Studio-Passwort eingeben, dann verbindet sich das Studio mit Google und speichert den aktuellen Stand verschlüsselt.</p>
         <label for="googleClientId">Google OAuth Client-ID</label>
         <input id="googleClientId" type="text" autocomplete="off" placeholder="…apps.googleusercontent.com">
         <label for="studioPassphrase">Studio-Passwort (mindestens 12 Zeichen)</label>
         <input id="studioPassphrase" type="password" autocomplete="off">
-        <div class="actions">
-          <button class="ghost" id="connectGoogleDrive" type="button">Mit Google verbinden</button>
-          <button class="ghost" id="loadEncryptedDraft" type="button" disabled>Zwischenstand laden</button>
-          <button class="ghost" id="loadEncryptedDrive" type="button" disabled>Aus Drive laden</button>
-          <button class="ghost" id="saveEncryptedDrive" type="button" disabled>Verschlüsselt speichern</button>
-          <button class="ghost danger" id="clearLocalPlaintext" type="button" disabled>Lokalen Klartext entfernen</button>
+        <div class="actions guided-actions">
+          <button class="primary" id="guidedDriveSave" type="button">Mit Google verbinden &amp; verschlüsselt speichern</button>
         </div>
+        <details class="drive-advanced">
+          <summary>Weitere Speicherfunktionen</summary>
+          <div class="actions">
+            <button class="ghost" id="connectGoogleDrive" type="button">Mit Google verbinden</button>
+            <button class="ghost" id="loadEncryptedDraft" type="button" disabled>Zwischenstand laden</button>
+            <button class="ghost" id="loadEncryptedDrive" type="button" disabled>Aus Drive laden</button>
+            <button class="ghost" id="saveEncryptedDrive" type="button" disabled>Verschlüsselt speichern</button>
+            <button class="ghost danger" id="clearLocalPlaintext" type="button" disabled>Lokalen Klartext entfernen</button>
+          </div>
+        </details>
         <p class="hint" id="driveSyncStatus">Nicht verbunden. Das Passwort wird nicht gespeichert.</p>
       </div>
     </details>
