@@ -838,17 +838,36 @@ function setAcquisitionMail(c,status){
 
   if(status==="zugesagt"){
     setAcquisitionMailTitle(status);
-    $("#mailOutput").value=`Betreff: Interview für ZUSTAND – Terminabstimmung
+    const interview=getInterview(c);
+    const contributionUrl=String(interview.contributionUrl||"").trim();
+    const curveUrl=String(interview.curveUrl||"").trim();
+    $("#mailOutput").value=`Betreff: ZUSTAND-Interview – Termin und gemeinsame Datengrundlage
 
 Guten Tag ${c.name},
 
-vielen Dank für Ihre Rückmeldung – ich freue mich sehr, dass Sie zu einem Gespräch bereit sind.
+vielen Dank für Ihre Rückmeldung und die Bereitschaft zum Gespräch.
 
-Der Offene Kanal Lübeck ist regulär dienstags bis samstags von 12:00 bis 19:00 Uhr geöffnet. Ich kann dort einen Studioplatz reservieren, sofern zu dem gewünschten Zeitpunkt einer frei ist.
+Zur Vorbereitung habe ich den relevanten Beitrag und – sofern vorhanden – die dazugehörige Kurve in unserem Grundlage-Wirkung-Leben-Panel (GWL-Panel) zusammengestellt:
 
-Für mich eignen sich besonders Termine von Dienstag bis Freitag, möglichst zwischen 14:00 und 17:00 Uhr. Wenn Sie mir ein oder zwei Tage bzw. Zeitfenster nennen, die für Sie grundsätzlich gut passen würden, prüfe ich anschließend die Verfügbarkeit des Studios.
+Beitrag:
+${contributionUrl||"[Link zum Beitrag]"}
 
-Danach können wir den konkreten Termin gemeinsam festlegen.
+Kurve:
+${curveUrl||"[Link zur Kurve]"}
+
+Die Darstellung ist als redaktioneller und fachlicher Arbeitsstand gedacht. Im Interview würde ich die Datengrundlage gern gemeinsam mit Ihnen prüfen – insbesondere:
+
+– Ist die verwendete Messreihe für das Thema passend?
+– Sind Verlauf und zentrale Aussage fachlich richtig eingeordnet?
+– Welche Unsicherheiten, methodischen Grenzen oder notwendigen Ergänzungen sollten wir im Gespräch erläutern?
+
+Sie müssen im Panel selbst nichts bearbeiten. Falls Änderungen oder Ergänzungen erforderlich sind, nehme ich diese anschließend selbst vor. Es geht auch nicht um eine formale Freigabe des gesamten Panels, sondern um eine möglichst verlässliche und verständliche Darstellung Ihres Fachgebiets.
+
+Wenn Ihnen vorab bereits etwas auffällt, können Sie mir gerne kurz antworten. Wir können die Punkte aber ebenso gemeinsam im Interview durchgehen.
+
+Der Offene Kanal Lübeck ist regulär montags bis samstags von 12:00 bis 19:00 Uhr geöffnet. Ich kann dort einen Studioplatz reservieren, sofern zum gewünschten Zeitpunkt einer frei ist.
+
+Für mich eignen sich besonders Termine von Montag bis Freitag, möglichst zwischen 14:00 und 17:00 Uhr. Wenn Sie mir ein oder zwei Tage beziehungsweise Zeitfenster nennen, die für Sie grundsätzlich gut passen, prüfe ich anschließend die Verfügbarkeit des Studios.
 
 Beste Grüße
 Detlef Hau
@@ -900,9 +919,11 @@ $("#aCandidate").onchange=makeMail;
 $("#aStatus").onchange=()=>{
   const c=selected("#aCandidate");
   if(!c)return;
-  setAcquisitionMailTitle($("#aStatus").value);
   const a=data.acquisition[c.id]||{};
-  data.acquisition[c.id]={...a,status:$("#aStatus").value,note:$("#aNote").value,mailDraft:$("#mailOutput").value};
+  const nextStatus=$("#aStatus").value;
+  if(nextStatus==="zugesagt"&&a.status!=="zugesagt")setAcquisitionMail(c,nextStatus);
+  else setAcquisitionMailTitle(nextStatus);
+  data.acquisition[c.id]={...a,status:nextStatus,note:$("#aNote").value,mailDraft:$("#mailOutput").value};
   storage.save(data);
 };
 $("#mailOutput").oninput=()=>{
@@ -1087,7 +1108,7 @@ function makeInterviewDraft(c){
 }
 function completeInterviewShape(c,value){
   const draft={
-    ...makeInterviewDraft(c),recordingAt:"",broadcastAt:"",curveTitle:"",curveId:"",curveUrl:"",
+    ...makeInterviewDraft(c),recordingAt:"",broadcastAt:"",contributionId:"",contributionUrl:"",curveTitle:"",curveId:"",curveUrl:"",
     oklUrl:"",castopodUrl:"",podcastUrl:"",transcriptSource:"",transcript:"",transcriptAudioUrl:"",
     transcriptStatus:"draft",transcriptSegments:[],transcriptUpdatedAt:"",transcriptReviewedAt:"",
     transcriptApprovedAt:"",zArticleId:""
@@ -1095,7 +1116,7 @@ function completeInterviewShape(c,value){
   if(typeof value==="string")return {...draft,intro:value};
   if(!value || typeof value!=="object")return draft;
   const result={...draft};
-  for(const key of ["intro","coreFindings","evidence","recordingAt","broadcastAt","curveTitle","curveId","curveUrl","oklUrl","castopodUrl","podcastUrl","transcriptSource","transcript","transcriptAudioUrl","transcriptStatus","transcriptUpdatedAt","transcriptReviewedAt","transcriptApprovedAt","zArticleId"]){
+  for(const key of ["intro","coreFindings","evidence","recordingAt","broadcastAt","contributionId","contributionUrl","curveTitle","curveId","curveUrl","oklUrl","castopodUrl","podcastUrl","transcriptSource","transcript","transcriptAudioUrl","transcriptStatus","transcriptUpdatedAt","transcriptReviewedAt","transcriptApprovedAt","zArticleId"]){
     if(Object.prototype.hasOwnProperty.call(value,key))result[key]=String(value[key]||"");
   }
   if(Array.isArray(value.transcriptSegments))result.transcriptSegments=value.transcriptSegments.map((segment,index)=>({
@@ -1117,7 +1138,7 @@ function getInterview(c){
 
 function showInterviewForSelectedCandidate(forceDraft=false){
   const c=selected("#iCandidate");
-  const fields=["#iIntro","#iCoreFindings","#iEvidence","#iRecordingAt","#iBroadcastAt","#iCurveTitle","#iCurveId","#iCurveUrl","#iOklUrl","#iCastopodUrl","#iPodcastUrl","#iTranscriptSource","#iTranscriptAudioUrl","#iTranscript"];
+  const fields=["#iIntro","#iCoreFindings","#iEvidence","#iRecordingAt","#iBroadcastAt","#iContributionId","#iContributionUrl","#iCurveTitle","#iCurveId","#iCurveUrl","#iOklUrl","#iCastopodUrl","#iPodcastUrl","#iTranscriptSource","#iTranscriptAudioUrl","#iTranscript"];
   if(!c){fields.forEach(id=>$(id).value="");loadTranscriptEditor(completeInterviewShape(null,null));renderInterviewProcessStatus();return;}
 
   // Beim Laden eines neuen Textvorschlags bleiben bereits eingetragene Termine erhalten.
@@ -1126,6 +1147,8 @@ function showInterviewForSelectedCandidate(forceDraft=false){
     ...makeInterviewDraft(c),
     recordingAt:saved.recordingAt||"",
     broadcastAt:saved.broadcastAt||"",
+    contributionId:saved.contributionId||"",
+    contributionUrl:saved.contributionUrl||"",
     curveTitle:saved.curveTitle||"",
     curveId:saved.curveId||"",
     curveUrl:saved.curveUrl||"",
@@ -1147,6 +1170,8 @@ function showInterviewForSelectedCandidate(forceDraft=false){
   $("#iEvidence").value=interview.evidence||"";
   $("#iRecordingAt").value=interview.recordingAt||"";
   $("#iBroadcastAt").value=interview.broadcastAt||"";
+  $("#iContributionId").value=interview.contributionId||"";
+  $("#iContributionUrl").value=interview.contributionUrl||"";
   $("#iCurveTitle").value=interview.curveTitle||"";
   $("#iCurveId").value=interview.curveId||"";
   $("#iCurveUrl").value=interview.curveUrl||"";
@@ -1185,6 +1210,8 @@ function currentInterviewEditorValues(){
     evidence:$("#iEvidence").value,
     recordingAt:$("#iRecordingAt").value,
     broadcastAt:$("#iBroadcastAt").value,
+    contributionId:$("#iContributionId").value.trim(),
+    contributionUrl:$("#iContributionUrl").value.trim(),
     curveTitle:$("#iCurveTitle").value.trim(),
     curveId:$("#iCurveId").value.trim(),
     curveUrl:$("#iCurveUrl").value.trim(),
