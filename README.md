@@ -50,6 +50,8 @@ Optional kann ein Interview mit einer konkreten BLC26-Kurve verknüpft werden. K
 
 Der Interviewbereich führt durch fünf Arbeitsschritte: **Vorbereitung → Aufnahme → Veröffentlichung → Transkript → Z-Beitrag**. OKL-, Castopod- und weitere Podcast-Links sowie ein internes Transkript bleiben beim Interview gespeichert. Ein einmal angelegter Z-Beitrag wird beim erneuten Aufruf geöffnet statt dupliziert.
 
+Unter **Aufnahme** stehen vergrößerbare Referenzfotos des Digitalmischpults im Offenen Kanal Lübeck und des RØDECaster Pro in der MPA als mobile Aufnahmehilfe bereit.
+
 In der Interviewvorbereitung können außerdem die stabilen IDs und Direktlinks eines GWL-Beitrags und einer BLC26-Kurve hinterlegt werden. Beim Wechsel des Akquise-Status auf **zugesagt** erzeugt das Studio daraus die zweite E-Mail zur Terminabstimmung und gemeinsamen fachlichen Prüfung. Bereits individuell bearbeitete Entwürfe werden ansonsten nicht automatisch ersetzt.
 
 ### Transkript-Redaktion
